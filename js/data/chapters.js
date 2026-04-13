@@ -8,10 +8,13 @@ export const chapters = [
         theme: {
             background: '#f5e6c8',
             gridDot: '#d4b896',
-            arrowIdle: '#8b6914',
-            arrowRemovable: '#5c4a0e',
-            arrowRemoving: '#c0392b',
-            removedDot: '#e8d5b0'
+            pathIdle: '#a0834a',
+            pathRemovable: '#6b4e1f',
+            pathRemoving: '#c0392b',
+            removedDot: '#e8d5b0',
+            pathWidth: 4,
+            arrowHeadSize: 8,
+            hintColor: '#f1c40f'
         }
     },
     {
@@ -21,10 +24,13 @@ export const chapters = [
         theme: {
             background: '#e8eef5',
             gridDot: '#b0c4de',
-            arrowIdle: '#4a6fa5',
-            arrowRemovable: '#2c3e6b',
-            arrowRemoving: '#c0392b',
-            removedDot: '#d0daea'
+            pathIdle: '#6080a8',
+            pathRemovable: '#2c4a6b',
+            pathRemoving: '#c0392b',
+            removedDot: '#d0daea',
+            pathWidth: 4,
+            arrowHeadSize: 8,
+            hintColor: '#f1c40f'
         }
     },
     {
@@ -34,10 +40,13 @@ export const chapters = [
         theme: {
             background: '#f0e6dc',
             gridDot: '#c4a882',
-            arrowIdle: '#8b4513',
-            arrowRemovable: '#5c2e0e',
-            arrowRemoving: '#c0392b',
-            removedDot: '#ddd0c0'
+            pathIdle: '#8b5a2b',
+            pathRemovable: '#5c2e0e',
+            pathRemoving: '#c0392b',
+            removedDot: '#ddd0c0',
+            pathWidth: 5,
+            arrowHeadSize: 9,
+            hintColor: '#f1c40f'
         }
     },
     {
@@ -47,10 +56,13 @@ export const chapters = [
         theme: {
             background: '#dde3e8',
             gridDot: '#9aabb8',
-            arrowIdle: '#3e5c6b',
-            arrowRemovable: '#2a3f4d',
-            arrowRemoving: '#c0392b',
-            removedDot: '#c8d3dc'
+            pathIdle: '#4a6a7a',
+            pathRemovable: '#2a3f4d',
+            pathRemoving: '#c0392b',
+            removedDot: '#c8d3dc',
+            pathWidth: 5,
+            arrowHeadSize: 9,
+            hintColor: '#e67e22'
         }
     },
     {
@@ -60,10 +72,13 @@ export const chapters = [
         theme: {
             background: '#f2e6e9',
             gridDot: '#c9a0a8',
-            arrowIdle: '#8b1a2b',
-            arrowRemovable: '#5c1120',
-            arrowRemoving: '#e74c3c',
-            removedDot: '#e0d0d5'
+            pathIdle: '#a03050',
+            pathRemovable: '#6b1530',
+            pathRemoving: '#e74c3c',
+            removedDot: '#e0d0d5',
+            pathWidth: 4,
+            arrowHeadSize: 9,
+            hintColor: '#f39c12'
         }
     },
     {
@@ -73,10 +88,13 @@ export const chapters = [
         theme: {
             background: '#f5e8e0',
             gridDot: '#d4a888',
-            arrowIdle: '#b22222',
-            arrowRemovable: '#8b0000',
-            arrowRemoving: '#ff4444',
-            removedDot: '#e8d5c8'
+            pathIdle: '#cc3333',
+            pathRemovable: '#8b0000',
+            pathRemoving: '#ff4444',
+            removedDot: '#e8d5c8',
+            pathWidth: 4,
+            arrowHeadSize: 8,
+            hintColor: '#f1c40f'
         }
     },
     {
@@ -86,10 +104,13 @@ export const chapters = [
         theme: {
             background: '#e0eadc',
             gridDot: '#98b08a',
-            arrowIdle: '#3d6b35',
-            arrowRemovable: '#2a4d25',
-            arrowRemoving: '#c0392b',
-            removedDot: '#ccdcc5'
+            pathIdle: '#4a7a40',
+            pathRemovable: '#2a4d25',
+            pathRemoving: '#c0392b',
+            removedDot: '#ccdcc5',
+            pathWidth: 5,
+            arrowHeadSize: 9,
+            hintColor: '#e67e22'
         }
     },
     {
@@ -99,10 +120,13 @@ export const chapters = [
         theme: {
             background: '#f5eae0',
             gridDot: '#d4a870',
-            arrowIdle: '#cc5500',
-            arrowRemovable: '#993d00',
-            arrowRemoving: '#c0392b',
-            removedDot: '#e8d8c0'
+            pathIdle: '#cc6600',
+            pathRemovable: '#8a4500',
+            pathRemoving: '#c0392b',
+            removedDot: '#e8d8c0',
+            pathWidth: 4,
+            arrowHeadSize: 9,
+            hintColor: '#9b59b6'
         }
     },
     {
@@ -112,10 +136,13 @@ export const chapters = [
         theme: {
             background: '#e0ddd8',
             gridDot: '#a09890',
-            arrowIdle: '#555555',
-            arrowRemovable: '#333333',
-            arrowRemoving: '#c0392b',
-            removedDot: '#ccc8c0'
+            pathIdle: '#606060',
+            pathRemovable: '#333333',
+            pathRemoving: '#c0392b',
+            removedDot: '#ccc8c0',
+            pathWidth: 5,
+            arrowHeadSize: 10,
+            hintColor: '#e67e22'
         }
     },
     {
@@ -125,10 +152,13 @@ export const chapters = [
         theme: {
             background: '#f0ece0',
             gridDot: '#c0b8a0',
-            arrowIdle: '#5c3d2e',
-            arrowRemovable: '#3a2510',
-            arrowRemoving: '#c0392b',
-            removedDot: '#ddd5c5'
+            pathIdle: '#5c3d2e',
+            pathRemovable: '#3a2510',
+            pathRemoving: '#c0392b',
+            removedDot: '#ddd5c5',
+            pathWidth: 5,
+            arrowHeadSize: 10,
+            hintColor: '#e74c3c'
         }
     }
 ];

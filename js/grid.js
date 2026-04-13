@@ -1,74 +1,83 @@
 // js/grid.js
 
-import { Arrow, ArrowState, Direction } from './arrow.js';
+import { ArrowPath, ArrowState, getDirectionVector } from './arrow.js';
 
 export class Grid {
     constructor(width, height) {
         this.width = width;
         this.height = height;
-        this.arrows = [];
+        this.paths = [];
     }
 
-    addArrow(x, y, direction) {
-        const arrow = new Arrow(x, y, direction);
-        this.arrows.push(arrow);
-        return arrow;
+    addPath(cells, direction) {
+        const path = new ArrowPath(cells, direction);
+        this.paths.push(path);
+        return path;
     }
 
-    getArrowAt(x, y) {
-        return this.arrows.find(a => a.x === x && a.y === y && !a.isRemoved()) || null;
+    // Find which non-removed path owns a cell
+    getPathAt(x, y) {
+        return this.paths.find(p => !p.isRemoved() && p.state !== ArrowState.REMOVING && p.hasCell(x, y)) || null;
     }
 
-    isPathClear(arrow) {
-        if (arrow.isRemoved()) return false;
+    // Check if any non-removed path has a cell at (x, y)
+    isCellOccupied(x, y) {
+        return this.paths.some(p => !p.isRemoved() && p.state !== ArrowState.REMOVING && p.hasCell(x, y));
+    }
 
-        const { dx, dy } = arrow.getDirectionVector();
-        let cx = arrow.x + dx;
-        let cy = arrow.y + dy;
+    // A path is removable if from its arrow head, going in its direction,
+    // there are no occupied cells until the grid edge
+    isPathClear(path) {
+        if (path.isRemoved()) return false;
+        const head = path.getHead();
+        const { dx, dy } = getDirectionVector(path.direction);
+        let cx = head.x + dx;
+        let cy = head.y + dy;
 
         while (cx >= 0 && cx < this.width && cy >= 0 && cy < this.height) {
-            if (this.getArrowAt(cx, cy)) {
-                return false;
+            // Check if any OTHER path occupies this cell
+            for (const other of this.paths) {
+                if (other === path || other.isRemoved() || other.state === ArrowState.REMOVING) continue;
+                if (other.hasCell(cx, cy)) return false;
             }
             cx += dx;
             cy += dy;
         }
-
         return true;
     }
 
     updateRemovableStates() {
-        for (const arrow of this.arrows) {
-            if (arrow.isRemoved() || arrow.state === ArrowState.REMOVING) continue;
-            arrow.state = this.isPathClear(arrow) ? ArrowState.REMOVABLE : ArrowState.IDLE;
+        for (const path of this.paths) {
+            if (path.isRemoved() || path.state === ArrowState.REMOVING) continue;
+            path.state = this.isPathClear(path) ? ArrowState.REMOVABLE : ArrowState.IDLE;
         }
     }
 
-    removeArrow(arrow) {
-        arrow.state = ArrowState.REMOVING;
+    removePath(path) {
+        path.state = ArrowState.REMOVING;
     }
 
-    finalizeRemoval(arrow) {
-        arrow.state = ArrowState.REMOVED;
+    finalizeRemoval(path) {
+        path.state = ArrowState.REMOVED;
         this.updateRemovableStates();
     }
 
-    getActiveArrows() {
-        return this.arrows.filter(a => !a.isRemoved());
+    getActivePaths() {
+        return this.paths.filter(p => !p.isRemoved());
     }
 
     isCleared() {
-        return this.getActiveArrows().length === 0;
+        return this.getActivePaths().length === 0;
     }
 
-    getRemovableArrows() {
-        return this.arrows.filter(a => a.state === ArrowState.REMOVABLE);
+    getRemovablePaths() {
+        return this.paths.filter(p => p.state === ArrowState.REMOVABLE);
     }
 
-    loadFromData(arrowData) {
-        this.arrows = [];
-        for (const data of arrowData) {
-            this.addArrow(data.x, data.y, data.direction);
+    loadFromData(pathsData) {
+        this.paths = [];
+        for (const data of pathsData) {
+            this.addPath(data.cells, data.direction);
         }
         this.updateRemovableStates();
     }

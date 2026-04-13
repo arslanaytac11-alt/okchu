@@ -22,7 +22,7 @@ export class HintManager {
     }
 
     findHintArrow(grid) {
-        const removable = grid.getRemovableArrows();
+        const removable = grid.getRemovablePaths();
         if (removable.length === 0) return null;
         return removable[Math.floor(Math.random() * removable.length)];
     }
