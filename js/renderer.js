@@ -84,7 +84,7 @@ export class Renderer {
         const ctx = this.ctx;
         const cx = this.gridOffsetX + arrow.x * this.cellSize + this.cellSize / 2;
         const cy = this.gridOffsetY + arrow.y * this.cellSize + this.cellSize / 2;
-        const halfLen = this.cellSize * 0.35;
+        const halfLen = this.cellSize * 0.45;
         const headSize = this.theme.arrowHeadSize;
 
         let color;

@@ -113,6 +113,7 @@ export class ScreenManager {
             }
 
             card.textContent = level.level;
+            card.title = level.name;
 
             if (isAccessible && this.onStartLevel) {
                 card.addEventListener('click', () => {
