@@ -296,3 +296,42 @@ html, body {
 .overlay-content h2 {
     color: #5c3d2e;
 }
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+    .game-title {
+        font-size: 2rem;
+    }
+
+    .game-subtitle {
+        font-size: 1rem;
+    }
+
+    .chapter-card {
+        padding: 12px;
+    }
+
+    .level-card {
+        width: 70px;
+        height: 70px;
+        font-size: 1.3rem;
+    }
+
+    .game-header {
+        padding: 8px 12px;
+    }
+}
+
+/* Prevent text selection on game elements */
+#app {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Safe area for notched phones */
+@supports (padding-top: env(safe-area-inset-top)) {
+    .screen-header,
+    .game-header {
+        padding-top: calc(12px + env(safe-area-inset-top));
+    }
+}
