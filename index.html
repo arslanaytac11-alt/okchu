@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ok Bulmacasi - Antik Yolculuk</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Menu Screen -->
+        <div id="screen-menu" class="screen active">
+            <h1 class="game-title">Ok Bulmacasi</h1>
+            <p class="game-subtitle">Antik Yolculuk</p>
+            <button id="btn-play" class="btn btn-primary">Oyna</button>
+        </div>
+
+        <!-- Chapter Select Screen -->
+        <div id="screen-chapters" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" id="btn-chapters-back">&larr;</button>
+                <h2>Bolumler</h2>
+            </div>
+            <div id="chapter-list" class="chapter-list"></div>
+        </div>
+
+        <!-- Level Select Screen -->
+        <div id="screen-levels" class="screen">
+            <div class="screen-header">
+                <button class="btn-back" id="btn-levels-back">&larr;</button>
+                <h2 id="level-screen-title">Seviyeler</h2>
+            </div>
+            <div id="level-list" class="level-list"></div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="screen-game" class="screen">
+            <div class="game-header">
+                <button class="btn-back" id="btn-game-back">&larr;</button>
+                <div class="level-info">
+                    <span id="level-name">Seviye 1</span>
+                    <span id="level-difficulty" class="difficulty-badge">Kolay</span>
+                </div>
+                <button id="btn-hint" class="btn-hint" title="Ipucu">?</button>
+            </div>
+            <div id="lives-display" class="lives-display"></div>
+            <canvas id="game-canvas"></canvas>
+        </div>
+
+        <!-- Level Complete Overlay -->
+        <div id="overlay-complete" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>Tebrikler!</h2>
+                <p id="complete-message">Seviyeyi tamamladin!</p>
+                <button id="btn-next-level" class="btn btn-primary">Sonraki Seviye</button>
+            </div>
+        </div>
+
+        <!-- Lives Empty Overlay -->
+        <div id="overlay-no-lives" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>Canin Bitti!</h2>
+                <p id="lives-timer-text">Yeni can: --:--</p>
+                <button id="btn-watch-ad" class="btn btn-primary">Reklam Izle (+1 Can)</button>
+                <button id="btn-wait" class="btn btn-secondary">Bekle</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
