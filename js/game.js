@@ -23,6 +23,7 @@ export class Game {
         this.onLevelComplete = null;
         this.onNoLives = null;
         this.onLivesChanged = null;
+        this._renderLoopId = null;
 
         this.setupInput();
     }
@@ -46,6 +47,7 @@ export class Game {
         document.getElementById('level-difficulty').textContent = chapterData.difficulty;
 
         this.updateHintButton();
+        this.startRenderLoop();
     }
 
     applyChapterTheme(chapterData) {
@@ -81,6 +83,7 @@ export class Game {
             if (!path) return;
 
             this.hintedPath = null;
+            this.renderer.touchFeedback = { path, startTime: performance.now() };
 
             if (this.grid.isPathClear(path)) {
                 this.removePathWithAnimation(path);
@@ -422,6 +425,25 @@ export class Game {
     updateHintButton() {
         const btn = document.getElementById('btn-hint');
         btn.style.opacity = this.hintManager.hasFreeHint() ? '1' : '0.4';
+    }
+
+    startRenderLoop() {
+        this.stopRenderLoop();
+        const loop = (time) => {
+            this.renderer.tick(time);
+            if (!this.isAnimating && this.grid) {
+                this.renderer.drawGrid(this.grid);
+            }
+            this._renderLoopId = requestAnimationFrame(loop);
+        };
+        this._renderLoopId = requestAnimationFrame(loop);
+    }
+
+    stopRenderLoop() {
+        if (this._renderLoopId !== null) {
+            cancelAnimationFrame(this._renderLoopId);
+            this._renderLoopId = null;
+        }
     }
 
     handleResize() {

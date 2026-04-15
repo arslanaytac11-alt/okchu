@@ -18,6 +18,8 @@ export class Renderer {
         this.panY = 0;
         this.shakeX = 0;
         this.shakeY = 0;
+        this.animTime = 0;
+        this.touchFeedback = null;
         this.theme = {
             background: '#e8dcc0',
             backgroundGradient: ['#f0e4c8', '#e0d0a8'],
@@ -109,7 +111,9 @@ export class Renderer {
             if (path.state === ArrowState.REMOVED) this.drawRemovedPath(path);
         }
         for (const path of grid.paths) {
-            if (path.state === ArrowState.IDLE || path.state === ArrowState.REMOVABLE) this.drawPath(path, false);
+            if (path.state === ArrowState.IDLE || path.state === ArrowState.REMOVABLE) {
+                this.drawPath(path, path.state === ArrowState.REMOVABLE);
+            }
         }
         for (const path of grid.paths) {
             if (path.state === ArrowState.REMOVING) this.drawPath(path, false, true);
@@ -203,6 +207,30 @@ export class Renderer {
         const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
         if (points.length < 2) return;
 
+        // Touch press scale effect
+        let touchScale = 1;
+        let touchCx = 0, touchCy = 0;
+        if (this.touchFeedback && this.touchFeedback.path === path) {
+            const touchElapsed = performance.now() - this.touchFeedback.startTime;
+            if (touchElapsed < 100) {
+                const tp = touchElapsed / 100;
+                touchScale = 1 + 0.05 * Math.sin(tp * Math.PI);
+                // Compute centroid of path points for scale origin
+                for (const pt of points) { touchCx += pt.x; touchCy += pt.y; }
+                touchCx /= points.length;
+                touchCy /= points.length;
+            } else {
+                this.touchFeedback = null;
+            }
+        }
+
+        if (touchScale !== 1) {
+            ctx.save();
+            ctx.translate(touchCx, touchCy);
+            ctx.scale(touchScale, touchScale);
+            ctx.translate(-touchCx, -touchCy);
+        }
+
         // Removable glow
         if (isRemovable) {
             ctx.strokeStyle = this.theme.removableGlow;
@@ -210,6 +238,17 @@ export class Renderer {
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             this._strokePoints(ctx, points);
+
+            // Subtle pulse glow for removable arrows
+            if (this.animTime > 0) {
+                const pulse = 0.5 + 0.5 * Math.sin(this.animTime / 800);
+                const glowAlpha = 0.04 + pulse * 0.06;
+                ctx.strokeStyle = `rgba(100,70,30,${glowAlpha})`;
+                ctx.lineWidth = metrics.width + 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                this._strokePoints(ctx, points);
+            }
         }
 
         // Main line
@@ -228,6 +267,10 @@ export class Renderer {
         ctx.beginPath();
         ctx.arc(tail.x, tail.y, metrics.width * 0.5, 0, Math.PI * 2);
         ctx.fill();
+
+        if (touchScale !== 1) {
+            ctx.restore();
+        }
     }
 
     _strokePoints(ctx, points) {
@@ -321,5 +364,9 @@ export class Renderer {
 
     setTheme(theme) {
         Object.assign(this.theme, theme);
+    }
+
+    tick(time) {
+        this.animTime = time;
     }
 }
