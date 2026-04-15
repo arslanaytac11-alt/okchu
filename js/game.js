@@ -341,26 +341,36 @@ export class Game {
     playCelebration(callback) {
         const rect = this.canvas.getBoundingClientRect();
         const particles = [];
-        const colors = ['#d4a843', '#c87030', '#2b6e8a', '#3a8a6e', '#b88a30', '#c0713a', '#8a4a2a', '#e8c870'];
+        const colors = this.currentChapter?.theme?.particleColors ||
+            ['#d4a843', '#c87030', '#2b6e8a', '#3a8a6e', '#b88a30', '#c0713a', '#8a4a2a', '#e8c870'];
+        const shapes = ['circle', 'square', 'triangle', 'diamond'];
 
-        // Create 60 particles
-        for (let i = 0; i < 60; i++) {
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+
+        // Create 80 particles with staggered start delays
+        for (let i = 0; i < 80; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 8 + 3;
             particles.push({
-                x: rect.width / 2 + (Math.random() - 0.5) * 60,
-                y: rect.height / 2,
-                vx: (Math.random() - 0.5) * 8,
-                vy: -Math.random() * 10 - 3,
-                size: Math.random() * 4 + 2,
+                x: cx + (Math.random() - 0.5) * 60,
+                y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 4,
+                size: Math.random() * 5 + 2,
                 color: colors[Math.floor(Math.random() * colors.length)],
                 alpha: 1,
                 rotation: Math.random() * Math.PI * 2,
-                rotSpeed: (Math.random() - 0.5) * 0.2
+                rotSpeed: (Math.random() - 0.5) * 0.25,
+                shape: shapes[Math.floor(Math.random() * shapes.length)],
+                delay: Math.random() * 100  // staggered 0-100ms
             });
         }
 
         const startTime = performance.now();
-        const duration = 1200;
+        const duration = 1500;
         const ctx = this.renderer.ctx;
+        const dpr = window.devicePixelRatio || 1;
 
         const animate = (time) => {
             const elapsed = time - startTime;
@@ -369,32 +379,65 @@ export class Game {
                 return;
             }
 
-            // Draw current grid state as background
+            const progress = elapsed / duration;
+
+            // Draw current grid state as background with subtle zoom-out
             this.renderer.drawGrid(this.grid);
 
-            // Draw particles on top (no zoom/pan transform)
-            const dpr = window.devicePixelRatio || 1;
             ctx.save();
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+            // Shockwave ring expanding from center
+            const shockProgress = Math.min(elapsed / 400, 1);
+            if (shockProgress < 1) {
+                const shockRadius = shockProgress * Math.max(rect.width, rect.height) * 0.6;
+                const shockAlpha = (1 - shockProgress) * 0.5;
+                ctx.strokeStyle = `rgba(255,220,100,${shockAlpha})`;
+                ctx.lineWidth = 3 * (1 - shockProgress) + 1;
+                ctx.beginPath();
+                ctx.arc(cx, cy, shockRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw particles
             for (const p of particles) {
+                const particleElapsed = elapsed - p.delay;
+                if (particleElapsed <= 0) continue;
+
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.15; // gravity
+                p.vy += 0.18;   // gravity
+                p.vx *= 0.995;  // air resistance
                 p.rotation += p.rotSpeed;
-                p.alpha = Math.max(0, 1 - elapsed / duration);
+                p.alpha = Math.max(0, 1 - particleElapsed / (duration - p.delay));
 
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rotation);
                 ctx.globalAlpha = p.alpha;
                 ctx.fillStyle = p.color;
-                // Draw diamond shape
+
                 ctx.beginPath();
-                ctx.moveTo(0, -p.size);
-                ctx.lineTo(p.size * 0.6, 0);
-                ctx.lineTo(0, p.size);
-                ctx.lineTo(-p.size * 0.6, 0);
+                switch (p.shape) {
+                    case 'circle':
+                        ctx.arc(0, 0, p.size * 0.6, 0, Math.PI * 2);
+                        break;
+                    case 'square':
+                        ctx.rect(-p.size * 0.5, -p.size * 0.5, p.size, p.size);
+                        break;
+                    case 'triangle':
+                        ctx.moveTo(0, -p.size);
+                        ctx.lineTo(p.size * 0.87, p.size * 0.5);
+                        ctx.lineTo(-p.size * 0.87, p.size * 0.5);
+                        break;
+                    case 'diamond':
+                    default:
+                        ctx.moveTo(0, -p.size);
+                        ctx.lineTo(p.size * 0.6, 0);
+                        ctx.lineTo(0, p.size);
+                        ctx.lineTo(-p.size * 0.6, 0);
+                        break;
+                }
                 ctx.closePath();
                 ctx.fill();
                 ctx.restore();

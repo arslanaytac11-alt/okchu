@@ -24,6 +24,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#b08020',
             removableGlow: 'rgba(100,70,30,0.12)',
+            particleColors: ['#d4a843', '#2b8a9a'],
         }
     },
     {
@@ -49,6 +50,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#4a80b0',
             removableGlow: 'rgba(40,50,80,0.1)',
+            particleColors: ['#ffffff', '#4a80b0'],
         }
     },
     {
@@ -74,6 +76,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#a07030',
             removableGlow: 'rgba(80,50,20,0.1)',
+            particleColors: ['#c04030', '#d4a843'],
         }
     },
     {
@@ -99,6 +102,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#5888a8',
             removableGlow: 'rgba(40,50,70,0.1)',
+            particleColors: ['#c0c0c0', '#5888a8'],
         }
     },
     {
@@ -130,6 +134,7 @@ export const chapters = [
             lifeAlive: '#b53b52',
             lifeGlow: 'rgba(181,59,82,0.34)',
             patternColor: 'rgba(13,108,103,0.14)',
+            particleColors: ['#8a2040', '#d4a843', '#0d6c67'],
         }
     },
     {
@@ -155,6 +160,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#a06040',
             removableGlow: 'rgba(80,30,30,0.1)',
+            particleColors: ['#c04030', '#d4a843'],
         }
     },
     {
@@ -180,6 +186,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#608040',
             removableGlow: 'rgba(30,60,30,0.1)',
+            particleColors: ['#408040', '#d4a843'],
         }
     },
     {
@@ -205,6 +212,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#b08030',
             removableGlow: 'rgba(80,50,20,0.1)',
+            particleColors: ['#d48020', '#8040a0', '#d4a843'],
         }
     },
     {
@@ -230,6 +238,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#707080',
             removableGlow: 'rgba(40,40,50,0.1)',
+            particleColors: ['#c0c0c0', '#c07030'],
         }
     },
     {
@@ -255,6 +264,7 @@ export const chapters = [
             arrowHeadSize: 10,
             hintColor: '#806098',
             removableGlow: 'rgba(50,30,70,0.1)',
+            particleColors: ['#d4a843', '#c04030', '#4a80b0', '#408040', '#8040a0'],
         }
     }
 ];
