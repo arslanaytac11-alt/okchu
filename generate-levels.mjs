@@ -57,16 +57,16 @@ function makeRng(seed) {
 // ============================================================
 
 const CHAPTER_CONFIG = {
-    1:  { trapRatio: 0.10, chainDepth: 1, density: 0.30, maxPathLen: 6  },
-    2:  { trapRatio: 0.30, chainDepth: 2, density: 0.40, maxPathLen: 8  },
-    3:  { trapRatio: 0.40, chainDepth: 2, density: 0.45, maxPathLen: 8  },
-    4:  { trapRatio: 0.50, chainDepth: 3, density: 0.50, maxPathLen: 10 },
-    5:  { trapRatio: 0.60, chainDepth: 3, density: 0.55, maxPathLen: 10 },
-    6:  { trapRatio: 0.65, chainDepth: 4, density: 0.60, maxPathLen: 12 },
-    7:  { trapRatio: 0.70, chainDepth: 4, density: 0.65, maxPathLen: 12 },
-    8:  { trapRatio: 0.75, chainDepth: 5, density: 0.65, maxPathLen: 12 },
-    9:  { trapRatio: 0.80, chainDepth: 5, density: 0.70, maxPathLen: 14 },
-    10: { trapRatio: 0.85, chainDepth: 6, density: 0.75, maxPathLen: 14 },
+    1:  { trapRatio: 0.05, chainDepth: 1, density: 0.85, maxPathLen: 4,  turnChance: 0.30 },
+    2:  { trapRatio: 0.15, chainDepth: 1, density: 0.85, maxPathLen: 5,  turnChance: 0.35 },
+    3:  { trapRatio: 0.30, chainDepth: 2, density: 0.88, maxPathLen: 6,  turnChance: 0.40 },
+    4:  { trapRatio: 0.45, chainDepth: 2, density: 0.88, maxPathLen: 7,  turnChance: 0.50 },
+    5:  { trapRatio: 0.55, chainDepth: 3, density: 0.90, maxPathLen: 8,  turnChance: 0.55 },
+    6:  { trapRatio: 0.65, chainDepth: 4, density: 0.90, maxPathLen: 9,  turnChance: 0.60 },
+    7:  { trapRatio: 0.75, chainDepth: 4, density: 0.90, maxPathLen: 10, turnChance: 0.65 },
+    8:  { trapRatio: 0.82, chainDepth: 5, density: 0.92, maxPathLen: 11, turnChance: 0.70 },
+    9:  { trapRatio: 0.88, chainDepth: 5, density: 0.92, maxPathLen: 12, turnChance: 0.75 },
+    10: { trapRatio: 0.92, chainDepth: 6, density: 0.94, maxPathLen: 14, turnChance: 0.80 },
 };
 
 // ============================================================
@@ -928,28 +928,37 @@ function generateShapedLevel(width, height, mask, seed, chapterNum) {
     }
 
     // Random walk to create a winding path of target length
+    // turnChance controls how often the path changes direction (higher = more L/U/S shapes)
     function growPath(startX, startY, targetLen) {
         const cells = [[startX, startY]];
         grid[startY][startX] = pathIdx;
+        const tc = config.turnChance || 0.5;
 
         for (let step = 1; step < targetLen; step++) {
             const [cx, cy] = cells[cells.length - 1];
             const neighbors = freeNeighbors(cx, cy);
             if (neighbors.length === 0) break;
 
-            // Prefer directions that continue the current trajectory (creates longer straight/curved lines)
             let chosen;
             if (cells.length >= 2) {
                 const [px, py] = cells[cells.length - 2];
                 const dx = cx - px;
                 const dy = cy - py;
-                // Try to continue same direction (70% chance) for natural curves
                 const cont = [cx + dx, cy + dy];
                 const contFree = neighbors.find(n => n[0] === cont[0] && n[1] === cont[1]);
-                if (contFree && rand() < 0.5) {
+                // Use turnChance: higher value = more likely to turn instead of continuing straight
+                if (contFree && rand() >= tc) {
+                    // Continue straight
                     chosen = contFree;
                 } else {
-                    chosen = neighbors[Math.floor(rand() * neighbors.length)];
+                    // Turn: pick from neighbors that are NOT the straight continuation
+                    const turnNeighbors = neighbors.filter(n => !(n[0] === cont[0] && n[1] === cont[1]));
+                    if (turnNeighbors.length > 0) {
+                        chosen = turnNeighbors[Math.floor(rand() * turnNeighbors.length)];
+                    } else {
+                        // No turn options available, continue straight or pick any
+                        chosen = contFree || neighbors[Math.floor(rand() * neighbors.length)];
+                    }
                 }
             } else {
                 chosen = neighbors[Math.floor(rand() * neighbors.length)];
@@ -997,9 +1006,33 @@ function generateShapedLevel(width, height, mask, seed, chapterNum) {
         return costs[2].dir;
     }
 
-    // VARIED path lengths driven by chapter config
-    const minLen = 2;
+    // VARIED path lengths driven by chapter config with weighted distribution
     const maxLen = config.maxPathLen;
+
+    // Weighted path length picker: mix of short, medium, and long paths.
+    // Early chapters (low chapterNum) favor short paths; later chapters favor long.
+    // chapterProgress goes from 0.0 (ch1) to 1.0 (ch10).
+    const chapterProgress = (chapterNum - 1) / 9;
+    // Weight buckets: short (1-2), medium (3-5), long (6+)
+    const shortWeight = Math.max(0.10, 0.45 - chapterProgress * 0.35);  // 0.45 -> 0.10
+    const longWeight  = Math.max(0.10, 0.10 + chapterProgress * 0.45);  // 0.10 -> 0.55
+    const medWeight   = 1.0 - shortWeight - longWeight;                  // remainder
+
+    function pickTargetLen() {
+        const r = rand();
+        if (r < shortWeight) {
+            // Short: 1 or 2 cells
+            return 1 + Math.floor(rand() * 2); // 1-2
+        } else if (r < shortWeight + medWeight) {
+            // Medium: 3 to min(5, maxLen)
+            const medMax = Math.min(5, maxLen);
+            return 3 + Math.floor(rand() * (medMax - 3 + 1)); // 3-5
+        } else {
+            // Long: 6 to maxLen (clamped to at least 6)
+            const longMin = Math.min(6, maxLen);
+            return longMin + Math.floor(rand() * (maxLen - longMin + 1)); // 6-maxLen
+        }
+    }
 
     // Collect all mask cells and shuffle
     const cellOrder = [];
@@ -1011,12 +1044,44 @@ function generateShapedLevel(width, height, mask, seed, chapterNum) {
         [cellOrder[i], cellOrder[j]] = [cellOrder[j], cellOrder[i]];
     }
 
-    // Phase 1: Place long paths first
+    // Phase 0: Guarantee at least 1 single-cell arrow and 1 long arrow per level
+    let placedSingle = false;
+    let placedLong = false;
     for (const [x, y] of cellOrder) {
         if (grid[y][x] !== -1) continue;
-        const targetLen = minLen + Math.floor(rand() * (maxLen - minLen + 1));
+        if (!placedSingle) {
+            // Force a single-cell arrow for a quick win
+            const cells = growPath(x, y, 1);
+            const dir = pickDirection(cells);
+            paths.push({ cells, direction: dir });
+            pathIdx++;
+            placedSingle = true;
+            continue;
+        }
+        if (!placedLong) {
+            // Force a long winding arrow for challenge
+            const longTarget = maxLen;
+            const cells = growPath(x, y, longTarget);
+            const dir = pickDirection(cells);
+            paths.push({ cells, direction: dir });
+            pathIdx++;
+            placedLong = true;
+            continue;
+        }
+        break;
+    }
+
+    // Phase 1: Place paths with weighted length distribution
+    for (const [x, y] of cellOrder) {
+        if (grid[y][x] !== -1) continue;
+        const targetLen = pickTargetLen();
         const cells = growPath(x, y, targetLen);
         if (cells.length >= 2) {
+            const dir = pickDirection(cells);
+            paths.push({ cells, direction: dir });
+            pathIdx++;
+        } else if (cells.length === 1) {
+            // Single-cell arrows are valid quick-win elements
             const dir = pickDirection(cells);
             paths.push({ cells, direction: dir });
             pathIdx++;
@@ -1153,66 +1218,66 @@ function validateLevel(paths, width, height, mask) {
 // ============================================================
 
 const levelSpecs = [
-    // CH1: MISIR - Kolay + Ogretici (18x14)
-    { id: 'egypt_1', chapter: 1, level: 1,  name: 'Piramit',   w: 18, h: 14, shape: 'pyramid',     seedStart: 1000 },
-    { id: 'egypt_2', chapter: 1, level: 2,  name: 'Sfenks',    w: 18, h: 14, shape: 'sphinx',      seedStart: 2000 },
-    { id: 'egypt_3', chapter: 1, level: 3,  name: 'Elmas',     w: 18, h: 14, shape: 'diamond',     seedStart: 3000 },
-    { id: 'egypt_4', chapter: 1, level: 4,  name: 'Basamak',   w: 18, h: 14, shape: 'steppyramid', seedStart: 4000 },
-    { id: 'egypt_5', chapter: 1, level: 5,  name: 'Firavun',   w: 18, h: 14, shape: 'solidoval',   seedStart: 5000 },
-    // CH2: YUNAN - Orta (20x16)
-    { id: 'greek_1', chapter: 2, level: 6,  name: 'Parthenon', w: 20, h: 16, shape: 'temple',      seedStart: 6000 },
-    { id: 'greek_2', chapter: 2, level: 7,  name: 'Amphora',   w: 20, h: 16, shape: 'amphora',     seedStart: 7000 },
-    { id: 'greek_3', chapter: 2, level: 8,  name: 'Olympia',   w: 20, h: 16, shape: 'diamond',     seedStart: 8000 },
-    { id: 'greek_4', chapter: 2, level: 9,  name: 'Akropolis', w: 20, h: 16, shape: 'solidoval',   seedStart: 9000 },
-    { id: 'greek_5', chapter: 2, level: 10, name: 'Atina',     w: 20, h: 16, shape: 'steppyramid', seedStart: 10000 },
-    // CH3: ROMA - Zor (22x18)
-    { id: 'rome_1', chapter: 3, level: 11, name: 'Kolezyum',   w: 22, h: 18, shape: 'arch',        seedStart: 11000 },
-    { id: 'rome_2', chapter: 3, level: 12, name: 'Kartal',     w: 22, h: 18, shape: 'eagle',       seedStart: 12000 },
-    { id: 'rome_3', chapter: 3, level: 13, name: 'Su Kemeri',  w: 22, h: 18, shape: 'aqueduct',    seedStart: 13000 },
-    { id: 'rome_4', chapter: 3, level: 14, name: 'Arena',      w: 22, h: 18, shape: 'oval4',       seedStart: 14000 },
-    { id: 'rome_5', chapter: 3, level: 15, name: 'Sezar',      w: 22, h: 18, shape: 'solidoval',   seedStart: 15000 },
-    // CH4: VIKING - Zor+ (26x20)
-    { id: 'viking_1', chapter: 4, level: 16, name: 'Drakkar',   w: 26, h: 20, shape: 'ship',        seedStart: 16000 },
-    { id: 'viking_2', chapter: 4, level: 17, name: 'Mjolnir',   w: 26, h: 20, shape: 'hammer',      seedStart: 17000 },
-    { id: 'viking_3', chapter: 4, level: 18, name: 'Runik',     w: 26, h: 20, shape: 'diamond',     seedStart: 18000 },
-    { id: 'viking_4', chapter: 4, level: 19, name: 'Fiyort',    w: 26, h: 20, shape: 'solidoval',   seedStart: 19000 },
-    { id: 'viking_5', chapter: 4, level: 20, name: 'Valhalla',  w: 26, h: 20, shape: 'steppyramid', seedStart: 20000 },
-    // CH5: OSMANLI - Cok Zor (26x22)
-    { id: 'ottoman_1', chapter: 5, level: 21, name: 'Cami',     w: 26, h: 22, shape: 'mosque',      seedStart: 21000 },
-    { id: 'ottoman_2', chapter: 5, level: 22, name: 'Lale',     w: 26, h: 22, shape: 'tulip',       seedStart: 22000 },
-    { id: 'ottoman_3', chapter: 5, level: 23, name: 'Kubbe',    w: 26, h: 22, shape: 'solidoval',   seedStart: 23000 },
-    { id: 'ottoman_4', chapter: 5, level: 24, name: 'Minare',   w: 26, h: 22, shape: 'castle',      seedStart: 24000 },
-    { id: 'ottoman_5', chapter: 5, level: 25, name: 'Sultan',   w: 26, h: 22, shape: 'diamond',     seedStart: 25000 },
-    // CH6: CIN - Cok Zor+ (28x24)
-    { id: 'china_1', chapter: 6, level: 26, name: 'Pagoda',     w: 28, h: 24, shape: 'pagoda',      seedStart: 26000 },
-    { id: 'china_2', chapter: 6, level: 27, name: 'Ejderha',    w: 28, h: 24, shape: 'dragon',      seedStart: 27000 },
-    { id: 'china_3', chapter: 6, level: 28, name: 'Ipek Yolu',  w: 28, h: 24, shape: 'steppyramid', seedStart: 28000 },
-    { id: 'china_4', chapter: 6, level: 29, name: 'Sur',        w: 28, h: 24, shape: 'castle',      seedStart: 29000 },
-    { id: 'china_5', chapter: 6, level: 30, name: 'Imparator',  w: 28, h: 24, shape: 'solidoval',   seedStart: 30000 },
-    // CH7: MAYA - Efsanevi (28x26)
-    { id: 'maya_1', chapter: 7, level: 31, name: 'Piramit',     w: 28, h: 26, shape: 'mayapyramid', seedStart: 31000 },
-    { id: 'maya_2', chapter: 7, level: 32, name: 'Takvim',      w: 28, h: 26, shape: 'suncalendar', seedStart: 32000 },
-    { id: 'maya_3', chapter: 7, level: 33, name: 'Jaguar',      w: 28, h: 26, shape: 'solidoval',   seedStart: 33000 },
-    { id: 'maya_4', chapter: 7, level: 34, name: 'Gunes',       w: 28, h: 26, shape: 'diamond',     seedStart: 34000 },
-    { id: 'maya_5', chapter: 7, level: 35, name: 'Kukulkan',    w: 28, h: 26, shape: 'steppyramid', seedStart: 35000 },
-    // CH8: HINT - Efsanevi+ (30x28)
-    { id: 'india_1', chapter: 8, level: 36, name: 'Tac Mahal',  w: 30, h: 28, shape: 'tajmahal',    seedStart: 36000 },
-    { id: 'india_2', chapter: 8, level: 37, name: 'Lotus',      w: 30, h: 28, shape: 'lotus',       seedStart: 37000 },
-    { id: 'india_3', chapter: 8, level: 38, name: 'Mandala',    w: 30, h: 28, shape: 'solidoval',   seedStart: 38000 },
-    { id: 'india_4', chapter: 8, level: 39, name: 'Ganj',       w: 30, h: 28, shape: 'diamond',     seedStart: 39000 },
-    { id: 'india_5', chapter: 8, level: 40, name: 'Mogol',      w: 30, h: 28, shape: 'steppyramid', seedStart: 40000 },
-    // CH9: ORTACAG - Kabus (32x30)
-    { id: 'medieval_1', chapter: 9, level: 41, name: 'Kale',    w: 32, h: 30, shape: 'castle',      seedStart: 41000 },
-    { id: 'medieval_2', chapter: 9, level: 42, name: 'Kalkan',   w: 32, h: 30, shape: 'shield',     seedStart: 42000 },
-    { id: 'medieval_3', chapter: 9, level: 43, name: 'Katedral', w: 32, h: 30, shape: 'temple',     seedStart: 43000 },
-    { id: 'medieval_4', chapter: 9, level: 44, name: 'Simyaci',  w: 32, h: 30, shape: 'solidoval',  seedStart: 44000 },
-    { id: 'medieval_5', chapter: 9, level: 45, name: 'Ejderha',  w: 32, h: 30, shape: 'diamond',    seedStart: 45000 },
-    // CH10: FINAL - Kabus+ (32x32)
-    { id: 'final_1', chapter: 10, level: 46, name: 'Birlesim',  w: 32, h: 32, shape: 'solidoval',   seedStart: 46000 },
-    { id: 'final_2', chapter: 10, level: 47, name: 'Portal',    w: 32, h: 32, shape: 'portal',      seedStart: 47000 },
-    { id: 'final_3', chapter: 10, level: 48, name: 'Efsane',    w: 32, h: 32, shape: 'mosque',      seedStart: 48000 },
-    { id: 'final_4', chapter: 10, level: 49, name: 'Miras',     w: 32, h: 32, shape: 'castle',      seedStart: 49000 },
-    { id: 'final_5', chapter: 10, level: 50, name: 'Sonsuzluk', w: 32, h: 32, shape: 'diamond',     seedStart: 50000 },
+    // CH1: MISIR - Kolay (10x12 -> 12x14)
+    { id: 'egypt_1', chapter: 1, level: 1,  name: 'Piramit',   w: 10, h: 12, shape: 'pyramid',     seedStart: 1000 },
+    { id: 'egypt_2', chapter: 1, level: 2,  name: 'Sfenks',    w: 10, h: 12, shape: 'sphinx',      seedStart: 2000 },
+    { id: 'egypt_3', chapter: 1, level: 3,  name: 'Elmas',     w: 11, h: 13, shape: 'diamond',     seedStart: 3000 },
+    { id: 'egypt_4', chapter: 1, level: 4,  name: 'Basamak',   w: 12, h: 13, shape: 'steppyramid', seedStart: 4000 },
+    { id: 'egypt_5', chapter: 1, level: 5,  name: 'Firavun',   w: 12, h: 14, shape: 'solidoval',   seedStart: 5000 },
+    // CH2: YUNAN - Orta (12x14 -> 14x16)
+    { id: 'greek_1', chapter: 2, level: 6,  name: 'Parthenon', w: 12, h: 14, shape: 'temple',      seedStart: 6000 },
+    { id: 'greek_2', chapter: 2, level: 7,  name: 'Amphora',   w: 12, h: 15, shape: 'amphora',     seedStart: 7000 },
+    { id: 'greek_3', chapter: 2, level: 8,  name: 'Olympia',   w: 13, h: 15, shape: 'diamond',     seedStart: 8000 },
+    { id: 'greek_4', chapter: 2, level: 9,  name: 'Akropolis', w: 13, h: 16, shape: 'solidoval',   seedStart: 9000 },
+    { id: 'greek_5', chapter: 2, level: 10, name: 'Atina',     w: 14, h: 16, shape: 'steppyramid', seedStart: 10000 },
+    // CH3: ROMA - Zor (14x16 -> 16x18)
+    { id: 'rome_1', chapter: 3, level: 11, name: 'Kolezyum',   w: 14, h: 16, shape: 'arch',        seedStart: 11000 },
+    { id: 'rome_2', chapter: 3, level: 12, name: 'Kartal',     w: 14, h: 17, shape: 'eagle',       seedStart: 12000 },
+    { id: 'rome_3', chapter: 3, level: 13, name: 'Su Kemeri',  w: 15, h: 17, shape: 'aqueduct',    seedStart: 13000 },
+    { id: 'rome_4', chapter: 3, level: 14, name: 'Arena',      w: 15, h: 18, shape: 'oval4',       seedStart: 14000 },
+    { id: 'rome_5', chapter: 3, level: 15, name: 'Sezar',      w: 16, h: 18, shape: 'solidoval',   seedStart: 15000 },
+    // CH4: VIKING - Zor+ (16x18 -> 18x20)
+    { id: 'viking_1', chapter: 4, level: 16, name: 'Drakkar',   w: 16, h: 18, shape: 'ship',        seedStart: 16000 },
+    { id: 'viking_2', chapter: 4, level: 17, name: 'Mjolnir',   w: 16, h: 19, shape: 'hammer',      seedStart: 17000 },
+    { id: 'viking_3', chapter: 4, level: 18, name: 'Runik',     w: 17, h: 19, shape: 'diamond',     seedStart: 18000 },
+    { id: 'viking_4', chapter: 4, level: 19, name: 'Fiyort',    w: 17, h: 20, shape: 'solidoval',   seedStart: 19000 },
+    { id: 'viking_5', chapter: 4, level: 20, name: 'Valhalla',  w: 18, h: 20, shape: 'steppyramid', seedStart: 20000 },
+    // CH5: OSMANLI - Cok Zor (18x20 -> 20x22)
+    { id: 'ottoman_1', chapter: 5, level: 21, name: 'Cami',     w: 18, h: 20, shape: 'mosque',      seedStart: 21000 },
+    { id: 'ottoman_2', chapter: 5, level: 22, name: 'Lale',     w: 18, h: 21, shape: 'tulip',       seedStart: 22000 },
+    { id: 'ottoman_3', chapter: 5, level: 23, name: 'Kubbe',    w: 19, h: 21, shape: 'solidoval',   seedStart: 23000 },
+    { id: 'ottoman_4', chapter: 5, level: 24, name: 'Minare',   w: 19, h: 22, shape: 'castle',      seedStart: 24000 },
+    { id: 'ottoman_5', chapter: 5, level: 25, name: 'Sultan',   w: 20, h: 22, shape: 'diamond',     seedStart: 25000 },
+    // CH6: CIN - Cok Zor+ (20x22 -> 22x24)
+    { id: 'china_1', chapter: 6, level: 26, name: 'Pagoda',     w: 20, h: 22, shape: 'pagoda',      seedStart: 26000 },
+    { id: 'china_2', chapter: 6, level: 27, name: 'Ejderha',    w: 20, h: 23, shape: 'dragon',      seedStart: 27000 },
+    { id: 'china_3', chapter: 6, level: 28, name: 'Ipek Yolu',  w: 21, h: 23, shape: 'steppyramid', seedStart: 28000 },
+    { id: 'china_4', chapter: 6, level: 29, name: 'Sur',        w: 21, h: 24, shape: 'castle',      seedStart: 29000 },
+    { id: 'china_5', chapter: 6, level: 30, name: 'Imparator',  w: 22, h: 24, shape: 'solidoval',   seedStart: 30000 },
+    // CH7: MAYA - Efsanevi (22x24 -> 24x26)
+    { id: 'maya_1', chapter: 7, level: 31, name: 'Piramit',     w: 22, h: 24, shape: 'mayapyramid', seedStart: 31000 },
+    { id: 'maya_2', chapter: 7, level: 32, name: 'Takvim',      w: 22, h: 25, shape: 'suncalendar', seedStart: 32000 },
+    { id: 'maya_3', chapter: 7, level: 33, name: 'Jaguar',      w: 23, h: 25, shape: 'solidoval',   seedStart: 33000 },
+    { id: 'maya_4', chapter: 7, level: 34, name: 'Gunes',       w: 23, h: 26, shape: 'diamond',     seedStart: 34000 },
+    { id: 'maya_5', chapter: 7, level: 35, name: 'Kukulkan',    w: 24, h: 26, shape: 'steppyramid', seedStart: 35000 },
+    // CH8: HINT - Efsanevi+ (24x26 -> 26x28)
+    { id: 'india_1', chapter: 8, level: 36, name: 'Tac Mahal',  w: 24, h: 26, shape: 'tajmahal',    seedStart: 36000 },
+    { id: 'india_2', chapter: 8, level: 37, name: 'Lotus',      w: 24, h: 27, shape: 'lotus',       seedStart: 37000 },
+    { id: 'india_3', chapter: 8, level: 38, name: 'Mandala',    w: 25, h: 27, shape: 'solidoval',   seedStart: 38000 },
+    { id: 'india_4', chapter: 8, level: 39, name: 'Ganj',       w: 25, h: 28, shape: 'diamond',     seedStart: 39000 },
+    { id: 'india_5', chapter: 8, level: 40, name: 'Mogol',      w: 26, h: 28, shape: 'steppyramid', seedStart: 40000 },
+    // CH9: ORTACAG - Kabus (26x28 -> 28x30)
+    { id: 'medieval_1', chapter: 9, level: 41, name: 'Kale',    w: 26, h: 28, shape: 'castle',      seedStart: 41000 },
+    { id: 'medieval_2', chapter: 9, level: 42, name: 'Kalkan',   w: 26, h: 29, shape: 'shield',     seedStart: 42000 },
+    { id: 'medieval_3', chapter: 9, level: 43, name: 'Katedral', w: 27, h: 29, shape: 'temple',     seedStart: 43000 },
+    { id: 'medieval_4', chapter: 9, level: 44, name: 'Simyaci',  w: 27, h: 30, shape: 'solidoval',  seedStart: 44000 },
+    { id: 'medieval_5', chapter: 9, level: 45, name: 'Ejderha',  w: 28, h: 30, shape: 'diamond',    seedStart: 45000 },
+    // CH10: FINAL - Kabus+ (28x30 -> 30x32)
+    { id: 'final_1', chapter: 10, level: 46, name: 'Birlesim',  w: 28, h: 30, shape: 'solidoval',   seedStart: 46000 },
+    { id: 'final_2', chapter: 10, level: 47, name: 'Portal',    w: 28, h: 31, shape: 'portal',      seedStart: 47000 },
+    { id: 'final_3', chapter: 10, level: 48, name: 'Efsane',    w: 29, h: 31, shape: 'mosque',      seedStart: 48000 },
+    { id: 'final_4', chapter: 10, level: 49, name: 'Miras',     w: 29, h: 32, shape: 'castle',      seedStart: 49000 },
+    { id: 'final_5', chapter: 10, level: 50, name: 'Sonsuzluk', w: 30, h: 32, shape: 'diamond',     seedStart: 50000 },
 ];
 
 function getShapeMask(spec) {
