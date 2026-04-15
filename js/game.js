@@ -7,7 +7,6 @@ import { HintManager } from './hints.js';
 import { storage } from './storage.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
-import { easeOutCubic } from './easing.js';
 import { sound } from './sound.js';
 
 export class Game {
@@ -24,7 +23,20 @@ export class Game {
         this.onLevelComplete = null;
         this.onNoLives = null;
         this.onLivesChanged = null;
+        this.onScoreChanged = null;
         this._renderLoopId = null;
+        this._timerInterval = null;
+
+        // Scoring system
+        this.score = 0;
+        this.combo = 0;
+        this.maxCombo = 0;
+        this.moves = 0;
+        this.wrongMoves = 0;
+        this.startTime = 0;
+        this.elapsedTime = 0;
+        this.totalPaths = 0;
+        this.usedHint = false;
 
         this.setupInput();
     }
@@ -47,8 +59,75 @@ export class Game {
         document.getElementById('level-name').textContent = levelData.name;
         document.getElementById('level-difficulty').textContent = chapterData.difficulty;
 
+        // Reset scoring
+        this.score = 0;
+        this.combo = 0;
+        this.maxCombo = 0;
+        this.moves = 0;
+        this.wrongMoves = 0;
+        this.usedHint = false;
+        this.totalPaths = this.grid.paths.length;
+        this.startTime = Date.now();
+        this.elapsedTime = 0;
+        this._startTimer();
+        this._updateScoreDisplay();
+
         this.updateHintButton();
         this.startRenderLoop();
+    }
+
+    _startTimer() {
+        this._stopTimer();
+        this._timerInterval = setInterval(() => {
+            this.elapsedTime = Date.now() - this.startTime;
+            this._updateTimerDisplay();
+        }, 1000);
+    }
+
+    _stopTimer() {
+        if (this._timerInterval) {
+            clearInterval(this._timerInterval);
+            this._timerInterval = null;
+        }
+    }
+
+    _updateTimerDisplay() {
+        const el = document.getElementById('game-timer');
+        if (!el) return;
+        const secs = Math.floor(this.elapsedTime / 1000);
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        el.textContent = `${mins}:${s.toString().padStart(2, '0')}`;
+    }
+
+    _updateScoreDisplay() {
+        const scoreEl = document.getElementById('game-score');
+        if (scoreEl) scoreEl.textContent = this.score;
+        const comboEl = document.getElementById('game-combo');
+        if (comboEl) {
+            comboEl.textContent = this.combo > 1 ? `x${this.combo}` : '';
+            comboEl.classList.toggle('active', this.combo > 1);
+        }
+        const movesEl = document.getElementById('game-moves');
+        if (movesEl) movesEl.textContent = `${this.moves}/${this.totalPaths}`;
+        if (this.onScoreChanged) this.onScoreChanged({ score: this.score, combo: this.combo, moves: this.moves });
+    }
+
+    // Calculate points for removing a path
+    _calculatePoints(path) {
+        const basePoints = 10;
+        const lengthBonus = path.cells.length * 5;  // Longer arrows = more points
+        const comboMultiplier = Math.min(this.combo, 10); // Cap at x10
+        const comboBonus = comboMultiplier * 5;
+        return basePoints + lengthBonus + comboBonus;
+    }
+
+    // Calculate star rating: 3 stars = perfect, 2 = good, 1 = completed
+    calculateStars() {
+        // Based on wrong moves and time
+        if (this.wrongMoves === 0 && !this.usedHint) return 3;
+        if (this.wrongMoves <= 1) return 2;
+        return 1;
     }
 
     applyChapterTheme(chapterData) {
@@ -161,71 +240,71 @@ export class Game {
         this.isAnimating = true;
         this.grid.removePath(path);
 
-        const { dx, dy } = getDirectionVector(path.direction);
-        const origCells = path.cells.map(c => ({ x: c.x, y: c.y }));
-        const distance = Math.max(this.grid.width, this.grid.height) + 4;
+        // Scoring: correct move
+        this.combo++;
+        this.moves++;
+        if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        const points = this._calculatePoints(path);
+        this.score += points;
+        this._updateScoreDisplay();
+        this._showFloatingScore(points, path);
+        if (this.combo > 1) sound.play('combo');
 
-        // 3-phase animation:
-        // Phase 1 (0-80ms):  Anticipation — pull back -0.2 cells
-        // Phase 2 (0-200ms): Launch — accelerate forward via easeOutCubic
-        // Phase 3 (0-150ms): Trail fade — ghost trail fades while arrow is off screen
-        // Total ~430ms
-        const ph1 = 80;
-        const ph2 = 200;
-        const ph3 = 150;
-        const totalDuration = ph1 + ph2 + ph3;
+        const cells = path.cells;
+        const totalCells = cells.length;
+        const cellDelay = 60;
+        const cellAnimDur = 150;
+        const { dx, dy } = getDirectionVector(path.direction);
+        const origCells = cells.map(c => ({ x: c.x, y: c.y }));
         const startTime = performance.now();
-        const ghostCells = origCells.map(c => ({ x: c.x, y: c.y }));
+        const totalDuration = totalCells * cellDelay + cellAnimDur + 100;
+
+        const cellStates = cells.map(() => ({ visible: true, offsetX: 0, offsetY: 0, alpha: 1 }));
 
         const animate = (time) => {
             const elapsed = time - startTime;
 
-            let shift;
-            let ghostAlpha = 0;
-
-            if (elapsed < ph1) {
-                // Phase 1: anticipation — pull back opposite direction
-                const p = elapsed / ph1;
-                shift = -0.2 * Math.sin(p * Math.PI / 2);
-            } else if (elapsed < ph1 + ph2) {
-                // Phase 2: launch — easeOutCubic acceleration forward
-                const p = (elapsed - ph1) / ph2;
-                shift = easeOutCubic(p) * distance;
-            } else {
-                // Phase 3: arrow is off screen, show ghost trail fading
-                shift = distance;
-                const p = (elapsed - ph1 - ph2) / ph3;
-                ghostAlpha = 1 - p;
+            for (let i = 0; i < totalCells; i++) {
+                const cellStart = i * cellDelay;
+                const cellElapsed = elapsed - cellStart;
+                if (cellElapsed < 0) continue;
+                if (cellElapsed < cellAnimDur) {
+                    const p = cellElapsed / cellAnimDur;
+                    const ease = 1 - Math.pow(1 - p, 3);
+                    cellStates[i].offsetX = dx * ease * 1.5;
+                    cellStates[i].offsetY = dy * ease * 1.5;
+                    cellStates[i].alpha = 1 - ease;
+                } else {
+                    cellStates[i].visible = false;
+                }
             }
 
-            for (let i = 0; i < path.cells.length; i++) {
-                path.cells[i].x = origCells[i].x + dx * shift;
-                path.cells[i].y = origCells[i].y + dy * shift;
+            for (let i = 0; i < totalCells; i++) {
+                if (cellStates[i].visible) {
+                    path.cells[i].x = origCells[i].x + cellStates[i].offsetX;
+                    path.cells[i].y = origCells[i].y + cellStates[i].offsetY;
+                }
             }
 
+            path._snakeCellStates = cellStates;
             this.renderer.drawGrid(this.grid);
-
-            if (ghostAlpha > 0) {
-                this.renderer.drawGhostTrail(ghostCells, path.direction, ghostAlpha);
-            }
 
             if (elapsed < totalDuration) {
                 requestAnimationFrame(animate);
             } else {
-                for (let i = 0; i < path.cells.length; i++) {
+                for (let i = 0; i < totalCells; i++) {
                     path.cells[i].x = origCells[i].x;
                     path.cells[i].y = origCells[i].y;
                 }
+                path._snakeCellStates = null;
                 this.grid.finalizeRemoval(path);
                 this.isAnimating = false;
                 this.renderer.drawGrid(this.grid);
-
                 if (this.grid.isCleared()) {
                     this.handleLevelComplete();
                 }
             }
         };
-
         requestAnimationFrame(animate);
     }
 
@@ -238,6 +317,11 @@ export class Game {
         const remaining = this.livesManager.loseLife();
         sound.play('wrong');
         if (this.onLivesChanged) this.onLivesChanged(remaining);
+
+        // Scoring: wrong move breaks combo
+        this.combo = 0;
+        this.wrongMoves++;
+        this._updateScoreDisplay();
 
         // 4-phase wrong move animation:
         // Phase 1 (0-60ms):    Forward lunge 0.4 cells
@@ -331,15 +415,80 @@ export class Game {
     }
 
     handleLevelComplete() {
+        this._stopTimer();
+        this.elapsedTime = Date.now() - this.startTime;
         storage.completeLevel(this.currentLevel.id, this.currentChapter.id);
+
+        // Time bonus: faster = more points
+        const timeSecs = Math.floor(this.elapsedTime / 1000);
+        const timeBonus = Math.max(0, 300 - timeSecs * 2); // Up to 300 bonus
+        this.score += timeBonus;
+
+        // Perfect bonus (no wrong moves)
+        if (this.wrongMoves === 0) this.score += 200;
+
+        const stars = this.calculateStars();
+
+        // Save score
+        storage.saveLevelScore(this.currentLevel.id, {
+            score: this.score,
+            stars,
+            moves: this.moves,
+            wrongMoves: this.wrongMoves,
+            time: this.elapsedTime,
+            bestCombo: this.maxCombo,
+        });
+
+        this._updateScoreDisplay();
 
         // Celebration particle effect
         this.playCelebration(() => {
             if (this.onLevelComplete) {
                 const nextLevel = getNextLevel(this.currentLevel.id);
-                this.onLevelComplete(this.currentLevel, nextLevel);
+                this.onLevelComplete(this.currentLevel, nextLevel, {
+                    score: this.score,
+                    stars,
+                    moves: this.moves,
+                    wrongMoves: this.wrongMoves,
+                    time: this.elapsedTime,
+                    maxCombo: this.maxCombo,
+                });
             }
         });
+    }
+
+    _showFloatingScore(points, path) {
+        const head = path.getHead();
+        const cx = this.renderer.gridOffsetX + head.x * this.renderer.cellSize + this.renderer.cellSize / 2;
+        const cy = this.renderer.gridOffsetY + head.y * this.renderer.cellSize;
+        const ctx = this.renderer.ctx;
+        const dpr = window.devicePixelRatio || 1;
+        const startTime = performance.now();
+        const duration = 800;
+        const text = this.combo > 1 ? `+${points} x${this.combo}` : `+${points}`;
+
+        const animate = (time) => {
+            const elapsed = time - startTime;
+            if (elapsed > duration) return;
+            const p = elapsed / duration;
+            const alpha = 1 - p;
+            const yOff = p * -30;
+
+            this.renderer.drawGrid(this.grid);
+            ctx.save();
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const sx = (cx * this.renderer.scale + this.renderer.panX);
+            const sy = ((cy + yOff) * this.renderer.scale + this.renderer.panY);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = this.combo > 2 ? '#c88020' : '#5c3d2e';
+            ctx.font = `bold ${this.combo > 2 ? 16 : 13}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(text, sx, sy);
+            ctx.restore();
+
+            requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
     }
 
     playCelebration(callback) {
@@ -464,6 +613,7 @@ export class Game {
         if (!hintPath) return;
 
         this.hintManager.useFreeHint();
+        this.usedHint = true;
         this.hintedPath = hintPath;
         this.renderer.drawGrid(this.grid);
         this.renderer.drawHintHighlight(hintPath);
@@ -472,7 +622,7 @@ export class Game {
 
     updateHintButton() {
         const btn = document.getElementById('btn-hint');
-        btn.style.opacity = this.hintManager.hasFreeHint() ? '1' : '0.4';
+        if (btn) btn.style.opacity = this.hintManager.hasFreeHint() ? '1' : '0.4';
     }
 
     startRenderLoop() {

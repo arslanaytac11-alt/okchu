@@ -9,8 +9,8 @@ export class Grid {
         this.paths = [];
     }
 
-    addPath(cells, direction) {
-        const path = new ArrowPath(cells, direction);
+    addPath(cells, direction, colorIndex) {
+        const path = new ArrowPath(cells, direction, colorIndex);
         this.paths.push(path);
         return path;
     }
@@ -55,6 +55,7 @@ export class Grid {
 
     removePath(path) {
         path.state = ArrowState.REMOVING;
+        path.snakeProgress = 0;
     }
 
     finalizeRemoval(path) {
@@ -76,8 +77,9 @@ export class Grid {
 
     loadFromData(pathsData) {
         this.paths = [];
-        for (const data of pathsData) {
-            this.addPath(data.cells, data.direction);
+        for (let i = 0; i < pathsData.length; i++) {
+            const data = pathsData[i];
+            this.addPath(data.cells, data.direction, i % 8);
         }
         this.updateRemovableStates();
     }

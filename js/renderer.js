@@ -112,7 +112,7 @@ export class Renderer {
         }
         for (const path of grid.paths) {
             if (path.state === ArrowState.IDLE || path.state === ArrowState.REMOVABLE) {
-                this.drawPath(path, path.state === ArrowState.REMOVABLE);
+                this.drawPath(path, false);
             }
         }
         for (const path of grid.paths) {
@@ -202,6 +202,12 @@ export class Renderer {
         const ctx = this.ctx;
         if (path.cells.length === 0) return;
 
+        // Snake animation: only draw visible cells
+        if (path._snakeCellStates) {
+            this._drawSnakePath(path);
+            return;
+        }
+
         const metrics = this._getArrowMetrics();
         const color = isRemoving ? (path._flashColor || this.theme.arrowRemoving) : this.theme.arrowIdle;
         const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
@@ -271,6 +277,52 @@ export class Renderer {
         if (touchScale !== 1) {
             ctx.restore();
         }
+    }
+
+    _drawSnakePath(path) {
+        const ctx = this.ctx;
+        const metrics = this._getArrowMetrics();
+        const states = path._snakeCellStates;
+        const color = this.theme.arrowRemoving || '#c04030';
+
+        for (let i = 0; i < path.cells.length; i++) {
+            if (!states[i].visible) continue;
+            const cell = path.cells[i];
+            const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
+            const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
+            const alpha = states[i].alpha;
+
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = metrics.width;
+            ctx.lineCap = 'round';
+
+            // Draw cell dot
+            ctx.beginPath();
+            ctx.arc(cx, cy, metrics.width * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Connect to next visible cell
+            if (i < path.cells.length - 1 && states[i + 1].visible) {
+                const nextCell = path.cells[i + 1];
+                const nx = this.gridOffsetX + nextCell.x * this.cellSize + this.cellSize / 2;
+                const ny = this.gridOffsetY + nextCell.y * this.cellSize + this.cellSize / 2;
+                ctx.globalAlpha = Math.min(alpha, states[i + 1].alpha);
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(nx, ny);
+                ctx.stroke();
+            }
+
+            // Arrow head on last visible cell
+            const isLastVisible = !states.slice(i + 1).some(s => s.visible);
+            if (isLastVisible || i === path.cells.length - 1) {
+                ctx.globalAlpha = alpha;
+                this._drawArrowHead(ctx, cx, cy, path.direction, color, metrics);
+            }
+        }
+        ctx.globalAlpha = 1;
     }
 
     _strokePoints(ctx, points) {
