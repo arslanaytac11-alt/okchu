@@ -422,6 +422,427 @@ function makeOval(w, h, thickness) {
     return mask;
 }
 
+// Sphinx: head (top 30%, narrow centered), body (wide, bottom 70%), paws at bottom
+function makeSphinx(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    const headRows = Math.floor(h * 0.3);
+    const headHalfW = Math.max(2, Math.floor(w * 0.20));
+    for (let y = 0; y < headRows; y++) {
+        for (let x = cx - headHalfW; x <= cx + headHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Body (wide horizontal rectangle, bottom 70%)
+    const bodyHalfW = Math.floor(w * 0.40);
+    for (let y = headRows; y < h - 3; y++) {
+        for (let x = cx - bodyHalfW; x <= cx + bodyHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Paws extending forward from body at the bottom (two rectangles)
+    const pawW = Math.floor(w * 0.18);
+    const pawLeft = cx - bodyHalfW;
+    const pawRight = cx + bodyHalfW - pawW;
+    for (let y = h - 3; y < h; y++) {
+        for (let dx = 0; dx < pawW; dx++) {
+            const lx = pawLeft + dx;
+            const rx = pawRight + dx;
+            if (lx >= 0 && lx < w) mask[y][lx] = true;
+            if (rx >= 0 && rx < w) mask[y][rx] = true;
+        }
+    }
+    return mask;
+}
+
+// Amphora: narrow rim top, narrow neck, handles at junction, wide belly, narrow foot
+function makeAmphora(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    for (let y = 0; y < h; y++) {
+        const t = y / (h - 1); // 0=top, 1=bottom
+        let halfW;
+        if (t < 0.08) {
+            // Rim: wider flat top
+            halfW = Math.floor(w * 0.20);
+        } else if (t < 0.22) {
+            // Neck: wider
+            halfW = Math.floor(w * 0.14);
+        } else if (t < 0.30) {
+            // Neck-body junction: transition
+            halfW = Math.floor(w * 0.14 + (t - 0.22) / 0.08 * w * 0.16);
+        } else if (t < 0.72) {
+            // Belly: wide, widest at 55% using sine curve
+            const bellyt = (t - 0.30) / 0.42;
+            halfW = Math.floor(w * (0.28 + Math.sin(bellyt * Math.PI) * 0.26));
+        } else if (t < 0.87) {
+            // Taper toward foot
+            halfW = Math.floor(w * (0.28 - (t - 0.72) / 0.15 * 0.18));
+        } else {
+            // Foot: narrow
+            halfW = Math.floor(w * 0.12);
+        }
+        halfW = Math.max(1, halfW);
+        for (let x = cx - halfW; x <= cx + halfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Handles/ears at neck-body junction (rows ~22-32% height)
+    const handleTop = Math.floor(h * 0.20);
+    const handleBot = Math.floor(h * 0.35);
+    const handleX = Math.floor(w * 0.12);
+    for (let y = handleTop; y <= handleBot; y++) {
+        const hx1 = cx - Math.floor(w * 0.2);
+        const hx2 = cx + Math.floor(w * 0.2);
+        if (hx1 >= 0) mask[y][hx1] = true;
+        if (hx1 - 1 >= 0) mask[y][hx1 - 1] = true;
+        if (hx2 < w) mask[y][hx2] = true;
+        if (hx2 + 1 < w) mask[y][hx2 + 1] = true;
+    }
+    return mask;
+}
+
+// Eagle: small head top, vertical body center, wide spread wings, V-shaped tail bottom
+function makeEagle(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    // Head (small circle at top ~8% height)
+    const headR = Math.max(2, Math.floor(w * 0.10));
+    const headCy = Math.floor(h * 0.07);
+    for (let y = 0; y < Math.floor(h * 0.16); y++) {
+        const dy = y - headCy;
+        const hw = Math.floor(Math.sqrt(Math.max(0, headR * headR - dy * dy)));
+        for (let x = cx - hw; x <= cx + hw; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Body (vertical center strip, full height)
+    const bodyHalfW = Math.max(2, Math.floor(w * 0.12));
+    for (let y = 0; y < h; y++) {
+        for (let x = cx - bodyHalfW; x <= cx + bodyHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Wings: span nearly full height, widest at 35% height
+    const wingTop = 0;
+    const wingBot = Math.floor(h * 0.80);
+    const wingWidestY = Math.floor(h * 0.35);
+    for (let y = wingTop; y <= wingBot; y++) {
+        let halfW;
+        if (y <= wingWidestY) {
+            halfW = Math.floor((y + 1) / Math.max(1, wingWidestY + 1) * (w / 2 - 1));
+        } else {
+            halfW = Math.floor((1 - (y - wingWidestY) / Math.max(1, wingBot - wingWidestY)) * (w / 2 - 1));
+        }
+        halfW = Math.max(bodyHalfW, halfW);
+        for (let x = cx - halfW; x <= cx + halfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // V-shaped tail at bottom (filled wide wedge)
+    const tailTop = Math.floor(h * 0.68);
+    const tailHalfW = Math.floor(w * 0.42);
+    for (let y = tailTop; y < h; y++) {
+        const t = (y - tailTop) / Math.max(1, h - 1 - tailTop);
+        const spread = Math.floor(t * tailHalfW);
+        for (let x = cx - spread; x <= cx + spread; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    return mask;
+}
+
+// Hammer (Mjolnir): wide head top, narrow handle center, slightly wider grip bottom
+function makeHammer(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    const headH = Math.floor(h * 0.40);
+    const headHalfW = Math.floor(w * 0.46);
+    // Head (wide rectangle at top)
+    for (let y = 0; y < headH; y++) {
+        for (let x = cx - headHalfW; x <= cx + headHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Handle (center, 60% height)
+    const handleHalfW = Math.max(3, Math.floor(w * 0.14));
+    for (let y = headH; y < h - 4; y++) {
+        for (let x = cx - handleHalfW; x <= cx + handleHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Grip (wider at very bottom)
+    const gripHalfW = Math.floor(w * 0.22);
+    for (let y = h - 4; y < h; y++) {
+        for (let x = cx - gripHalfW; x <= cx + gripHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    return mask;
+}
+
+// Tulip: 3 overlapping petal ovals at top, narrow stem, small leaf bumps, narrow base
+function makeTulip(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    const petalBotY = Math.floor(h * 0.55);
+    // 3 petals (center + left + right, overlapping ovals)
+    const petalH = Math.floor(h * 0.50);
+    const petalRx = Math.floor(w * 0.23);
+    const petalRy = Math.floor(petalH / 2);
+    const petalCy = Math.floor(h * 0.26);
+    const offsets = [0, -Math.floor(w * 0.20), Math.floor(w * 0.20)];
+    for (const ox of offsets) {
+        const pcx = cx + ox;
+        for (let y = 0; y < petalBotY; y++) {
+            const dy = (y - petalCy) / Math.max(1, petalRy);
+            if (dy * dy > 1) continue;
+            const hw = Math.floor(Math.sqrt(Math.max(0, 1 - dy * dy)) * petalRx);
+            for (let x = pcx - hw; x <= pcx + hw; x++) {
+                if (x >= 0 && x < w) mask[y][x] = true;
+            }
+        }
+    }
+    // Stem (center, from petalBotY to bottom-3)
+    const stemHalfW = Math.max(3, Math.floor(w * 0.10));
+    for (let y = petalBotY; y < h - 2; y++) {
+        for (let x = cx - stemHalfW; x <= cx + stemHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Leaf bumps on sides of stem at ~68% height
+    const leafY = Math.floor(h * 0.68);
+    const leafW = Math.floor(w * 0.20);
+    for (let dy = -4; dy <= 4; dy++) {
+        const y = leafY + dy;
+        if (y < 0 || y >= h) continue;
+        const spread = Math.floor(leafW * (1 - Math.abs(dy) / 5));
+        for (let dx = 1; dx <= spread; dx++) {
+            if (cx - stemHalfW - dx >= 0) mask[y][cx - stemHalfW - dx] = true;
+            if (cx + stemHalfW + dx < w) mask[y][cx + stemHalfW + dx] = true;
+        }
+    }
+    // Base
+    const baseHalfW = Math.floor(w * 0.16);
+    for (let y = h - 3; y < h; y++) {
+        for (let x = cx - baseHalfW; x <= cx + baseHalfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    return mask;
+}
+
+// Dragon: S-curve body from top-right to bottom-left, wider head at top, fan tail at bottom
+function makeDragon(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    // S-curve body: thicker for good coverage
+    const bodyHalfW = Math.max(5, Math.floor(w * 0.22));
+    for (let y = 0; y < h; y++) {
+        const t = y / (h - 1);
+        // At top lean right, at bottom lean left (S-curve)
+        const linearShift = Math.floor((0.5 - t) * (w * 0.30));
+        const bx = cx + linearShift + Math.floor(Math.sin(t * Math.PI * 1.5) * (w * 0.08));
+        let hw = bodyHalfW;
+        // Head: wider at top 20%
+        if (t < 0.20) hw = Math.floor(bodyHalfW * (1 + (0.20 - t) / 0.20 * 0.8));
+        for (let x = bx - hw; x <= bx + hw; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    // Fan tail at bottom: spread out from bottom-left area
+    const tailTop = Math.floor(h * 0.68);
+    const tailCx = Math.floor(w * 0.32);
+    for (let y = tailTop; y < h; y++) {
+        const spread = Math.floor((y - tailTop) / Math.max(1, h - 1 - tailTop) * (w * 0.42));
+        for (let x = tailCx - spread; x <= tailCx + spread; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    return mask;
+}
+
+// Sun Calendar: thick outer oval ring, inner circle, cross spokes N-S-E-W
+function makeSunCalendar(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = (w - 1) / 2;
+    const cy = (h - 1) / 2;
+    const rx = (w - 1) / 2;
+    const ry = (h - 1) / 2;
+    const thickness = Math.max(4, Math.floor(Math.min(w, h) * 0.15));
+    const rxI = rx - thickness;
+    const ryI = ry - thickness;
+    // Outer ring
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const dx = (x - cx) / rx;
+            const dy = (y - cy) / ry;
+            const outer = dx * dx + dy * dy;
+            if (outer > 1.0) continue;
+            if (rxI <= 0 || ryI <= 0) {
+                mask[y][x] = true;
+            } else {
+                const dxI = (x - cx) / rxI;
+                const dyI = (y - cy) / ryI;
+                const inner = dxI * dxI + dyI * dyI;
+                if (inner >= 1.0) mask[y][x] = true;
+            }
+        }
+    }
+    // Inner circle at center
+    const innerR = Math.floor(Math.min(rxI, ryI) * 0.55);
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const dx = x - cx;
+            const dy = y - cy;
+            if (dx * dx + dy * dy <= innerR * innerR) mask[y][x] = true;
+        }
+    }
+    // Cross spokes (N-S-E-W lines connecting inner circle to outer ring)
+    const spokeW = Math.max(2, Math.floor(Math.min(w, h) * 0.07));
+    for (let y = 0; y < h; y++) {
+        for (let sw = -spokeW; sw <= spokeW; sw++) {
+            const x = Math.round(cx) + sw;
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    for (let x = 0; x < w; x++) {
+        for (let sw = -spokeW; sw <= spokeW; sw++) {
+            const y = Math.round(cy) + sw;
+            if (y >= 0 && y < h) mask[y][x] = true;
+        }
+    }
+    // Clip all filled cells to be within outer oval
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if (mask[y][x]) {
+                const dx = (x - cx) / rx;
+                const dy = (y - cy) / ry;
+                if (dx * dx + dy * dy > 1.0) mask[y][x] = false;
+            }
+        }
+    }
+    return mask;
+}
+
+// Lotus: 5 petals radiating upward from center point, wide shallow arc base
+function makeLotus(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    const originY = Math.floor(h * 0.46); // petals radiate from here
+    const petalLen = Math.floor(h * 0.44);
+    const petalW = Math.max(4, Math.floor(w * 0.14));
+    // 5 petals: angles spread from -60 to +60 degrees upward
+    const angles = [-60, -30, 0, 30, 60].map(a => a * Math.PI / 180);
+    for (const angle of angles) {
+        // Petal axis direction (upward with angle offset)
+        const ax = Math.sin(angle);
+        const ay = -Math.cos(angle); // negative because y increases downward
+        // Draw petal as a filled oval along the axis
+        for (let step = 0; step <= petalLen; step++) {
+            const t = step / petalLen;
+            const px = cx + ax * step;
+            const py = originY + ay * step;
+            // Width tapers at tip
+            const hw = Math.floor(petalW * Math.sin(t * Math.PI));
+            // Perpendicular direction
+            const px1 = -ay, py1 = ax;
+            for (let s = -hw; s <= hw; s++) {
+                const fx = Math.round(px + px1 * s);
+                const fy = Math.round(py + py1 * s);
+                if (fx >= 0 && fx < w && fy >= 0 && fy < h) mask[fy][fx] = true;
+            }
+        }
+    }
+    // Wide arc base at bottom (fill most of bottom half)
+    const baseY = originY;
+    const baseR = Math.floor(w * 0.49);
+    for (let x = 0; x < w; x++) {
+        for (let y = baseY; y < h; y++) {
+            const dx = x - cx;
+            const dy = y - baseY;
+            // Wider ellipse: dy factor < 1 makes it taller relative to width
+            if (dx * dx + (dy * 1.2) * (dy * 1.2) <= baseR * baseR) mask[y][x] = true;
+        }
+    }
+    return mask;
+}
+
+// Shield: flat/wide top, tapering via quadratic curve to point at bottom
+function makeShield(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = Math.floor(w / 2);
+    const flatRows = Math.floor(h * 0.3);
+    // Flat top section
+    for (let y = 0; y < flatRows; y++) {
+        for (let x = 1; x < w - 1; x++) mask[y][x] = true;
+    }
+    // Taper section: quadratic curve to point at bottom
+    for (let y = flatRows; y < h; y++) {
+        const t = (y - flatRows) / Math.max(1, h - 1 - flatRows); // 0=top of taper, 1=point
+        // Quadratic: halfW goes from (w/2-1) to 0
+        const halfW = Math.floor((1 - t * t) * (w / 2 - 1));
+        for (let x = cx - halfW; x <= cx + halfW; x++) {
+            if (x >= 0 && x < w) mask[y][x] = true;
+        }
+    }
+    return mask;
+}
+
+// Portal: thick oval ring (thickness 5), diagonal X cross pattern inside
+function makePortal(w, h) {
+    const mask = Array.from({ length: h }, () => Array(w).fill(false));
+    const cx = (w - 1) / 2;
+    const cy = (h - 1) / 2;
+    const rx = (w - 1) / 2;
+    const ry = (h - 1) / 2;
+    const thickness = 5;
+    const rxI = rx - thickness;
+    const ryI = ry - thickness;
+    // Thick oval ring
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const dx = (x - cx) / rx;
+            const dy = (y - cy) / ry;
+            const outer = dx * dx + dy * dy;
+            if (outer > 1.0) continue;
+            if (rxI <= 0 || ryI <= 0) {
+                mask[y][x] = true;
+            } else {
+                const dxI = (x - cx) / rxI;
+                const dyI = (y - cy) / ryI;
+                const inner = dxI * dxI + dyI * dyI;
+                if (inner >= 1.0) mask[y][x] = true;
+            }
+        }
+    }
+    // Diagonal X cross pattern inside (only within the inner oval)
+    const crossW = Math.max(2, Math.floor(Math.min(w, h) * 0.09));
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const dx = (x - cx) / rxI;
+            const dy = (y - cy) / ryI;
+            if (rxI <= 0 || ryI <= 0 || dx * dx + dy * dy < 1.0) {
+                // Check if on an X diagonal
+                const adx = Math.abs((x - cx) - (y - cy));
+                const sdx = Math.abs((x - cx) + (y - cy));
+                if (adx <= crossW || sdx <= crossW) mask[y][x] = true;
+            }
+        }
+    }
+    // Clip to outer oval
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if (mask[y][x]) {
+                const dx = (x - cx) / rx;
+                const dy = (y - cy) / ry;
+                if (dx * dx + dy * dy > 1.0) mask[y][x] = false;
+            }
+        }
+    }
+    return mask;
+}
+
 // ============================================================
 // SHAPE EDGE / DIRECTION HELPERS
 // ============================================================
@@ -813,6 +1234,16 @@ function getShapeMask(spec) {
         case 'tajmahal': return makeTajMahal(spec.w, spec.h);
         case 'castle': return makeCastle(spec.w, spec.h);
         case 'solidoval': return makeSolidOval(spec.w, spec.h);
+        case 'sphinx': return makeSphinx(spec.w, spec.h);
+        case 'amphora': return makeAmphora(spec.w, spec.h);
+        case 'eagle': return makeEagle(spec.w, spec.h);
+        case 'hammer': return makeHammer(spec.w, spec.h);
+        case 'tulip': return makeTulip(spec.w, spec.h);
+        case 'dragon': return makeDragon(spec.w, spec.h);
+        case 'suncalendar': return makeSunCalendar(spec.w, spec.h);
+        case 'lotus': return makeLotus(spec.w, spec.h);
+        case 'shield': return makeShield(spec.w, spec.h);
+        case 'portal': return makePortal(spec.w, spec.h);
         default: return makeSolidOval(spec.w, spec.h);
     }
 }
