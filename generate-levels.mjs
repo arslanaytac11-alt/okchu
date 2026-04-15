@@ -423,11 +423,70 @@ function makeOval(w, h, thickness) {
 }
 
 // ============================================================
+// SHAPE EDGE / DIRECTION HELPERS
+// ============================================================
+
+function cellIsOnShapeEdge(x, y, mask, width, height) {
+    const neighbors = [
+        [x - 1, y],
+        [x + 1, y],
+        [x, y - 1],
+        [x, y + 1],
+    ];
+    for (const [nx, ny] of neighbors) {
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height || !mask[ny][nx]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function mostBlockedDirection(hx, hy, mask, width, height) {
+    const dirs = ['up', 'down', 'left', 'right'];
+    let bestDir = dirs[0];
+    let bestCount = -1;
+    for (const d of dirs) {
+        const [dx, dy] = getDirVec(d);
+        let cx = hx + dx, cy = hy + dy;
+        let count = 0;
+        while (cx >= 0 && cx < width && cy >= 0 && cy < height) {
+            if (mask[cy][cx]) count++;
+            cx += dx; cy += dy;
+        }
+        if (count > bestCount) {
+            bestCount = count;
+            bestDir = d;
+        }
+    }
+    return bestDir;
+}
+
+function leastBlockedDirection(hx, hy, mask, width, height) {
+    const dirs = ['up', 'down', 'left', 'right'];
+    let bestDir = dirs[0];
+    let bestCount = Infinity;
+    for (const d of dirs) {
+        const [dx, dy] = getDirVec(d);
+        let cx = hx + dx, cy = hy + dy;
+        let count = 0;
+        while (cx >= 0 && cx < width && cy >= 0 && cy < height) {
+            if (mask[cy][cx]) count++;
+            cx += dx; cy += dy;
+        }
+        if (count < bestCount) {
+            bestCount = count;
+            bestDir = d;
+        }
+    }
+    return bestDir;
+}
+
+// ============================================================
 // DENSE LEVEL GENERATOR - RANDOM WALK approach
 // Creates long, winding arrow paths (4-8 cells) like real puzzle games
 // ============================================================
 
-function generateShapedLevel(width, height, mask, seed, difficulty) {
+function generateShapedLevel(width, height, mask, seed, chapterNum) {
     const grid = Array.from({ length: height }, () => Array(width).fill(-1));
     const paths = [];
     let pathIdx = 0;
@@ -482,12 +541,23 @@ function generateShapedLevel(width, height, mask, seed, difficulty) {
         return cells;
     }
 
-    // ALL arrows start pointing INWARD (most blocked direction)
+    const config = CHAPTER_CONFIG[chapterNum] || CHAPTER_CONFIG[1];
+
     function pickDirection(cells) {
         const head = cells[cells.length - 1];
         const [hx, hy] = head;
         const dirs = ['up', 'down', 'left', 'right'];
 
+        if (cellIsOnShapeEdge(hx, hy, mask, width, height)) {
+            // Edge cell: trapRatio chance to point inward (trap), otherwise point outward (easy)
+            if (rand() < config.trapRatio) {
+                return mostBlockedDirection(hx, hy, mask, width, height);
+            } else {
+                return leastBlockedDirection(hx, hy, mask, width, height);
+            }
+        }
+
+        // Interior cell: weighted random (60% most blocked, 30% second, 10% third)
         const costs = dirs.map(d => {
             const [dx, dy] = getDirVec(d);
             let cx = hx + dx, cy = hy + dy;
@@ -506,9 +576,9 @@ function generateShapedLevel(width, height, mask, seed, difficulty) {
         return costs[2].dir;
     }
 
-    // VARIED path lengths: mix of short (2-3) and long (6-12) for maze-like appearance
+    // VARIED path lengths driven by chapter config
     const minLen = 2;
-    const maxLen = difficulty > 0.6 ? 12 : difficulty > 0.3 ? 10 : 8;
+    const maxLen = config.maxPathLen;
 
     // Collect all mask cells and shuffle
     const cellOrder = [];
