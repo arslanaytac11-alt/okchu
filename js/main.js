@@ -4,11 +4,36 @@ import { Game } from './game.js';
 import { ScreenManager } from './screens.js';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
+import { MenuBackground } from './menu-bg.js';
+import { sound } from './sound.js';
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
 const screenManager = new ScreenManager();
 const livesDisplay = document.getElementById('lives-display');
+
+// Menu animated background
+const menuBgCanvas = document.getElementById('menu-bg-canvas');
+const menuBg = new MenuBackground(menuBgCanvas);
+menuBg.start();
+
+// Stop menu bg animation when leaving menu, restart when returning
+const origShowScreen = screenManager.showScreen.bind(screenManager);
+screenManager.showScreen = (name) => {
+    origShowScreen(name);
+    if (name === 'menu') {
+        menuBg.resize();
+        menuBg.start();
+    } else {
+        menuBg.stop();
+    }
+};
+
+window.addEventListener('resize', () => {
+    if (document.getElementById('screen-menu').classList.contains('active')) {
+        menuBg.resize();
+    }
+});
 
 let noLivesTimerInterval = null;
 
@@ -98,6 +123,15 @@ function showNoLivesOverlay() {
 
 // Hint button
 document.getElementById('btn-hint').addEventListener('click', () => game.useHint());
+
+// Sound toggle
+const soundBtn = document.getElementById('btn-sound');
+if (soundBtn) {
+    soundBtn.addEventListener('click', () => {
+        const enabled = sound.toggle();
+        soundBtn.style.opacity = enabled ? '1' : '0.4';
+    });
+}
 
 // Resize handler
 window.addEventListener('resize', () => game.handleResize());

@@ -8,6 +8,7 @@ import { storage } from './storage.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
 import { easeOutCubic } from './easing.js';
+import { sound } from './sound.js';
 
 export class Game {
     constructor(canvas) {
@@ -81,6 +82,7 @@ export class Game {
             const path = this.grid.getPathAt(gridX, gridY);
 
             if (!path) return;
+            sound.play('tap');
 
             this.hintedPath = null;
             this.renderer.touchFeedback = { path, startTime: performance.now() };
@@ -155,6 +157,7 @@ export class Game {
     }
 
     removePathWithAnimation(path) {
+        sound.play('remove');
         this.isAnimating = true;
         this.grid.removePath(path);
 
@@ -233,6 +236,7 @@ export class Game {
         }
 
         const remaining = this.livesManager.loseLife();
+        sound.play('wrong');
         if (this.onLivesChanged) this.onLivesChanged(remaining);
 
         // 4-phase wrong move animation:
@@ -339,6 +343,7 @@ export class Game {
     }
 
     playCelebration(callback) {
+        sound.play('complete');
         const rect = this.canvas.getBoundingClientRect();
         const particles = [];
         const colors = this.currentChapter?.theme?.particleColors ||
