@@ -539,6 +539,25 @@ html, body {
     cursor: not-allowed;
 }
 
+.chapter-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    border: 1px solid var(--theme-border);
+}
+
+.chapter-card.locked .chapter-thumb {
+    filter: grayscale(1) brightness(0.5);
+}
+
+.chapter-card.completed .chapter-number {
+    border: 2px solid #d4a843;
+    box-shadow: 0 0 8px rgba(212, 168, 67, 0.3);
+}
+
 .chapter-number {
     width: 44px;
     height: 44px;
