@@ -1,6 +1,6 @@
 // js/renderer.js
-// Draws connected arrow paths with thick lines, turns, and arrow heads
-// Supports pinch-to-zoom and pan
+// Clean arrow renderer with variable-width arrows (5 sizes based on path length)
+// Supports L-shaped, U-shaped multi-cell arrow paths
 
 import { ArrowState, getDirectionVector } from './arrow.js';
 
@@ -11,23 +11,30 @@ export class Renderer {
         this.cellSize = 40;
         this.gridOffsetX = 0;
         this.gridOffsetY = 0;
-        // Zoom & pan
         this.scale = 1;
         this.minScale = 0.5;
         this.maxScale = 3;
         this.panX = 0;
         this.panY = 0;
         this.theme = {
-            background: '#f5f0e1',
-            gridDot: '#d4c5a9',
-            pathIdle: '#8b7355',
-            pathRemovable: '#5c3d2e',
-            pathRemoving: '#c0392b',
-            removedDot: '#e0d5c0',
-            pathWidth: 4,
-            arrowHeadSize: 8,
-            hintColor: '#f1c40f'
+            background: '#e8dcc0',
+            backgroundGradient: ['#f0e4c8', '#e0d0a8'],
+            gridDot: 'rgba(120,90,50,0.06)',
+            arrowIdle: '#3a3028',
+            arrowRemovable: '#3a3028',
+            arrowRemoving: '#c04030',
+            arrowRemoved: 'rgba(120,90,50,0.08)',
+            arrowWidth: 2.5,
+            arrowHeadSize: 10,
+            hintColor: '#c04030',
+            removableGlow: 'rgba(90,60,30,0.12)',
         };
+    }
+
+    // Fixed thin arrow metrics - all arrows same width, only length varies
+    _getArrowMetrics() {
+        const cs = this.cellSize;
+        return { width: cs * 0.07, headSize: cs * 0.25, headSpread: 0.50 };
     }
 
     resize(gridWidth, gridHeight) {
@@ -37,18 +44,18 @@ export class Renderer {
         this.canvas.height = rect.height * dpr;
         this.ctx.scale(dpr, dpr);
 
-        const maxCellW = (rect.width - 20) / gridWidth;
-        const maxCellH = (rect.height - 20) / gridHeight;
-        this.cellSize = Math.floor(Math.min(maxCellW, maxCellH, 45));
+        const padding = 16;
+        const maxCellW = (rect.width - padding * 2) / gridWidth;
+        const maxCellH = (rect.height - padding * 2) / gridHeight;
+        this.cellSize = Math.floor(Math.min(maxCellW, maxCellH, 40));
 
         const totalW = this.cellSize * gridWidth;
         const totalH = this.cellSize * gridHeight;
         this.gridOffsetX = (rect.width - totalW) / 2;
         this.gridOffsetY = (rect.height - totalH) / 2;
 
-        // Auto-zoom for large grids
-        if (gridWidth > 12 || gridHeight > 12) {
-            this.scale = Math.min(rect.width / (totalW + 40), rect.height / (totalH + 40));
+        if (gridWidth > 16 || gridHeight > 16) {
+            this.scale = Math.min(rect.width / (totalW + 30), rect.height / (totalH + 30));
             if (this.scale > 1) this.scale = 1;
         } else {
             this.scale = 1;
@@ -60,7 +67,6 @@ export class Renderer {
     setZoom(scale, centerX, centerY) {
         const oldScale = this.scale;
         this.scale = Math.max(this.minScale, Math.min(this.maxScale, scale));
-        // Adjust pan to zoom toward center point
         const ratio = this.scale / oldScale;
         this.panX = centerX - (centerX - this.panX) * ratio;
         this.panY = centerY - (centerY - this.panY) * ratio;
@@ -72,9 +78,17 @@ export class Renderer {
     }
 
     clear() {
+        const ctx = this.ctx;
         const rect = this.canvas.getBoundingClientRect();
-        this.ctx.fillStyle = this.theme.background;
-        this.ctx.fillRect(0, 0, rect.width, rect.height);
+        if (this.theme.backgroundGradient) {
+            const grad = ctx.createLinearGradient(0, 0, 0, rect.height);
+            grad.addColorStop(0, this.theme.backgroundGradient[0]);
+            grad.addColorStop(1, this.theme.backgroundGradient[1]);
+            ctx.fillStyle = grad;
+        } else {
+            ctx.fillStyle = this.theme.background;
+        }
+        ctx.fillRect(0, 0, rect.width, rect.height);
     }
 
     drawGrid(grid) {
@@ -87,32 +101,16 @@ export class Renderer {
 
         this.drawGridDots(grid);
 
-        // Draw removed paths first (dots)
+        // Layer order: removed -> idle/removable -> removing
+        // NO visual difference between idle and removable - player must figure it out
         for (const path of grid.paths) {
-            if (path.state === ArrowState.REMOVED) {
-                this.drawRemovedPath(path);
-            }
+            if (path.state === ArrowState.REMOVED) this.drawRemovedPath(path);
         }
-
-        // Draw idle paths
         for (const path of grid.paths) {
-            if (path.state === ArrowState.IDLE) {
-                this.drawPath(path);
-            }
+            if (path.state === ArrowState.IDLE || path.state === ArrowState.REMOVABLE) this.drawPath(path, false);
         }
-
-        // Draw removable paths (on top, slightly brighter)
         for (const path of grid.paths) {
-            if (path.state === ArrowState.REMOVABLE) {
-                this.drawPath(path);
-            }
-        }
-
-        // Draw removing paths (red, animating)
-        for (const path of grid.paths) {
-            if (path.state === ArrowState.REMOVING) {
-                this.drawPath(path);
-            }
+            if (path.state === ArrowState.REMOVING) this.drawPath(path, false, true);
         }
 
         ctx.restore();
@@ -120,13 +118,15 @@ export class Renderer {
 
     drawGridDots(grid) {
         const ctx = this.ctx;
-        ctx.fillStyle = this.theme.gridDot;
         for (let x = 0; x <= grid.width; x++) {
             for (let y = 0; y <= grid.height; y++) {
-                const px = this.gridOffsetX + x * this.cellSize;
-                const py = this.gridOffsetY + y * this.cellSize;
+                ctx.fillStyle = this.theme.gridDot;
                 ctx.beginPath();
-                ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+                ctx.arc(
+                    this.gridOffsetX + x * this.cellSize,
+                    this.gridOffsetY + y * this.cellSize,
+                    1, 0, Math.PI * 2
+                );
                 ctx.fill();
             }
         }
@@ -134,134 +134,156 @@ export class Renderer {
 
     drawRemovedPath(path) {
         const ctx = this.ctx;
-        ctx.fillStyle = this.theme.removedDot;
         for (const cell of path.cells) {
-            const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
-            const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
+            ctx.fillStyle = this.theme.arrowRemoved;
             ctx.beginPath();
-            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+            ctx.arc(
+                this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2,
+                this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2,
+                1.5, 0, Math.PI * 2
+            );
             ctx.fill();
         }
     }
 
-    drawPath(path) {
-        const ctx = this.ctx;
-        const cells = path.cells;
-        if (cells.length === 0) return;
-
-        let color;
-        switch (path.state) {
-            case ArrowState.REMOVABLE:
-                color = this.theme.pathRemovable;
-                break;
-            case ArrowState.REMOVING:
-                color = this.theme.pathRemoving;
-                break;
-            default:
-                color = this.theme.pathIdle;
-        }
-
-        const lineWidth = this.theme.pathWidth;
-
-        // Draw the connected path as thick lines
-        ctx.strokeStyle = color;
-        ctx.lineWidth = lineWidth;
-        ctx.lineCap = 'square';
-        ctx.lineJoin = 'miter';
-
-        if (cells.length === 1) {
-            // Single cell - draw a short line with arrow
-            const cell = cells[0];
-            const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
-            const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
-            const { dx, dy } = getDirectionVector(path.direction);
-            const halfLen = this.cellSize * 0.35;
-
-            ctx.beginPath();
-            ctx.moveTo(cx - dx * halfLen, cy - dy * halfLen);
-            ctx.lineTo(cx + dx * halfLen, cy + dy * halfLen);
-            ctx.stroke();
-
-            this.drawArrowHead(cx + dx * halfLen, cy + dy * halfLen, path.direction, color);
-            return;
-        }
-
-        // Multi-cell path: draw thick connected lines from cell center to cell center
-        ctx.beginPath();
-        const startCx = this.gridOffsetX + cells[0].x * this.cellSize + this.cellSize / 2;
-        const startCy = this.gridOffsetY + cells[0].y * this.cellSize + this.cellSize / 2;
-
-        // Extend the start beyond the first cell center (toward the cell edge)
-        if (cells.length > 1) {
-            const dx0 = cells[1].x - cells[0].x;
-            const dy0 = cells[1].y - cells[0].y;
-            // Start from the opposite edge of first cell
-            ctx.moveTo(startCx - dx0 * this.cellSize * 0.45, startCy - dy0 * this.cellSize * 0.45);
-        } else {
-            ctx.moveTo(startCx, startCy);
-        }
-
-        for (let i = 0; i < cells.length; i++) {
-            const cx = this.gridOffsetX + cells[i].x * this.cellSize + this.cellSize / 2;
-            const cy = this.gridOffsetY + cells[i].y * this.cellSize + this.cellSize / 2;
-            ctx.lineTo(cx, cy);
-        }
-
-        // Extend the end toward the arrow direction
-        const lastCell = cells[cells.length - 1];
-        const lastCx = this.gridOffsetX + lastCell.x * this.cellSize + this.cellSize / 2;
-        const lastCy = this.gridOffsetY + lastCell.y * this.cellSize + this.cellSize / 2;
-        const { dx: adx, dy: ady } = getDirectionVector(path.direction);
-        const endExtend = this.cellSize * 0.35;
-        ctx.lineTo(lastCx + adx * endExtend, lastCy + ady * endExtend);
-
-        ctx.stroke();
-
-        // Draw arrow head at the end
-        this.drawArrowHead(
-            lastCx + adx * endExtend,
-            lastCy + ady * endExtend,
-            path.direction,
-            color
-        );
-
-        // Draw small cap at start
-        if (cells.length > 1) {
-            const dx0 = cells[1].x - cells[0].x;
-            const dy0 = cells[1].y - cells[0].y;
-            const capX = startCx - dx0 * this.cellSize * 0.45;
-            const capY = startCy - dy0 * this.cellSize * 0.45;
-            ctx.fillStyle = color;
-            ctx.fillRect(
-                capX - lineWidth / 2 - 1,
-                capY - lineWidth / 2 - 1,
-                lineWidth + 2,
-                lineWidth + 2
-            );
-        }
+    _cellCenter(cell) {
+        return {
+            x: this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2,
+            y: this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2
+        };
     }
 
-    drawArrowHead(tipX, tipY, direction, color) {
+    _buildPathPoints(path, metrics) {
+        const cells = path.cells;
+        if (cells.length === 0) return { points: [], tipX: 0, tipY: 0 };
+
+        const points = [];
+        const cs = this.cellSize;
+        const headSize = metrics.headSize;
+
+        if (cells.length === 1) {
+            const c = this._cellCenter(cells[0]);
+            const { dx, dy } = getDirectionVector(path.direction);
+            const halfLen = cs * 0.35;
+            points.push({ x: c.x - dx * halfLen, y: c.y - dy * halfLen });
+            const tipX = c.x + dx * halfLen;
+            const tipY = c.y + dy * halfLen;
+            points.push({ x: tipX - dx * headSize * 0.6, y: tipY - dy * headSize * 0.6 });
+            return { points, tipX, tipY };
+        }
+
+        // Tail extension
+        const first = this._cellCenter(cells[0]);
+        const second = this._cellCenter(cells[1]);
+        const dx0 = Math.sign(second.x - first.x);
+        const dy0 = Math.sign(second.y - first.y);
+        points.push({ x: first.x - dx0 * cs * 0.42, y: first.y - dy0 * cs * 0.42 });
+
+        // Cell centers
+        for (const cell of cells) points.push(this._cellCenter(cell));
+
+        // Head extension
+        const last = this._cellCenter(cells[cells.length - 1]);
+        const { dx: adx, dy: ady } = getDirectionVector(path.direction);
+        const tipX = last.x + adx * cs * 0.42;
+        const tipY = last.y + ady * cs * 0.42;
+        points.push({ x: tipX - adx * headSize * 0.55, y: tipY - ady * headSize * 0.55 });
+
+        return { points, tipX, tipY };
+    }
+
+    drawPath(path, isRemovable = false, isRemoving = false) {
         const ctx = this.ctx;
-        const size = this.theme.arrowHeadSize;
+        if (path.cells.length === 0) return;
+
+        const metrics = this._getArrowMetrics();
+        const color = isRemoving ? this.theme.arrowRemoving : this.theme.arrowIdle;
+        const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
+        if (points.length < 2) return;
+
+        // Removable glow
+        if (isRemovable) {
+            ctx.strokeStyle = this.theme.removableGlow;
+            ctx.lineWidth = metrics.width + 8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            this._strokePoints(ctx, points);
+        }
+
+        // Main line
+        ctx.strokeStyle = color;
+        ctx.lineWidth = metrics.width;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        this._strokePoints(ctx, points);
+
+        // Arrow head
+        this._drawArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
+
+        // Tail rounded cap
+        const tail = points[0];
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(tail.x, tail.y, metrics.width * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    _strokePoints(ctx, points) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.stroke();
+    }
+
+    _drawArrowHead(ctx, tipX, tipY, direction, color, metrics) {
+        const size = metrics.headSize;
+        const spread = size * metrics.headSpread;
         const { dx, dy } = getDirectionVector(direction);
+
+        let p1, p2, p3;
+        if (dx !== 0) {
+            p1 = { x: tipX + dx * 1, y: tipY };
+            p2 = { x: tipX - dx * size, y: tipY - spread };
+            p3 = { x: tipX - dx * size, y: tipY + spread };
+        } else {
+            p1 = { x: tipX, y: tipY + dy * 1 };
+            p2 = { x: tipX - spread, y: tipY - dy * size };
+            p3 = { x: tipX + spread, y: tipY - dy * size };
+        }
 
         ctx.fillStyle = color;
         ctx.beginPath();
-
-        if (dx !== 0) {
-            // Horizontal arrow
-            ctx.moveTo(tipX, tipY);
-            ctx.lineTo(tipX - dx * size, tipY - size * 0.6);
-            ctx.lineTo(tipX - dx * size, tipY + size * 0.6);
-        } else {
-            // Vertical arrow
-            ctx.moveTo(tipX, tipY);
-            ctx.lineTo(tipX - size * 0.6, tipY - dy * size);
-            ctx.lineTo(tipX + size * 0.6, tipY - dy * size);
-        }
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
         ctx.closePath();
         ctx.fill();
+    }
+
+    drawGhostTrail(cells, direction, alpha) {
+        if (!cells || cells.length === 0) return;
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.translate(this.panX, this.panY);
+        ctx.scale(this.scale, this.scale);
+
+        const metrics = this._getArrowMetrics();
+        // Build ghost points from original cell positions
+        const ghostPath = { cells, direction };
+        const { points } = this._buildPathPoints(ghostPath, metrics);
+
+        if (points.length >= 2) {
+            ctx.globalAlpha = alpha * 0.5;
+            ctx.strokeStyle = this.theme.arrowIdle;
+            ctx.lineWidth = metrics.width;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash([4, 6]);
+            this._strokePoints(ctx, points);
+            ctx.setLineDash([]);
+        }
+
+        ctx.restore();
     }
 
     drawHintHighlight(path) {
@@ -270,16 +292,14 @@ export class Renderer {
         ctx.translate(this.panX, this.panY);
         ctx.scale(this.scale, this.scale);
 
-        ctx.strokeStyle = this.theme.hintColor;
-        ctx.lineWidth = 3;
-        ctx.setLineDash([4, 4]);
-
         for (const cell of path.cells) {
             const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
             const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
-            const r = this.cellSize * 0.4;
+            ctx.strokeStyle = this.theme.hintColor;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 3]);
             ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.arc(cx, cy, this.cellSize * 0.35, 0, Math.PI * 2);
             ctx.stroke();
         }
 
@@ -287,16 +307,14 @@ export class Renderer {
         ctx.restore();
     }
 
-    // Convert screen coordinates to grid cell, accounting for zoom/pan
     getCellFromPoint(clientX, clientY) {
         const rect = this.canvas.getBoundingClientRect();
         const x = (clientX - rect.left - this.panX) / this.scale;
         const y = (clientY - rect.top - this.panY) / this.scale;
-
-        const gridX = Math.floor((x - this.gridOffsetX) / this.cellSize);
-        const gridY = Math.floor((y - this.gridOffsetY) / this.cellSize);
-
-        return { gridX, gridY };
+        return {
+            gridX: Math.floor((x - this.gridOffsetX) / this.cellSize),
+            gridY: Math.floor((y - this.gridOffsetY) / this.cellSize)
+        };
     }
 
     setTheme(theme) {
