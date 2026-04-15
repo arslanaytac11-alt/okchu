@@ -1257,7 +1257,8 @@ const allLevels = [];
 for (const spec of levelSpecs) {
     const mask = getShapeMask(spec);
     const totalCells = countCells(mask);
-    console.log(`\n=== ${spec.name} (${spec.w}x${spec.h}, ${totalCells} cells, diff=${spec.diff}) ===`);
+    const config = CHAPTER_CONFIG[spec.chapter];
+    console.log(`\n=== ${spec.name} (${spec.w}x${spec.h}, ${totalCells} cells, ch=${spec.chapter}, trap=${config.trapRatio}) ===`);
 
     // Print shape
     for (let y = 0; y < spec.h; y++) {
@@ -1270,11 +1271,11 @@ for (const spec of levelSpecs) {
     let bestSeed = 0;
 
     for (let seed = spec.seedStart; seed < spec.seedStart + 5000; seed++) {
-        const paths = generateShapedLevel(spec.w, spec.h, mask, seed, spec.diff);
+        const paths = generateShapedLevel(spec.w, spec.h, mask, seed, spec.chapter);
         const v = validateLevel(paths, spec.w, spec.h, mask);
 
         if (v.overlaps > 0 || v.adjErrors > 0 || v.oobErrors > 0) continue;
-        if (v.covered < totalCells * 0.98) continue;
+        if (v.covered < totalCells * 0.95) continue;
 
         const solved = fixSolvability(paths, spec.w, spec.h, 300);
         if (solved) {
