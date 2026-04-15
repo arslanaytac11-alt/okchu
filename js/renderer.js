@@ -16,6 +16,8 @@ export class Renderer {
         this.maxScale = 3;
         this.panX = 0;
         this.panY = 0;
+        this.shakeX = 0;
+        this.shakeY = 0;
         this.theme = {
             background: '#e8dcc0',
             backgroundGradient: ['#f0e4c8', '#e0d0a8'],
@@ -96,7 +98,7 @@ export class Renderer {
         const ctx = this.ctx;
 
         ctx.save();
-        ctx.translate(this.panX, this.panY);
+        ctx.translate(this.panX + this.shakeX, this.panY + this.shakeY);
         ctx.scale(this.scale, this.scale);
 
         this.drawGridDots(grid);
@@ -197,7 +199,7 @@ export class Renderer {
         if (path.cells.length === 0) return;
 
         const metrics = this._getArrowMetrics();
-        const color = isRemoving ? this.theme.arrowRemoving : this.theme.arrowIdle;
+        const color = isRemoving ? (path._flashColor || this.theme.arrowRemoving) : this.theme.arrowIdle;
         const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
         if (points.length < 2) return;
 

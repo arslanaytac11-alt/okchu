@@ -232,38 +232,63 @@ export class Game {
         const remaining = this.livesManager.loseLife();
         if (this.onLivesChanged) this.onLivesChanged(remaining);
 
-        // Animate: arrow tries to go in its direction but bounces back
+        // 4-phase wrong move animation:
+        // Phase 1 (0-60ms):    Forward lunge 0.4 cells
+        // Phase 2 (60-160ms):  Hold at 0.4, flash bright red
+        // Phase 3 (160-310ms): Shake — sin oscillation, clear flash
+        // Phase 4 (310-510ms): Elastic bounce back with cubic ease
+        // Screen shake: 2px intensity, 100ms starting at 60ms
         this.isAnimating = true;
         const origState = path.state;
-        path.state = 'removing'; // red color
+        path.state = 'removing';
         const { dx, dy } = getDirectionVector(path.direction);
         const origCells = path.cells.map(c => ({ x: c.x, y: c.y }));
-        const maxShift = 0.6; // cells to shift before bouncing back
-        const duration = 500;
+
+        const ph1 = 60;
+        const ph2 = 100;  // 60-160ms
+        const ph3 = 150;  // 160-310ms
+        const ph4 = 200;  // 310-510ms
+        const totalDuration = ph1 + ph2 + ph3 + ph4;
+        const lunge = 0.4;
         const startTime = performance.now();
+        const shakeStart = ph1;
+        const shakeDuration = 100;
 
         const animate = (time) => {
             const elapsed = time - startTime;
-            const progress = Math.min(elapsed / duration, 1);
 
-            // Phase 1 (0-0.35): slide forward
-            // Phase 2 (0.35-0.65): hit wall, slight overshoot
-            // Phase 3 (0.65-1.0): bounce back to original
             let shift;
-            if (progress < 0.35) {
-                // Ease out - fast start, slow near wall
-                const p = progress / 0.35;
-                shift = maxShift * (1 - Math.pow(1 - p, 2));
-            } else if (progress < 0.65) {
-                // Vibrate/stuck at wall
-                const p = (progress - 0.35) / 0.3;
-                const shake = Math.sin(p * Math.PI * 4) * 0.08;
-                shift = maxShift + shake;
+
+            if (elapsed < ph1) {
+                // Phase 1: forward lunge
+                const p = elapsed / ph1;
+                shift = lunge * (1 - Math.pow(1 - p, 2));
+            } else if (elapsed < ph1 + ph2) {
+                // Phase 2: hold at lunge, flash red
+                shift = lunge;
+                path._flashColor = '#ff2020';
+            } else if (elapsed < ph1 + ph2 + ph3) {
+                // Phase 3: shake oscillation, clear flash
+                path._flashColor = null;
+                const p = (elapsed - ph1 - ph2) / ph3;
+                shift = lunge + Math.sin(p * Math.PI * 6) * 0.12;
             } else {
-                // Bounce back with elastic
-                const p = (progress - 0.65) / 0.35;
-                const eased = 1 - Math.pow(1 - p, 3);
-                shift = maxShift * (1 - eased);
+                // Phase 4: elastic bounce back using cubic ease
+                path._flashColor = null;
+                const p = (elapsed - ph1 - ph2 - ph3) / ph4;
+                const eased = 1 - Math.pow(1 - Math.min(p, 1), 3);
+                shift = lunge * (1 - eased);
+            }
+
+            // Screen shake: sin/cos oscillation for 100ms starting at phase 2
+            const shakeElapsed = (time - startTime) - shakeStart;
+            if (shakeElapsed >= 0 && shakeElapsed < shakeDuration) {
+                const sp = shakeElapsed / shakeDuration;
+                this.renderer.shakeX = Math.sin(sp * Math.PI * 8) * 2 * (1 - sp);
+                this.renderer.shakeY = Math.cos(sp * Math.PI * 8) * 2 * (1 - sp);
+            } else {
+                this.renderer.shakeX = 0;
+                this.renderer.shakeY = 0;
             }
 
             for (let i = 0; i < path.cells.length; i++) {
@@ -273,15 +298,18 @@ export class Game {
 
             this.renderer.drawGrid(this.grid);
 
-            if (progress < 1) {
+            if (elapsed < totalDuration) {
                 requestAnimationFrame(animate);
             } else {
-                // Restore
+                // Restore everything
                 for (let i = 0; i < path.cells.length; i++) {
                     path.cells[i].x = origCells[i].x;
                     path.cells[i].y = origCells[i].y;
                 }
+                path._flashColor = null;
                 path.state = origState;
+                this.renderer.shakeX = 0;
+                this.renderer.shakeY = 0;
                 this.grid.updateRemovableStates();
                 this.renderer.drawGrid(this.grid);
                 this.isAnimating = false;
