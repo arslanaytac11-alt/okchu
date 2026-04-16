@@ -32,7 +32,7 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
     const overlay = document.getElementById('overlay-complete');
     overlay.classList.remove('hidden');
 
-    // Show stars
+    // Animated stars
     const starsEl = document.getElementById('complete-stars');
     if (starsEl && stats) {
         starsEl.innerHTML = '';
@@ -40,6 +40,10 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
             const star = document.createElement('span');
             star.className = i < stats.stars ? 'star filled' : 'star empty';
             star.textContent = i < stats.stars ? '\u2605' : '\u2606';
+            if (i < stats.stars) {
+                star.style.animationDelay = `${i * 0.4}s`;
+                star.classList.add('star-animate');
+            }
             starsEl.appendChild(star);
         }
     }
@@ -50,14 +54,16 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
         scoreEl.textContent = `Skor: ${stats.score}`;
     }
 
-    // Show stats
+    // Show stats with remaining time
     const statsEl = document.getElementById('complete-stats');
     if (statsEl && stats) {
         const timeSecs = Math.floor(stats.time / 1000);
         const mins = Math.floor(timeSecs / 60);
         const secs = timeSecs % 60;
         const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-        const parts = [`Sure: ${timeStr}`, `Hamle: ${stats.moves}`];
+        const parts = [`Sure: ${timeStr}`];
+        if (stats.timeRemaining > 0) parts.push(`Kalan: ${stats.timeRemaining}s`);
+        parts.push(`Hamle: ${stats.moves}`);
         if (stats.maxCombo > 1) parts.push(`Max Combo: x${stats.maxCombo}`);
         if (stats.wrongMoves > 0) parts.push(`Yanlis: ${stats.wrongMoves}`);
         statsEl.textContent = parts.join(' | ');

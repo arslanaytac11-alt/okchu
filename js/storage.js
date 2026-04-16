@@ -19,10 +19,11 @@ function saveData(data) {
 function getDefaultData() {
     return {
         completedLevels: [],
-        unlockedChapters: [1],
+        unlockedChapters: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         lives: 3,
         lastLifeLostTime: null,
-        freeHintsUsed: []
+        freeHintsUsed: [],
+        levelScores: {},   // { levelId: { score, stars, moves, time, bestCombo } }
     };
 }
 
@@ -36,10 +37,11 @@ export const storage = {
         if (!data.completedLevels.includes(levelId)) {
             data.completedLevels.push(levelId);
         }
+        // Star-based unlock: need 10+ stars in current chapter to unlock next
         const nextChapter = chapterId + 1;
         if (nextChapter <= 10 && !data.unlockedChapters.includes(nextChapter)) {
-            const chapterLevels = data.completedLevels.filter(id => id.startsWith(this.getChapterPrefix(chapterId)));
-            if (chapterLevels.length >= 5) {
+            const chapterStars = this.getChapterStars(chapterId);
+            if (chapterStars >= 10) {
                 data.unlockedChapters.push(nextChapter);
             }
         }
@@ -118,6 +120,43 @@ export const storage = {
             data.freeHintsUsed.push(levelId);
         }
         saveData(data);
+    },
+
+    saveLevelScore(levelId, scoreData) {
+        const data = loadData();
+        if (!data.levelScores) data.levelScores = {};
+        const existing = data.levelScores[levelId];
+        // Keep best score
+        if (!existing || scoreData.score > existing.score) {
+            data.levelScores[levelId] = scoreData;
+        }
+        saveData(data);
+    },
+
+    getLevelScore(levelId) {
+        const data = loadData();
+        return data.levelScores?.[levelId] || null;
+    },
+
+    getChapterStars(chapterId) {
+        const data = loadData();
+        const prefix = this.getChapterPrefix(chapterId);
+        let total = 0;
+        for (const [id, score] of Object.entries(data.levelScores || {})) {
+            if (id.startsWith(prefix) && score.stars) {
+                total += score.stars;
+            }
+        }
+        return total;
+    },
+
+    getTotalStars() {
+        const data = loadData();
+        let total = 0;
+        for (const score of Object.values(data.levelScores || {})) {
+            if (score.stars) total += score.stars;
+        }
+        return total;
     },
 
     resetAll() {

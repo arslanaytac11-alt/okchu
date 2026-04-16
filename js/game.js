@@ -189,11 +189,10 @@ export class Game {
         return basePoints + lengthBonus + comboBonus;
     }
 
-    // Calculate star rating: 3 stars = perfect, 2 = good, 1 = completed
     calculateStars() {
-        // Based on wrong moves and time
-        if (this.wrongMoves === 0 && !this.usedHint) return 3;
-        if (this.wrongMoves <= 1) return 2;
+        const ratio = this.timeRemaining / this.timeLimit;
+        if (ratio >= 0.7 && this.wrongMoves === 0 && !this.usedHint) return 3;
+        if (ratio >= 0.5 && this.wrongMoves <= 2) return 2;
         return 1;
     }
 

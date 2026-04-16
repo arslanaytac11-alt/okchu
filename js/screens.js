@@ -9,7 +9,6 @@ export class ScreenManager {
         this.screens = {
             menu: document.getElementById('screen-menu'),
             chapters: document.getElementById('screen-chapters'),
-            story: document.getElementById('screen-story'),
             levels: document.getElementById('screen-levels'),
             game: document.getElementById('screen-game')
         };
@@ -20,7 +19,7 @@ export class ScreenManager {
 
     showScreen(name) {
         for (const [key, el] of Object.entries(this.screens)) {
-            el.classList.toggle('active', key === name);
+            if (el) el.classList.toggle('active', key === name);
         }
     }
 
@@ -37,12 +36,6 @@ export class ScreenManager {
             this.showChapters();
         });
 
-        document.getElementById('btn-story-continue').addEventListener('click', () => {
-            if (this.currentChapter) {
-                this.showLevels(this.currentChapter);
-            }
-        });
-
         document.getElementById('btn-game-back').addEventListener('click', () => {
             this.showScreen('levels');
         });
@@ -52,18 +45,20 @@ export class ScreenManager {
         const list = document.getElementById('chapter-list');
         list.innerHTML = '';
 
+        // Total stars in header
+        const header = document.querySelector('#screen-chapters .screen-header h2');
+        if (header) {
+            header.textContent = `Bolumler \u2605 ${storage.getTotalStars()}/150`;
+        }
+
         for (const chapter of chapters) {
             const unlocked = storage.isChapterUnlocked(chapter.id);
             const card = document.createElement('div');
             card.className = 'chapter-card' + (unlocked ? '' : ' locked');
 
-            const thumb = document.createElement('div');
-            thumb.className = 'chapter-thumb';
-            thumb.style.backgroundImage = `url(${chapter.story.image})`;
-
             const numDiv = document.createElement('div');
             numDiv.className = 'chapter-number';
-            numDiv.style.background = chapter.theme.arrowRemovable;
+            numDiv.style.background = chapter.theme.arrowRemovable || chapter.theme.arrowIdle;
             numDiv.textContent = chapter.id;
 
             const infoDiv = document.createElement('div');
@@ -77,10 +72,15 @@ export class ScreenManager {
             diffSpan.className = 'chapter-difficulty';
             diffSpan.textContent = chapter.difficulty;
 
+            const starsSpan = document.createElement('div');
+            starsSpan.className = 'chapter-stars';
+            const chapterStars = storage.getChapterStars(chapter.id);
+            starsSpan.textContent = `\u2605 ${chapterStars}/15`;
+
             infoDiv.appendChild(nameSpan);
             infoDiv.appendChild(diffSpan);
+            infoDiv.appendChild(starsSpan);
 
-            card.appendChild(thumb);
             card.appendChild(numDiv);
             card.appendChild(infoDiv);
 
@@ -93,7 +93,8 @@ export class ScreenManager {
 
             if (unlocked) {
                 card.addEventListener('click', () => {
-                    this.showStoryCard(chapter);
+                    this.currentChapter = chapter;
+                    this.showLevels(chapter);
                 });
             }
 
@@ -101,34 +102,6 @@ export class ScreenManager {
         }
 
         this.showScreen('chapters');
-    }
-
-    showStoryCard(chapter) {
-        this.currentChapter = chapter;
-        const story = chapter.story;
-        this.applyChapterTheme(chapter);
-
-        document.getElementById('story-title').textContent = story.title;
-        document.getElementById('story-period').textContent = story.period;
-        document.getElementById('story-text').textContent = story.text;
-        document.getElementById('story-mystery').textContent = story.mystery;
-
-        const img = document.getElementById('story-image');
-        // Try loading the chapter image, fallback to gradient
-        img.onerror = () => {
-            img.style.display = 'none';
-        };
-        img.onload = () => {
-            img.style.display = 'block';
-        };
-        img.src = story.image;
-
-        // Apply chapter theme color to story card
-        const card = document.querySelector('.story-card');
-        const color = chapter.theme.arrowRemovable;
-        card.style.setProperty('--chapter-color', color);
-
-        this.showScreen('story');
     }
 
     showLevels(chapter) {
