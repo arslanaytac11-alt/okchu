@@ -1449,3 +1449,286 @@ body[data-theme='ottoman'] .level-card.current {
     color: var(--theme-accent);
     margin-top: 2px;
 }
+
+/* === MENU BOTTOM BUTTONS === */
+.menu-bottom-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.btn-menu-icon {
+    padding: 10px 20px;
+    border: 1px solid rgba(120,80,40,0.2);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.2);
+    color: var(--theme-ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+body.dark-mode .btn-menu-icon {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(200,170,120,0.15);
+}
+
+/* === CHAPTER PROGRESS BAR === */
+.chapter-progress {
+    width: 100%;
+    height: 4px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+
+.chapter-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--theme-accent), #d4a843);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+/* === ACHIEVEMENTS === */
+.overlay-large {
+    max-width: 380px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.achievements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.ach-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.03);
+    transition: opacity 0.3s;
+}
+
+.ach-item.locked {
+    opacity: 0.4;
+}
+
+.ach-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+.ach-info {
+    flex: 1;
+    text-align: left;
+}
+
+.ach-name {
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: var(--theme-ink);
+}
+
+.ach-desc {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+body.dark-mode .ach-item {
+    background: rgba(255,255,255,0.05);
+}
+
+/* Achievement toast notification */
+.ach-toast {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: linear-gradient(135deg, #f5ecd8, #e8dcc0);
+    border: 1px solid rgba(140,110,70,0.2);
+    border-radius: 14px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(60,40,20,0.25);
+    z-index: 200;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ach-toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.ach-toast.hidden {
+    display: none;
+}
+
+body.dark-mode .ach-toast {
+    background: linear-gradient(135deg, #1e1e32, #141424);
+    border-color: rgba(200,170,120,0.15);
+}
+
+.ach-toast-icon {
+    font-size: 1.5rem;
+}
+
+.ach-toast-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.ach-toast-text strong {
+    font-size: 0.9rem;
+    color: var(--theme-ink);
+}
+
+.ach-toast-text span {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+/* === SETTINGS === */
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--theme-border);
+    font-size: 0.95rem;
+    color: var(--theme-ink);
+}
+
+.setting-row.danger {
+    border-bottom: none;
+}
+
+.setting-toggle {
+    width: 48px;
+    height: 28px;
+    border-radius: 14px;
+    border: none;
+    background: rgba(0,0,0,0.1);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s;
+}
+
+.setting-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.3s;
+}
+
+.setting-toggle.active {
+    background: var(--theme-accent);
+}
+
+.setting-toggle.active::after {
+    transform: translateX(20px);
+}
+
+.setting-value {
+    padding: 6px 14px;
+    border: 1px solid var(--theme-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.setting-buy {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    min-height: auto;
+}
+
+.setting-danger {
+    color: #c04030;
+    border-color: #c04030;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    min-height: auto;
+}
+
+.settings-version {
+    font-size: 0.75rem;
+    opacity: 0.4;
+    margin-top: 8px;
+}
+
+/* === BANNER AD === */
+.banner-ad {
+    width: 100%;
+    height: 50px;
+    background: rgba(0,0,0,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-top: 1px solid var(--theme-border);
+}
+
+.banner-ad-label {
+    font-size: 0.75rem;
+    color: var(--theme-ink);
+    opacity: 0.3;
+}
+
+body.dark-mode .banner-ad {
+    background: rgba(255,255,255,0.03);
+}
+
+/* Premium users: hide banner */
+body.premium .banner-ad {
+    display: none;
+}
+
+/* === CONFETTI CELEBRATION === */
+.confetti-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 150;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confettiFall linear forwards;
+}
+
+@keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}

@@ -28,6 +28,11 @@
             <h1 class="game-title">Okchu</h1>
             <p class="game-subtitle">Arrow Puzzle</p>
             <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Oyna</button>
+            <button id="btn-daily" class="btn btn-secondary">Gunluk Meydan Okuma</button>
+            <div class="menu-bottom-buttons">
+                <button id="btn-achievements" class="btn-menu-icon">Basarimlar</button>
+                <button id="btn-settings" class="btn-menu-icon">Ayarlar</button>
+            </div>
             <div class="menu-top-buttons">
                 <button id="btn-dark-mode" class="btn-dark-toggle" aria-label="Gece modu"></button>
                 <button id="btn-language" class="btn-lang-toggle" aria-label="Dil">TR</button>
@@ -90,6 +95,9 @@
                 <div class="stat-item"><span class="stat-label" data-i18n="game.time">Sure</span><span id="game-timer" class="stat-value">0:00</span></div>
             </div>
             <canvas id="game-canvas"></canvas>
+            <div id="banner-ad" class="banner-ad">
+                <span class="banner-ad-label">Reklam Alani</span>
+            </div>
         </div>
 
         <!-- Level Complete Overlay -->
@@ -127,6 +135,51 @@
             </div>
         </div>
 
+        <!-- Achievements Overlay -->
+        <div id="overlay-achievements" class="overlay hidden">
+            <div class="overlay-content overlay-large">
+                <h2>Basarimlar</h2>
+                <div id="achievements-list" class="achievements-list"></div>
+                <button id="btn-ach-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Settings Overlay -->
+        <div id="overlay-settings" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>Ayarlar</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <span>Gece Modu</span>
+                        <button id="setting-dark" class="setting-toggle"></button>
+                    </div>
+                    <div class="setting-row">
+                        <span>Dil</span>
+                        <button id="setting-lang" class="setting-value">TR</button>
+                    </div>
+                    <div class="setting-row">
+                        <span>Reklamsiz Premium</span>
+                        <button id="setting-premium" class="btn btn-primary setting-buy">Satin Al</button>
+                    </div>
+                    <div class="setting-row danger">
+                        <span>Ilerlemeyi Sifirla</span>
+                        <button id="setting-reset" class="btn btn-secondary setting-danger">Sifirla</button>
+                    </div>
+                </div>
+                <p class="settings-version">Okchu v1.0</p>
+                <button id="btn-settings-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Achievement Toast -->
+        <div id="achievement-toast" class="ach-toast hidden">
+            <span id="ach-toast-icon" class="ach-toast-icon"></span>
+            <div class="ach-toast-text">
+                <strong id="ach-toast-name"></strong>
+                <span id="ach-toast-desc"></span>
+            </div>
+        </div>
+
         <!-- Language Select Overlay -->
         <div id="overlay-language" class="overlay hidden">
             <div class="overlay-content lang-picker">
@@ -153,6 +206,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=12"></script>
+    <script type="module" src="js/main.js?v=13"></script>
 </body>
 </html>

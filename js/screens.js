@@ -86,9 +86,19 @@ export class ScreenManager {
             const chapterStars = storage.getChapterStars(chapter.id);
             starsSpan.textContent = `\u2605 ${chapterStars}/15`;
 
+            // Progress bar
+            const progressDiv = document.createElement('div');
+            progressDiv.className = 'chapter-progress';
+            const progressFill = document.createElement('div');
+            progressFill.className = 'chapter-progress-fill';
+            const completedCount = getLevelsByChapter(chapter.id).filter(l => storage.isLevelCompleted(l.id)).length;
+            progressFill.style.width = `${(completedCount / 5) * 100}%`;
+            progressDiv.appendChild(progressFill);
+
             infoDiv.appendChild(nameSpan);
             infoDiv.appendChild(diffSpan);
             infoDiv.appendChild(starsSpan);
+            infoDiv.appendChild(progressDiv);
 
             card.appendChild(numDiv);
             card.appendChild(infoDiv);

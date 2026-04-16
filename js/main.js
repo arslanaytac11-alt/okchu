@@ -6,6 +6,9 @@ import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
 import { initLanguage, loadLanguage, t, getLang } from './i18n.js';
+import { getDailyChallenge, isDailyCompleted, completeDaily, getDailyStreak } from './daily.js';
+import { checkAchievements, getAllAchievements, getAchievementStats } from './achievements.js';
+import { allLevels } from './levels.js';
 
 // Dark mode
 if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
@@ -96,6 +99,14 @@ screenManager.onStartLevel = (levelData, chapterData) => {
 game.onLevelComplete = (completedLevel, nextLevel, stats) => {
     const overlay = document.getElementById('overlay-complete');
     overlay.classList.remove('hidden');
+    showConfetti();
+
+    // Daily + achievements
+    if (game._isDailyChallenge) {
+        completeDaily(stats.score, stats.stars);
+        game._isDailyChallenge = false;
+    }
+    setTimeout(() => checkAndShowAchievements(), 1500);
 
     // Animated stars
     const starsEl = document.getElementById('complete-stars');
@@ -248,4 +259,166 @@ window.addEventListener('resize', () => game.handleResize());
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// === DAILY CHALLENGE ===
+document.getElementById('btn-daily').addEventListener('click', () => {
+    if (isDailyCompleted()) {
+        alert('Bugunun meydan okumasini zaten tamamladin! Yarin tekrar gel.');
+        return;
+    }
+    const daily = getDailyChallenge(allLevels);
+    const chapter = chapters.find(c => c.id === daily.level.chapter);
+    screenManager.showScreen('game');
+    game.livesManager.renderLives(livesDisplay);
+    game._isDailyChallenge = true;
+    setTimeout(() => game.startLevel(daily.level, chapter), 50);
+});
+
+// === ACHIEVEMENTS ===
+function getPlayerStats() {
+    const data = storage.getProgress();
+    const scores = data.levelScores || {};
+    let totalStars = 0, perfectLevels = 0, bestCombo = 0, noMistakeLevels = 0, fastestClear = Infinity;
+    let chaptersCleared = 0;
+
+    for (const score of Object.values(scores)) {
+        totalStars += score.stars || 0;
+        if (score.stars >= 3) perfectLevels++;
+        if (score.bestCombo > bestCombo) bestCombo = score.bestCombo;
+        if (score.wrongMoves === 0) noMistakeLevels++;
+        const secs = (score.time || 999999) / 1000;
+        if (secs < fastestClear) fastestClear = secs;
+    }
+
+    for (let ch = 1; ch <= 10; ch++) {
+        const prefix = storage.getChapterPrefix(ch);
+        const chLevels = data.completedLevels.filter(id => id.startsWith(prefix));
+        if (chLevels.length >= 5) chaptersCleared++;
+    }
+
+    const daily = getDailyStreak();
+    return {
+        totalCleared: data.completedLevels.length,
+        totalStars,
+        perfectLevels,
+        bestCombo,
+        chaptersCleared,
+        dailyCompleted: isDailyCompleted() ? 1 : 0,
+        dailyStreak: daily,
+        fastestClear,
+        noMistakeLevels,
+    };
+}
+
+function showAchievementToast(ach) {
+    const toast = document.getElementById('achievement-toast');
+    document.getElementById('ach-toast-icon').textContent = ach.icon;
+    document.getElementById('ach-toast-name').textContent = ach.name;
+    document.getElementById('ach-toast-desc').textContent = ach.desc;
+    toast.classList.remove('hidden');
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.classList.add('hidden'), 500);
+    }, 3000);
+}
+
+function checkAndShowAchievements() {
+    const stats = getPlayerStats();
+    const newAchs = checkAchievements(stats);
+    for (const ach of newAchs) {
+        showAchievementToast(ach);
+    }
+}
+
+
+// Show achievements overlay
+document.getElementById('btn-achievements').addEventListener('click', () => {
+    const list = document.getElementById('achievements-list');
+    list.innerHTML = '';
+    const achs = getAllAchievements();
+    for (const ach of achs) {
+        const item = document.createElement('div');
+        item.className = 'ach-item' + (ach.unlocked ? '' : ' locked');
+        item.innerHTML = `
+            <span class="ach-icon">${ach.unlocked ? ach.icon : '\u{1F512}'}</span>
+            <div class="ach-info">
+                <div class="ach-name">${ach.name}</div>
+                <div class="ach-desc">${ach.desc}</div>
+            </div>
+        `;
+        list.appendChild(item);
+    }
+    document.getElementById('overlay-achievements').classList.remove('hidden');
+});
+
+document.getElementById('btn-ach-close').addEventListener('click', () => {
+    document.getElementById('overlay-achievements').classList.add('hidden');
+});
+
+// === SETTINGS ===
+document.getElementById('btn-settings').addEventListener('click', () => {
+    // Update toggle states
+    const darkToggle = document.getElementById('setting-dark');
+    darkToggle.classList.toggle('active', document.body.classList.contains('dark-mode'));
+    document.getElementById('setting-lang').textContent = getLang().toUpperCase();
+    document.getElementById('overlay-settings').classList.remove('hidden');
+});
+
+document.getElementById('btn-settings-close').addEventListener('click', () => {
+    document.getElementById('overlay-settings').classList.add('hidden');
+});
+
+document.getElementById('setting-dark').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    document.getElementById('setting-dark').classList.toggle('active', document.body.classList.contains('dark-mode'));
+});
+
+document.getElementById('setting-lang').addEventListener('click', () => {
+    document.getElementById('overlay-settings').classList.add('hidden');
+    document.getElementById('overlay-language').classList.remove('hidden');
+});
+
+document.getElementById('setting-premium').addEventListener('click', () => {
+    // TODO: Integrate with App Store in-app purchase
+    alert('Premium satin alma yakinda aktif olacak!');
+});
+
+document.getElementById('setting-reset').addEventListener('click', () => {
+    if (confirm('Tum ilerlemen silinecek. Emin misin?')) {
+        storage.resetAll();
+        localStorage.removeItem('ok_bulmacasi_tutorial_done');
+        localStorage.removeItem('okchu_achievements');
+        localStorage.removeItem('okchu_daily');
+        location.reload();
+    }
+});
+
+// === CONFETTI CELEBRATION ===
+function showConfetti() {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+
+    const colors = ['#d4a843', '#c04030', '#2b8a9a', '#3a8a6e', '#8040a0', '#ff6b6b', '#ffd93d', '#6bcb77'];
+    const shapes = ['square', 'circle'];
+
+    for (let i = 0; i < 80; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = color;
+        piece.style.width = (6 + Math.random() * 8) + 'px';
+        piece.style.height = (6 + Math.random() * 8) + 'px';
+        piece.style.borderRadius = shape === 'circle' ? '50%' : '2px';
+        piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+        piece.style.animationDelay = Math.random() * 0.8 + 's';
+        container.appendChild(piece);
+    }
+
+    setTimeout(() => container.remove(), 4000);
 }

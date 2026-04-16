@@ -11,7 +11,7 @@ import { indiaLevels } from './data/levels/india.js';
 import { medievalLevels } from './data/levels/medieval.js';
 import { finalLevels } from './data/levels/final.js';
 
-const allLevels = [
+export const allLevels = [
     ...egyptLevels,
     ...greekLevels,
     ...romeLevels,
