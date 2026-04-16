@@ -391,28 +391,32 @@ export class Game {
 
         const cells = path.cells;
         const totalCells = cells.length;
-        const cellDelay = 60;
-        const cellAnimDur = 150;
+        // Snake animation: each cell departs in sequence, tail first → head last
+        const cellDelay = Math.max(40, 120 - totalCells * 3); // slower for short arrows, faster for long
+        const cellAnimDur = 250; // each cell's exit animation duration
+        const holdTime = 80; // brief hold before snake starts
         const { dx, dy } = getDirectionVector(path.direction);
         const origCells = cells.map(c => ({ x: c.x, y: c.y }));
         const startTime = performance.now();
-        const totalDuration = totalCells * cellDelay + cellAnimDur + 100;
+        const totalDuration = holdTime + totalCells * cellDelay + cellAnimDur + 100;
 
         const cellStates = cells.map(() => ({ visible: true, offsetX: 0, offsetY: 0, alpha: 1 }));
 
         const animate = (time) => {
-            const elapsed = time - startTime;
+            const elapsed = time - startTime - holdTime; // subtract hold time
 
             for (let i = 0; i < totalCells; i++) {
+                if (elapsed < 0) continue; // still in hold phase
                 const cellStart = i * cellDelay;
                 const cellElapsed = elapsed - cellStart;
                 if (cellElapsed < 0) continue;
                 if (cellElapsed < cellAnimDur) {
                     const p = cellElapsed / cellAnimDur;
-                    const ease = 1 - Math.pow(1 - p, 3);
-                    cellStates[i].offsetX = dx * ease * 1.5;
-                    cellStates[i].offsetY = dy * ease * 1.5;
-                    cellStates[i].alpha = 1 - ease;
+                    // Smooth ease-out with slight overshoot for satisfying feel
+                    const ease = 1 - Math.pow(1 - p, 2.5);
+                    cellStates[i].offsetX = dx * ease * 2.0;
+                    cellStates[i].offsetY = dy * ease * 2.0;
+                    cellStates[i].alpha = Math.max(0, 1 - ease * 1.2);
                 } else {
                     cellStates[i].visible = false;
                 }
