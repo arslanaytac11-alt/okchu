@@ -389,7 +389,7 @@ html, body {
 #screen-levels {
     background:
         linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%),
-        var(--chapter-bg, url('../assets/backgrounds/bg-final.jpg')) center/cover no-repeat;
+        url('../assets/backgrounds/bg-final.jpg') center/cover no-repeat;
 }
 
 /* === STORY CARD === */

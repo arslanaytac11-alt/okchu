@@ -114,9 +114,8 @@ export class ScreenManager {
             6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
         };
         const bgName = bgNames[chapter.id] || 'final';
-        document.getElementById('screen-levels').style.setProperty(
-            '--chapter-bg', `url('../assets/backgrounds/bg-${bgName}.jpg')`
-        );
+        const levelsScreen = document.getElementById('screen-levels');
+        levelsScreen.style.background = `linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%), url('assets/backgrounds/bg-${bgName}.jpg') center/cover no-repeat`;
         const list = document.getElementById('level-list');
         list.innerHTML = '';
 
