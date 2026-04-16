@@ -41,9 +41,15 @@
                     <span id="level-name">Seviye 1</span>
                     <span id="level-difficulty" class="difficulty-badge">Kolay</span>
                 </div>
-                <button id="btn-hint" class="btn-hint" title="Ipucu">?</button>
+                <span></span>
             </div>
-            <div id="lives-display" class="lives-display"></div>
+            <div class="game-stats">
+                <div id="lives-display" class="lives-display"></div>
+                <div class="stat-item"><span class="stat-label">Skor</span><span id="game-score" class="stat-value">0</span></div>
+                <div class="stat-item"><span id="game-combo" class="combo-badge"></span></div>
+                <div class="stat-item"><span class="stat-label">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
+                <div class="stat-item"><span class="stat-label">Sure</span><span id="game-timer" class="stat-value">0:00</span></div>
+            </div>
             <canvas id="game-canvas"></canvas>
         </div>
 
@@ -51,7 +57,9 @@
         <div id="overlay-complete" class="overlay hidden">
             <div class="overlay-content">
                 <h2>Tebrikler!</h2>
-                <p id="complete-message">Seviyeyi tamamladin!</p>
+                <div id="complete-stars" class="stars-display"></div>
+                <p id="complete-score" class="complete-score"></p>
+                <p id="complete-stats" class="complete-stats"></p>
                 <button id="btn-next-level" class="btn btn-primary">Sonraki Seviye</button>
             </div>
         </div>
@@ -65,8 +73,18 @@
                 <button id="btn-wait" class="btn btn-secondary">Bekle</button>
             </div>
         </div>
+
+        <!-- Time Up Overlay -->
+        <div id="overlay-time-up" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>Sure Doldu!</h2>
+                <p class="time-up-message">Zamani yetistiremdin</p>
+                <button id="btn-retry" class="btn btn-primary">Tekrar Dene</button>
+                <button id="btn-time-up-back" class="btn btn-secondary">Bolumler</button>
+            </div>
+        </div>
     </div>
 
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>

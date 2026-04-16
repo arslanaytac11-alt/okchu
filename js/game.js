@@ -9,6 +9,19 @@ import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
 import { sound } from './sound.js';
 
+const TIME_CONFIG = {
+    // [baseSec, perPathSec] indexed by chapter
+    1: [60, 3.0], 2: [60, 3.0],
+    3: [45, 2.5], 4: [45, 2.5],
+    5: [35, 2.0], 6: [35, 2.0],
+    7: [25, 1.5], 8: [25, 1.5],
+    9: [20, 1.0], 10: [20, 1.0],
+};
+
+const TIME_BONUS_CORRECT = 3;
+const TIME_PENALTY_WRONG = 5;
+const TIME_BONUS_COMBO = 1;
+
 export class Game {
     constructor(canvas) {
         this.canvas = canvas;
@@ -37,6 +50,10 @@ export class Game {
         this.elapsedTime = 0;
         this.totalPaths = 0;
         this.usedHint = false;
+        this.timeLimit = 0;
+        this.timeRemaining = 0;
+        this.onTimeUp = null;
+        this._lastHeartbeat = 0;
 
         this.setupInput();
     }
@@ -67,21 +84,33 @@ export class Game {
         this.wrongMoves = 0;
         this.usedHint = false;
         this.totalPaths = this.grid.paths.length;
-        this.startTime = Date.now();
-        this.elapsedTime = 0;
-        this._startTimer();
+
+        // Countdown timer
+        const chapterId = chapterData.id;
+        const [baseSec, perPathSec] = TIME_CONFIG[chapterId] || [60, 3.0];
+        this.timeLimit = baseSec + Math.round(this.totalPaths * perPathSec);
+        this.timeRemaining = this.timeLimit;
+        this._startCountdown();
         this._updateScoreDisplay();
 
         this.updateHintButton();
         this.startRenderLoop();
     }
 
-    _startTimer() {
+    _startCountdown() {
         this._stopTimer();
+        this._lastTick = Date.now();
         this._timerInterval = setInterval(() => {
-            this.elapsedTime = Date.now() - this.startTime;
+            const now = Date.now();
+            const dt = (now - this._lastTick) / 1000;
+            this._lastTick = now;
+            this.timeRemaining = Math.max(0, this.timeRemaining - dt);
             this._updateTimerDisplay();
-        }, 1000);
+
+            if (this.timeRemaining <= 0) {
+                this._handleTimeUp();
+            }
+        }, 100);
     }
 
     _stopTimer() {
@@ -91,13 +120,35 @@ export class Game {
         }
     }
 
+    _handleTimeUp() {
+        this._stopTimer();
+        this.stopRenderLoop();
+        this.livesManager.loseLife();
+        if (this.onLivesChanged) this.onLivesChanged();
+        if (this.onTimeUp) this.onTimeUp();
+    }
+
     _updateTimerDisplay() {
         const el = document.getElementById('game-timer');
         if (!el) return;
-        const secs = Math.floor(this.elapsedTime / 1000);
-        const mins = Math.floor(secs / 60);
-        const s = secs % 60;
-        el.textContent = `${mins}:${s.toString().padStart(2, '0')}`;
+        const totalSecs = Math.ceil(this.timeRemaining);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        el.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        const ratio = this.timeRemaining / this.timeLimit;
+        el.classList.toggle('timer-warning', ratio < 0.3 && ratio >= 0.15);
+        el.classList.toggle('timer-critical', ratio < 0.15);
+    }
+
+    addTime(seconds) {
+        this.timeRemaining = Math.min(this.timeLimit, this.timeRemaining + seconds);
+        this._updateTimerDisplay();
+    }
+
+    removeTime(seconds) {
+        this.timeRemaining = Math.max(0, this.timeRemaining - seconds);
+        this._updateTimerDisplay();
     }
 
     _updateScoreDisplay() {
@@ -250,6 +301,10 @@ export class Game {
         this._showFloatingScore(points, path);
         if (this.combo > 1) sound.play('combo');
 
+        // Time bonus
+        this.addTime(TIME_BONUS_CORRECT);
+        if (this.combo >= 3) this.addTime(TIME_BONUS_COMBO);
+
         const cells = path.cells;
         const totalCells = cells.length;
         const cellDelay = 60;
@@ -318,9 +373,10 @@ export class Game {
         sound.play('wrong');
         if (this.onLivesChanged) this.onLivesChanged(remaining);
 
-        // Scoring: wrong move breaks combo
+        // Scoring: wrong move breaks combo + time penalty
         this.combo = 0;
         this.wrongMoves++;
+        this.removeTime(TIME_PENALTY_WRONG);
         this._updateScoreDisplay();
 
         // 4-phase wrong move animation:
@@ -416,12 +472,11 @@ export class Game {
 
     handleLevelComplete() {
         this._stopTimer();
-        this.elapsedTime = Date.now() - this.startTime;
+        const elapsedTime = Math.round((this.timeLimit - this.timeRemaining) * 1000);
         storage.completeLevel(this.currentLevel.id, this.currentChapter.id);
 
-        // Time bonus: faster = more points
-        const timeSecs = Math.floor(this.elapsedTime / 1000);
-        const timeBonus = Math.max(0, 300 - timeSecs * 2); // Up to 300 bonus
+        // Time bonus: 2 points per second remaining
+        const timeBonus = Math.round(this.timeRemaining * 2);
         this.score += timeBonus;
 
         // Perfect bonus (no wrong moves)
@@ -435,7 +490,7 @@ export class Game {
             stars,
             moves: this.moves,
             wrongMoves: this.wrongMoves,
-            time: this.elapsedTime,
+            time: elapsedTime,
             bestCombo: this.maxCombo,
         });
 
@@ -450,7 +505,8 @@ export class Game {
                     stars,
                     moves: this.moves,
                     wrongMoves: this.wrongMoves,
-                    time: this.elapsedTime,
+                    time: elapsedTime,
+                    timeRemaining: Math.round(this.timeRemaining),
                     maxCombo: this.maxCombo,
                 });
             }

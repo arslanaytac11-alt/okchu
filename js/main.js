@@ -4,36 +4,12 @@ import { Game } from './game.js';
 import { ScreenManager } from './screens.js';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
-import { MenuBackground } from './menu-bg.js';
 import { sound } from './sound.js';
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
 const screenManager = new ScreenManager();
 const livesDisplay = document.getElementById('lives-display');
-
-// Menu animated background
-const menuBgCanvas = document.getElementById('menu-bg-canvas');
-const menuBg = new MenuBackground(menuBgCanvas);
-menuBg.start();
-
-// Stop menu bg animation when leaving menu, restart when returning
-const origShowScreen = screenManager.showScreen.bind(screenManager);
-screenManager.showScreen = (name) => {
-    origShowScreen(name);
-    if (name === 'menu') {
-        menuBg.resize();
-        menuBg.start();
-    } else {
-        menuBg.stop();
-    }
-};
-
-window.addEventListener('resize', () => {
-    if (document.getElementById('screen-menu').classList.contains('active')) {
-        menuBg.resize();
-    }
-});
 
 let noLivesTimerInterval = null;
 
@@ -52,9 +28,40 @@ screenManager.onStartLevel = (levelData, chapterData) => {
 };
 
 // When a level is completed
-game.onLevelComplete = (completedLevel, nextLevel) => {
+game.onLevelComplete = (completedLevel, nextLevel, stats) => {
     const overlay = document.getElementById('overlay-complete');
     overlay.classList.remove('hidden');
+
+    // Show stars
+    const starsEl = document.getElementById('complete-stars');
+    if (starsEl && stats) {
+        starsEl.innerHTML = '';
+        for (let i = 0; i < 3; i++) {
+            const star = document.createElement('span');
+            star.className = i < stats.stars ? 'star filled' : 'star empty';
+            star.textContent = i < stats.stars ? '\u2605' : '\u2606';
+            starsEl.appendChild(star);
+        }
+    }
+
+    // Show score
+    const scoreEl = document.getElementById('complete-score');
+    if (scoreEl && stats) {
+        scoreEl.textContent = `Skor: ${stats.score}`;
+    }
+
+    // Show stats
+    const statsEl = document.getElementById('complete-stats');
+    if (statsEl && stats) {
+        const timeSecs = Math.floor(stats.time / 1000);
+        const mins = Math.floor(timeSecs / 60);
+        const secs = timeSecs % 60;
+        const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+        const parts = [`Sure: ${timeStr}`, `Hamle: ${stats.moves}`];
+        if (stats.maxCombo > 1) parts.push(`Max Combo: x${stats.maxCombo}`);
+        if (stats.wrongMoves > 0) parts.push(`Yanlis: ${stats.wrongMoves}`);
+        statsEl.textContent = parts.join(' | ');
+    }
 
     const nextBtn = document.getElementById('btn-next-level');
     const handler = () => {
@@ -76,6 +83,39 @@ game.onNoLives = () => showNoLivesOverlay();
 
 // When lives change (wrong move)
 game.onLivesChanged = () => game.livesManager.renderLives(livesDisplay);
+
+// When time runs out
+game.onTimeUp = () => {
+    game.livesManager.renderLives(livesDisplay);
+    if (!game.livesManager.hasLives()) {
+        showNoLivesOverlay();
+        return;
+    }
+    const overlay = document.getElementById('overlay-time-up');
+    overlay.classList.remove('hidden');
+
+    const retryBtn = document.getElementById('btn-retry');
+    const backBtn = document.getElementById('btn-time-up-back');
+
+    const cleanup = () => {
+        overlay.classList.add('hidden');
+        retryBtn.removeEventListener('click', retryHandler);
+        backBtn.removeEventListener('click', backHandler);
+    };
+
+    const retryHandler = () => {
+        cleanup();
+        game.startLevel(game.currentLevel, game.currentChapter);
+    };
+
+    const backHandler = () => {
+        cleanup();
+        screenManager.showChapters();
+    };
+
+    retryBtn.addEventListener('click', retryHandler);
+    backBtn.addEventListener('click', backHandler);
+};
 
 function showNoLivesOverlay() {
     const overlay = document.getElementById('overlay-no-lives');
@@ -122,16 +162,8 @@ function showNoLivesOverlay() {
 }
 
 // Hint button
-document.getElementById('btn-hint').addEventListener('click', () => game.useHint());
-
-// Sound toggle
-const soundBtn = document.getElementById('btn-sound');
-if (soundBtn) {
-    soundBtn.addEventListener('click', () => {
-        const enabled = sound.toggle();
-        soundBtn.style.opacity = enabled ? '1' : '0.4';
-    });
-}
+const hintBtn = document.getElementById('btn-hint');
+if (hintBtn) hintBtn.addEventListener('click', () => game.useHint());
 
 // Resize handler
 window.addEventListener('resize', () => game.handleResize());
