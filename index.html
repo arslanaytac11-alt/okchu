@@ -14,12 +14,21 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="app">
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img src="assets/icons/icon-192.png" class="splash-icon" alt="">
+        <h1 class="splash-title">Ok Bulmacasi</h1>
+        <p class="splash-subtitle">Antik Yolculuk</p>
+        <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+    </div>
+
+    <div id="app" class="app-hidden">
         <!-- Menu Screen -->
         <div id="screen-menu" class="screen active">
             <h1 class="game-title">Ok Bulmacasi</h1>
             <p class="game-subtitle">Antik Yolculuk</p>
             <button id="btn-play" class="btn btn-primary">Oyna</button>
+            <button id="btn-dark-mode" class="btn-dark-toggle" aria-label="Gece modu"></button>
         </div>
 
         <!-- Chapter Select Screen -->
@@ -101,6 +110,20 @@
             </div>
         </div>
 
+        <!-- Tutorial Overlay -->
+        <div id="overlay-tutorial" class="overlay hidden">
+            <div class="tutorial-card">
+                <div class="tutorial-step" id="tutorial-step">
+                    <div class="tutorial-icon" id="tutorial-icon"></div>
+                    <h3 id="tutorial-title"></h3>
+                    <p id="tutorial-text"></p>
+                </div>
+                <div class="tutorial-dots" id="tutorial-dots"></div>
+                <button id="btn-tutorial-next" class="btn btn-primary">Devam</button>
+                <button id="btn-tutorial-skip" class="btn-ghost tutorial-skip">Atla</button>
+            </div>
+        </div>
+
         <!-- Time Up Overlay -->
         <div id="overlay-time-up" class="overlay hidden">
             <div class="overlay-content">
@@ -112,6 +135,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=10"></script>
+    <script type="module" src="js/main.js?v=11"></script>
 </body>
 </html>

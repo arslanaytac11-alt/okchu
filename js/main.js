@@ -4,12 +4,30 @@ import { Game } from './game.js';
 import { ScreenManager } from './screens.js';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
-// sounds removed
+import { Tutorial } from './tutorial.js';
+
+// Dark mode
+if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+document.getElementById('btn-dark-mode').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+});
+
+// Splash screen -> app transition
+setTimeout(() => {
+    const splash = document.getElementById('splash-screen');
+    const app = document.getElementById('app');
+    splash.classList.add('fade-out');
+    app.classList.remove('app-hidden');
+    app.classList.add('app-visible');
+    setTimeout(() => splash.remove(), 600);
+}, 2300);
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
 const screenManager = new ScreenManager();
 const livesDisplay = document.getElementById('lives-display');
+const tutorial = new Tutorial();
 
 let noLivesTimerInterval = null;
 
@@ -20,6 +38,16 @@ game.livesManager.renderLives(livesDisplay);
 screenManager.onStartLevel = (levelData, chapterData) => {
     if (!game.livesManager.hasLives()) {
         showNoLivesOverlay();
+        return;
+    }
+
+    // Show tutorial before first game
+    if (tutorial.shouldShow()) {
+        tutorial.show(() => {
+            screenManager.showScreen('game');
+            game.livesManager.renderLives(livesDisplay);
+            setTimeout(() => game.startLevel(levelData, chapterData), 50);
+        });
         return;
     }
     screenManager.showScreen('game');

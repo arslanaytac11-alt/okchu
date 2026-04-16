@@ -438,7 +438,7 @@ export class Game {
         }
 
         const remaining = this.livesManager.loseLife();
-
+        if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
         if (this.onLivesChanged) this.onLivesChanged(remaining);
 
         // Scoring: wrong move breaks combo + time penalty

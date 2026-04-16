@@ -4,6 +4,279 @@
     box-sizing: border-box;
 }
 
+/* === SPLASH SCREEN === */
+#splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: linear-gradient(160deg, #f0e4c8 0%, #d8c8a0 50%, #c4a878 100%);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#splash-screen.fade-out {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+.splash-icon {
+    width: 120px;
+    height: 120px;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(80,50,20,0.3);
+    animation: splashIconIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.splash-title {
+    font-family: 'Georgia', serif;
+    font-size: 2rem;
+    color: #4a3020;
+    animation: splashTextIn 0.6s ease 0.3s both;
+}
+
+.splash-subtitle {
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    color: #8a6a48;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: splashTextIn 0.6s ease 0.5s both;
+}
+
+.splash-loader {
+    width: 140px;
+    height: 3px;
+    background: rgba(100,70,40,0.15);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 12px;
+    animation: splashTextIn 0.6s ease 0.7s both;
+}
+
+.splash-loader-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #8b5e3c, #d4a843);
+    border-radius: 3px;
+    animation: splashLoad 1.5s ease 0.8s forwards;
+}
+
+@keyframes splashIconIn {
+    0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes splashTextIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splashLoad {
+    0% { width: 0%; }
+    60% { width: 80%; }
+    100% { width: 100%; }
+}
+
+.app-hidden {
+    opacity: 0;
+}
+
+.app-visible {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* === DARK MODE TOGGLE === */
+.btn-dark-toggle {
+    position: absolute;
+    top: env(safe-area-inset-top, 16px);
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.1);
+    cursor: pointer;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+    z-index: 10;
+}
+
+.btn-dark-toggle::after {
+    content: '\263E';
+}
+
+body.dark-mode .btn-dark-toggle {
+    background: rgba(255,255,255,0.15);
+}
+
+body.dark-mode .btn-dark-toggle::after {
+    content: '\2600';
+}
+
+/* === DARK MODE === */
+body.dark-mode {
+    --theme-bg-top: #1a1a2e;
+    --theme-bg-bottom: #0e0e1a;
+    --theme-ink: #d4c8b0;
+    --theme-accent: #c49a5c;
+    --theme-accent-soft: rgba(180,140,80,0.15);
+    --theme-surface: rgba(255,255,255,0.08);
+    --theme-surface-strong: rgba(255,255,255,0.14);
+    --theme-border: rgba(200,180,140,0.12);
+    --theme-life: #e05040;
+    --theme-life-shadow: rgba(220,70,50,0.3);
+    --theme-pattern: rgba(200,170,120,0.06);
+    background: #0e0e1a;
+    color: #d4c8b0;
+}
+
+body.dark-mode #screen-menu {
+    background:
+        linear-gradient(180deg, rgba(20,20,40,0.7) 0%, rgba(10,10,20,0.8) 100%),
+        url('../assets/menu-bg.png') center/cover no-repeat;
+}
+
+body.dark-mode #screen-chapters {
+    background:
+        linear-gradient(180deg, rgba(20,20,40,0.75) 0%, rgba(10,10,20,0.8) 100%),
+        url('../assets/backgrounds/bg-final.jpg') center/cover no-repeat;
+}
+
+body.dark-mode .chapter-card {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(200,170,120,0.1);
+}
+
+body.dark-mode .level-card {
+    background: rgba(255,255,255,0.08);
+}
+
+body.dark-mode .level-card.current {
+    background: linear-gradient(135deg, #8b5e3c, #6a4028);
+}
+
+body.dark-mode .overlay-content {
+    background: linear-gradient(180deg, #1e1e32 0%, #141424 100%);
+    border-color: rgba(200,170,120,0.15);
+}
+
+body.dark-mode .btn-primary {
+    background: linear-gradient(135deg, #a07040 0%, #7a5030 100%);
+}
+
+body.dark-mode .btn-secondary {
+    color: #c4a878;
+    border-color: #7a5830;
+}
+
+body.dark-mode .btn-back {
+    color: #c4a878;
+}
+
+body.dark-mode .screen-header {
+    border-bottom-color: rgba(200,170,120,0.1);
+}
+
+body.dark-mode .game-header {
+    background: linear-gradient(180deg, rgba(20,20,40,0.9) 0%, rgba(20,20,40,0.3) 100%);
+}
+
+body.dark-mode .story-back {
+    background: rgba(255,255,255,0.15);
+}
+
+body.dark-mode .story-mystery {
+    background: rgba(200,170,120,0.08);
+    border-left-color: #c49a5c;
+}
+
+body.dark-mode .story-fact {
+    background: rgba(255,255,255,0.06);
+}
+
+body.dark-mode #splash-screen {
+    background: linear-gradient(160deg, #1a1a2e 0%, #0e0e1a 100%);
+}
+
+body.dark-mode .splash-title { color: #d4c8b0; }
+body.dark-mode .splash-subtitle { color: #a08860; }
+body.dark-mode .splash-loader { background: rgba(200,170,120,0.1); }
+body.dark-mode .splash-loader-bar { background: linear-gradient(90deg, #7a5830, #c49a5c); }
+
+/* === TUTORIAL === */
+.tutorial-card {
+    background: linear-gradient(180deg, #f5ecd8 0%, #e8dcc0 100%);
+    border: 1px solid rgba(140,110,70,0.2);
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+    max-width: 320px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 12px 40px rgba(60,40,20,0.3);
+    animation: overlaySlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body.dark-mode .tutorial-card {
+    background: linear-gradient(180deg, #1e1e32 0%, #141424 100%);
+    border-color: rgba(200,170,120,0.15);
+}
+
+.tutorial-icon {
+    font-size: 3rem;
+    line-height: 1;
+    animation: splashIconIn 0.5s ease;
+}
+
+.tutorial-step h3 {
+    font-size: 1.2rem;
+    color: var(--theme-ink);
+    margin: 8px 0 4px;
+}
+
+.tutorial-step p {
+    font-size: 0.95rem;
+    color: var(--theme-ink);
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+.tutorial-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.tutorial-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(100,70,40,0.2);
+    transition: background 0.3s, transform 0.3s;
+}
+
+.tutorial-dot.active {
+    background: var(--theme-accent);
+    transform: scale(1.3);
+}
+
+.tutorial-skip {
+    font-size: 0.85rem;
+    padding: 8px 20px;
+    min-height: auto;
+}
+
 html, body {
     --theme-bg-top: #f0e4c8;
     --theme-bg-bottom: #ddd0b0;
