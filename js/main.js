@@ -4,7 +4,7 @@ import { Game } from './game.js';
 import { ScreenManager } from './screens.js';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
-import { sound } from './sound.js';
+// sounds removed
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);

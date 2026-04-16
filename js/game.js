@@ -7,7 +7,7 @@ import { HintManager } from './hints.js';
 import { storage } from './storage.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
-import { sound } from './sound.js';
+// sounds removed
 
 const TIME_CONFIG = {
     // [baseSec, perPathSec] indexed by chapter
@@ -117,7 +117,6 @@ export class Game {
 
             // Heartbeat sound at critical time
             if (ratio < 0.05 && (!this._lastHeartbeat || Date.now() - this._lastHeartbeat > 600)) {
-                sound.play('heartbeat');
                 this._lastHeartbeat = Date.now();
             }
 
@@ -225,7 +224,7 @@ export class Game {
             const path = this.grid.getPathAt(gridX, gridY);
 
             if (!path) return;
-            sound.play('tap');
+
 
             this.hintedPath = null;
             this.renderer.touchFeedback = { path, startTime: performance.now() };
@@ -326,7 +325,7 @@ export class Game {
     }
 
     removePathWithAnimation(path) {
-        sound.play('remove');
+
         this.isAnimating = true;
         this.grid.removePath(path);
 
@@ -338,12 +337,12 @@ export class Game {
         this.score += points;
         this._updateScoreDisplay();
         this._showFloatingScore(points, path);
-        if (this.combo > 1) sound.play('combo');
+
 
         // Time bonus
         this.addTime(TIME_BONUS_CORRECT);
         if (this.combo >= 3) this.addTime(TIME_BONUS_COMBO);
-        sound.setComboLevel(this.combo);
+
 
         // Combo-scaled particle burst
         const head = path.getHead();
@@ -465,7 +464,7 @@ export class Game {
         }
 
         const remaining = this.livesManager.loseLife();
-        sound.play('wrong');
+
         if (this.onLivesChanged) this.onLivesChanged(remaining);
 
         // Scoring: wrong move breaks combo + time penalty
@@ -730,7 +729,7 @@ export class Game {
     }
 
     playCelebration(callback) {
-        sound.play('complete');
+
         const rect = this.canvas.getBoundingClientRect();
         const particles = [];
         const colors = this.currentChapter?.theme?.particleColors ||
