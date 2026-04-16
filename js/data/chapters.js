@@ -3,13 +3,13 @@
 export const chapters = [
     {
         id: 1,
-        name: 'Misir',
+        name: 'Mısır',
         difficulty: 'Kolay',
         story: {
-            title: 'Antik Misir',
-            period: 'M.O. 3100 - M.O. 30',
-            text: 'Firavunlarin topraginda piramitler gokyuzune uzanir. Hiyeroglif yazitlar binlerce yildir cozulmemis sirlar barindirir. Nil\'in bereketli topraklarinda kurulan bu medeniyet, insanlik tarihinin en buyuleyici yapilarini birakti.',
-            mystery: 'Piramitlerin icindeki gizli odalarda saklanan ok isaretlerini coz ve firavunun hazinesine ulasan yolu bul!',
+            title: 'Antik Mısır',
+            period: 'M.Ö. 3100 - M.Ö. 30',
+            text: 'Firavunların topraklarında piramitler gökyüzüne uzanır. Hiyeroglif yazıtlar binlerce yıldır çözülmemiş sırlar barındırır. Nil\'in bereketli topraklarında kurulan bu medeniyet, insanlık tarihinin en büyüleyici yapılarını bıraktı.',
+            mystery: 'Piramitlerin içindeki gizli odalarda saklanan ok işaretlerini çöz ve firavunun hazinesine ulaşan yolu bul!',
             image: 'assets/chapters/chapter_1.jpg'
         },
         theme: {
@@ -33,9 +33,9 @@ export const chapters = [
         difficulty: 'Orta',
         story: {
             title: 'Antik Yunanistan',
-            period: 'M.O. 800 - M.O. 146',
-            text: 'Felsefenin, demokrasinin ve olimpiyatlarin dogdugu topraklar. Beyaz mermer tapinaklarda tanrilara adanan eserler, Akdeniz\'in mavisinde yansiyan sutunlar. Sokrates\'ten Arkhimedes\'e, dusuncenin altun caginda bilgelik her yerdeydi.',
-            mystery: 'Parthenon\'un mermer sutunlari arasinda gizlenmis ok isaretlerini takip et ve tanrilarin bilmecesini coz!',
+            period: 'M.Ö. 800 - M.Ö. 146',
+            text: 'Felsefenin, demokrasinin ve olimpiyatların doğduğu topraklar. Beyaz mermer tapınaklarda tanrılara adanan eserler, Akdeniz\'in mavisinde yansıyan sütunlar. Sokrates\'ten Arşimet\'e, düşüncenin altın çağında bilgelik her yerdeydi.',
+            mystery: 'Parthenon\'un mermer sütunları arasında gizlenmiş ok işaretlerini takip et ve tanrıların bilmecesini çöz!',
             image: 'assets/chapters/chapter_2.jpg'
         },
         theme: {
@@ -58,10 +58,10 @@ export const chapters = [
         name: 'Roma',
         difficulty: 'Zor',
         story: {
-            title: 'Roma Imparatorlugu',
-            period: 'M.O. 753 - M.S. 476',
-            text: 'Kolezyum\'da yankilanan alkislar, su kemerlerinden akan muhendislik harikasi, tum yollarin Roma\'ya ciktigi bir imparatorluk. Gladyatorlerin cesareti ve senatonun entrikalari bu devasa imparatorlugun iki yuzuydu.',
-            mystery: 'Kolezyum\'un karanlik koridorlarinda kaybolmus ok haritasini coz ve gladyatorun ozgurluk yolunu ac!',
+            title: 'Roma İmparatorluğu',
+            period: 'M.Ö. 753 - M.S. 476',
+            text: 'Kolezyum\'da yankılanan alkışlar, su kemerlerinden akan mühendislik harikası, tüm yolların Roma\'ya çıktığı bir imparatorluk. Gladyatörlerin cesareti ve senatonun entrikaları bu devasa imparatorluğun iki yüzüydü.',
+            mystery: 'Kolezyum\'un karanlık koridorlarında kaybolmuş ok haritasını çöz ve gladyatörün özgürlük yolunu aç!',
             image: 'assets/chapters/chapter_3.jpg'
         },
         theme: {
@@ -84,10 +84,10 @@ export const chapters = [
         name: 'Viking',
         difficulty: 'Zor+',
         story: {
-            title: 'Viking Cagi',
+            title: 'Viking Çağı',
             period: 'M.S. 793 - M.S. 1066',
-            text: 'Buzul fiyortlardan yelken acan ejderha gemiler, runik taslar uzerine kazinmis kehanetler. Kuzeyin korkusuz savascilar sadece fethetmek icin degil, yeni diyarlar kesfetmek icin de denizlere acildi. Thor\'un cekici gokyuzunde gumburduyor.',
-            mystery: 'Runik taslardaki ok sembollerini dogru sirada coz ve Viking hazine haritasinin sirrini ac!',
+            text: 'Buzul fiyortlardan yelken açan ejderha gemiler, runik taşlar üzerine kazınmış kehanetler. Kuzeyin korkusuz savaşçıları sadece fethetmek için değil, yeni diyarlar keşfetmek için de denizlere açıldı. Thor\'un çekici gökyüzünde gümbürdüyor.',
+            mystery: 'Runik taşlardaki ok sembollerini doğru sırada çöz ve Viking hazine haritasının sırrını aç!',
             image: 'assets/chapters/chapter_4.jpg'
         },
         theme: {
@@ -107,13 +107,13 @@ export const chapters = [
     },
     {
         id: 5,
-        name: 'Osmanli',
-        difficulty: 'Cok Zor',
+        name: 'Osmanlı',
+        difficulty: 'Çok Zor',
         story: {
-            title: 'Osmanli Imparatorlugu',
+            title: 'Osmanlı İmparatorluğu',
             period: 'M.S. 1299 - M.S. 1922',
-            text: 'Uc kitaya hukmeden muhtesem imparatorluk. Camilerin kubbeleri altin isikla parlar, tezhip sanati kagidi mucevhere cevirir. Istanbul\'un siluetinde minareler gokyuzunu deler, Topkapi Sarayi\'nda sirlar fisildanir.',
-            mystery: 'Topkapi Sarayi\'nin muhurlu avlusunda saklanan gecitleri ac, kubbelerin altindaki isaretleri cozumle ve kayip fermanin izini sur!',
+            text: 'Üç kıtaya hükmeden muhteşem imparatorluk. Camilerin kubbeleri altın ışıkla parlar, tezhip sanatı kağıdı mücevhere çevirir. İstanbul\'un siluetinde minareler gökyüzünü deler, Topkapı Sarayı\'nda sırlar fısıldanır.',
+            mystery: 'Topkapı Sarayı\'nın mühürlü avlusunda saklanan geçitleri aç, kubbelerin altındaki işaretleri çözümle ve kayıp fermanın izini sür!',
             image: 'assets/chapters/chapter_5.jpg'
         },
         theme: {
@@ -139,13 +139,13 @@ export const chapters = [
     },
     {
         id: 6,
-        name: 'Cin',
-        difficulty: 'Cok Zor+',
+        name: 'Çin',
+        difficulty: 'Çok Zor+',
         story: {
-            title: 'Antik Cin',
-            period: 'M.O. 2070 - M.S. 1912',
-            text: 'Cin Seddi ufukta kaybolur, ipek yolu dunya medeniyetlerini birbirine baglar. Ejderha efsaneleri bulutlarin arasinda saklanir, pagoda kuleleri gogu deler. Barut, kagit ve pusula - bu topraklardan dunyaya yayildi.',
-            mystery: 'Yasak Sehir\'in gizli odasindaki ejderha haritasini coz ve imparatorun kayip muhurunu bul!',
+            title: 'Antik Çin',
+            period: 'M.Ö. 2070 - M.S. 1912',
+            text: 'Çin Seddi ufukta kaybolur, ipek yolu dünya medeniyetlerini birbirine bağlar. Ejderha efsaneleri bulutların arasında saklanır, pagoda kuleleri göğü deler. Barut, kağıt ve pusula - bu topraklardan dünyaya yayıldı.',
+            mystery: 'Yasak Şehir\'in gizli odasındaki ejderha haritasını çöz ve imparatorun kayıp mührünü bul!',
             image: 'assets/chapters/chapter_6.jpg'
         },
         theme: {
@@ -169,9 +169,9 @@ export const chapters = [
         difficulty: 'Efsanevi',
         story: {
             title: 'Maya Medeniyeti',
-            period: 'M.O. 2000 - M.S. 1500',
-            text: 'Ormanin derinliklerinde gokyuzune yukselen tas piramitler, yildizlari izleyen rasathaneler. Maya takvimi zamani olcmekte inanilmaz derecede hassasti. Jaguarin gozleri karanlikta parlar, gunes tanrisi tapinagindan izler.',
-            mystery: 'Ormanin icindeki gizli tapinakta Maya takviminin ok sembollerini coz ve gunes tutulmasinin sirrini ac!',
+            period: 'M.Ö. 2000 - M.S. 1500',
+            text: 'Ormanın derinliklerinde gökyüzüne yükselen taş piramitler, yıldızları izleyen rasathaneler. Maya takvimi zamanı ölçmekte inanılmaz derecede hassastı. Jaguarın gözleri karanlıkta parlar, güneş tanrısı tapınağından izler.',
+            mystery: 'Ormanın içindeki gizli tapınakta Maya takviminin ok sembollerini çöz ve güneş tutulmasının sırrını aç!',
             image: 'assets/chapters/chapter_7.jpg'
         },
         theme: {
@@ -195,9 +195,9 @@ export const chapters = [
         difficulty: 'Efsanevi+',
         story: {
             title: 'Antik Hindistan',
-            period: 'M.O. 3300 - M.S. 1800',
-            text: 'Tac Mahal\'in beyaz mermeri ay isiginda parlar, Ganj Nehri kutsal sularini tasir. Mandala desenleri sonsuzlugu simgeler, lotus cicekleri bilgeligi temsil eder. Yoga ve meditasyonun dogdugu bu kadim topraklar ruhani derinlik tasir.',
-            mystery: 'Tac Mahal\'in gizli bahcesindeki lotus desenlerinin arasina gizlenmis ok yollarini coz ve Mogol hazinesini bul!',
+            period: 'M.Ö. 3300 - M.S. 1800',
+            text: 'Tac Mahal\'in beyaz mermeri ay ışığında parlar, Ganj Nehri kutsal sularını taşır. Mandala desenleri sonsuzluğu simgeler, lotus çiçekleri bilgeliği temsil eder. Yoga ve meditasyonun doğduğu bu kadim topraklar ruhani derinlik taşır.',
+            mystery: 'Tac Mahal\'in gizli bahçesindeki lotus desenlerinin arasına gizlenmiş ok yollarını çöz ve Moğol hazinesini bul!',
             image: 'assets/chapters/chapter_8.jpg'
         },
         theme: {
@@ -217,13 +217,13 @@ export const chapters = [
     },
     {
         id: 9,
-        name: 'Ortacag Avrupa',
+        name: 'Ortaçağ Avrupa',
         difficulty: 'Kabus',
         story: {
-            title: 'Ortacag Avrupasi',
+            title: 'Ortaçağ Avrupası',
             period: 'M.S. 500 - M.S. 1500',
-            text: 'Karanlik cagda kaleler sisli tepelerde yukselir, sovalyelerin kilici ay isiginda parlar. Gotik katedrallerin vitray camlari hikayeler anlatir, simyacilar altin arar. Antik haritalar bilinmeyen topraklara isaret eder.',
-            mystery: 'Simyacinin labirent gibi kalesindeki ok isaretlerini coz ve efsanevi felsefe tasinin formulunu ac!',
+            text: 'Karanlık çağda kaleler sisli tepelerde yükselir, şövalyelerin kılıcı ay ışığında parlar. Gotik katedrallerin vitray camları hikayeler anlatır, simyacılar altın arar. Antik haritalar bilinmeyen topraklara işaret eder.',
+            mystery: 'Simyacının labirent gibi kalesindeki ok işaretlerini çöz ve efsanevi felsefe taşının formülünü aç!',
             image: 'assets/chapters/chapter_9.jpg'
         },
         theme: {
@@ -246,10 +246,10 @@ export const chapters = [
         name: 'Final',
         difficulty: 'Kabus+',
         story: {
-            title: 'Medeniyetlerin Bulusmasi',
-            period: 'Zamansiz',
-            text: 'Tum antik medeniyetlerin bilgeligi tek bir noktada bulusuyor. Piramitlerin altini, pagodanin kirmizisi, mermer beyazi, runik mavisi... Her kultur kendi parcasini birakti. Simdi tum parcalar bir araya gelmeli.',
-            mystery: 'Tum medeniyetlerin biraktigi ok isaretlerini birlestir ve insanligin en buyuk sirrini coz!',
+            title: 'Medeniyetlerin Buluşması',
+            period: 'Zamansız',
+            text: 'Tüm antik medeniyetlerin bilgeliği tek bir noktada buluşuyor. Piramitlerin altını, pagodanın kırmızısı, mermer beyazı, runik mavisi... Her kültür kendi parçasını bıraktı. Şimdi tüm parçalar bir araya gelmeli.',
+            mystery: 'Tüm medeniyetlerin bıraktığı ok işaretlerini birleştir ve insanlığın en büyük sırrını çöz!',
             image: 'assets/chapters/chapter_10.jpg'
         },
         theme: {

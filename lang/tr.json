@@ -1,6 +1,6 @@
 {
     "lang": "tr",
-    "langName": "Turkce",
+    "langName": "Türkçe",
     "app": {
         "title": "Okchu",
         "subtitle": "Antik Yolculuk"
@@ -10,7 +10,7 @@
         "language": "Dil"
     },
     "chapters": {
-        "title": "Bolumler",
+        "title": "Bölümler",
         "locked": "Kilitli"
     },
     "levels": {
@@ -19,7 +19,7 @@
     "game": {
         "score": "Skor",
         "moves": "Hamle",
-        "time": "Sure",
+        "time": "Süre",
         "lives": "Can"
     },
     "difficulty": {
@@ -27,8 +27,8 @@
         "medium": "Orta",
         "hard": "Zor",
         "hard_plus": "Zor+",
-        "very_hard": "Cok Zor",
-        "very_hard_plus": "Cok Zor+",
+        "very_hard": "Çok Zor",
+        "very_hard_plus": "Çok Zor+",
         "legendary": "Efsanevi",
         "legendary_plus": "Efsanevi+",
         "nightmare": "Kabus",
@@ -37,128 +37,128 @@
     "overlay": {
         "complete_title": "Tebrikler!",
         "complete_score": "Skor",
-        "complete_time": "Sure",
+        "complete_time": "Süre",
         "complete_remaining": "Kalan",
         "complete_moves": "Hamle",
         "complete_combo": "Max Combo",
-        "complete_wrong": "Yanlis",
+        "complete_wrong": "Yanlış",
         "next_level": "Sonraki Seviye",
-        "no_lives_title": "Canin Bitti!",
-        "new_life_ready": "Yeni can hazir!",
+        "no_lives_title": "Canın Bitti!",
+        "new_life_ready": "Yeni can hazır!",
         "new_life_in": "Yeni can",
-        "watch_ad": "Reklam Izle (+1 Can)",
+        "watch_ad": "Reklam İzle (+1 Can)",
         "wait": "Bekle",
-        "time_up_title": "Sure Doldu!",
-        "time_up_text": "Zamani yetistiremdin",
+        "time_up_title": "Süre Doldu!",
+        "time_up_text": "Zamanı yetiştiremedin",
         "retry": "Tekrar Dene",
-        "back_chapters": "Bolumler"
+        "back_chapters": "Bölümler"
     },
     "story": {
         "play_button": "Seviyelere Git"
     },
     "tutorial": {
-        "step1_title": "Okchu'ya Hos Geldin!",
-        "step1_text": "Amacin gridde bulunan tum oklari dogru sirayla kaldirmak.",
-        "step2_title": "Hangi Oku Tiklayacaksin?",
-        "step2_text": "Bir ok, ucunun gosterdigi yonde yolu aciksa kaldirilabilir. Onunu baska bir ok engelliyorsa tiklanmaz!",
-        "step3_title": "Dogru Hamle",
-        "step3_text": "Yolu acik bir oku tiklarsan, ok yilan gibi kayarak ekrandan cikar. Puan kazanirsin!",
-        "step4_title": "Yanlis Hamle",
-        "step4_text": "Engelli bir oku tiklarsan can kaybedersin ve sureden 5 saniye duser. 3 canin var, dikkatli ol!",
-        "step5_title": "Zamana Karsi Yaris",
-        "step5_text": "Her seviyede bir sure limitin var. Dogru hamleler +3 saniye kazandirir. Sureyi iyi kullan!",
-        "step6_title": "Yildiz Topla",
-        "step6_text": "Hizli bitir ve hata yapma - 3 yildiz kazan! Yildizlar yeni bolumlerin kilidini acar.",
+        "step1_title": "Okchu'ya Hoş Geldin!",
+        "step1_text": "Amacın grid'de bulunan tüm okları doğru sırayla kaldırmak.",
+        "step2_title": "Hangi Oku Tıklayacaksın?",
+        "step2_text": "Bir ok, ucunun gösterdiği yönde yolu açıksa kaldırılabilir. Önünü başka bir ok engelliyorsa tıklanmaz!",
+        "step3_title": "Doğru Hamle",
+        "step3_text": "Yolu açık bir oku tıklarsan, ok yılan gibi kayarak ekrandan çıkar. Puan kazanırsın!",
+        "step4_title": "Yanlış Hamle",
+        "step4_text": "Engelli bir oku tıklarsan can kaybedersin ve süreden 5 saniye düşer. 3 canın var, dikkatli ol!",
+        "step5_title": "Zamana Karşı Yarış",
+        "step5_text": "Her seviyede bir süre limitin var. Doğru hamleler +3 saniye kazandırır. Süreyi iyi kullan!",
+        "step6_title": "Yıldız Topla",
+        "step6_text": "Hızlı bitir ve hata yapma - 3 yıldız kazan! Yıldızlar yeni bölümlerin kilidini açar.",
         "next": "Devam",
-        "start": "Basla!",
+        "start": "Başla!",
         "skip": "Atla"
     },
     "civilizations": {
         "1": {
-            "name": "Misir",
-            "title": "Antik Misir",
-            "period": "M.O. 3100 - M.O. 30",
-            "text": "Firavunlarin topraginda piramitler gokyuzune uzanir. Hiyeroglif yazitlar binlerce yildir cozulmemis sirlar barindirir. Nil'in bereketli topraklarinda kurulan bu medeniyet, insanlik tarihinin en buyuleyici yapilarini birakti.",
-            "mystery": "Piramitlerin icindeki gizli odalarda saklanan ok isaretlerini coz ve firavunun hazinesine ulasan yolu bul!",
-            "facts": ["Keops Piramidi 146m", "Hiyeroglif yazisi", "Mumyalama sanati", "Yildiz haritaciligi"]
+            "name": "Mısır",
+            "title": "Antik Mısır",
+            "period": "M.Ö. 3100 - M.Ö. 30",
+            "text": "Firavunların topraklarında piramitler gökyüzüne uzanır. Hiyeroglif yazıtlar binlerce yıldır çözülmemiş sırlar barındırır. Nil'in bereketli topraklarında kurulan bu medeniyet, insanlık tarihinin en büyüleyici yapılarını bıraktı.",
+            "mystery": "Piramitlerin içindeki gizli odalarda saklanan ok işaretlerini çöz ve firavunun hazinesine ulaşan yolu bul!",
+            "facts": ["Keops Piramidi 146m", "Hiyeroglif yazısı", "Mumyalama sanatı", "Yıldız haritacılığı"]
         },
         "2": {
             "name": "Yunan",
             "title": "Antik Yunanistan",
-            "period": "M.O. 800 - M.O. 146",
-            "text": "Felsefenin, demokrasinin ve olimpiyatlarin dogdugu topraklar. Beyaz mermer tapinaklarda tanrilara adanan eserler, Akdeniz'in mavisinde yansiyan sutunlar.",
-            "mystery": "Parthenon'un mermer sutunlari arasinda gizlenmis ok isaretlerini takip et ve tanrilarin bilmecesini coz!",
-            "facts": ["Parthenon tapinagi", "Felsefe ve demokrasi", "Olimpiyat oyunlari", "Matematik ve geometri"]
+            "period": "M.Ö. 800 - M.Ö. 146",
+            "text": "Felsefenin, demokrasinin ve olimpiyatların doğduğu topraklar. Beyaz mermer tapınaklarda tanrılara adanan eserler, Akdeniz'in mavisinde yansıyan sütunlar.",
+            "mystery": "Parthenon'un mermer sütunları arasında gizlenmiş ok işaretlerini takip et ve tanrıların bilmecesini çöz!",
+            "facts": ["Parthenon tapınağı", "Felsefe ve demokrasi", "Olimpiyat oyunları", "Matematik ve geometri"]
         },
         "3": {
             "name": "Roma",
-            "title": "Roma Imparatorlugu",
-            "period": "M.O. 753 - M.S. 476",
-            "text": "Kolezyum'da yankilanan alkislar, su kemerlerinden akan muhendislik harikasi, tum yollarin Roma'ya ciktigi bir imparatorluk.",
-            "mystery": "Kolezyum'un karanlik koridorlarinda kaybolmus ok haritasini coz ve gladyatorun ozgurluk yolunu ac!",
-            "facts": ["Kolezyum 50.000 kisi", "Roma yollari 80.000km", "Gladyator dovusleri", "Su kemeri muhendisligi"]
+            "title": "Roma İmparatorluğu",
+            "period": "M.Ö. 753 - M.S. 476",
+            "text": "Kolezyum'da yankılanan alkışlar, su kemerlerinden akan mühendislik harikası, tüm yolların Roma'ya çıktığı bir imparatorluk.",
+            "mystery": "Kolezyum'un karanlık koridorlarında kaybolmuş ok haritasını çöz ve gladyatörün özgürlük yolunu aç!",
+            "facts": ["Kolezyum 50.000 kişi", "Roma yolları 80.000km", "Gladyatör dövüşleri", "Su kemeri mühendisliği"]
         },
         "4": {
             "name": "Viking",
-            "title": "Viking Cagi",
+            "title": "Viking Çağı",
             "period": "M.S. 793 - M.S. 1066",
-            "text": "Buzul fiyortlardan yelken acan ejderha gemiler, runik taslar uzerine kazinmis kehanetler. Kuzeyin korkusuz savascilari.",
-            "mystery": "Runik taslardaki ok sembollerini dogru sirada coz ve Viking hazine haritasinin sirrini ac!",
-            "facts": ["Ejderha gemiler", "Amerika'yi kesfettiler", "Runik alfabe", "Fiyort cografyasi"]
+            "text": "Buzul fiyortlardan yelken açan ejderha gemiler, runik taşlar üzerine kazınmış kehanetler. Kuzeyin korkusuz savaşçıları.",
+            "mystery": "Runik taşlardaki ok sembollerini doğru sırada çöz ve Viking hazine haritasının sırrını aç!",
+            "facts": ["Ejderha gemiler", "Amerika'yı keşfettiler", "Runik alfabe", "Fiyort coğrafyası"]
         },
         "5": {
-            "name": "Osmanli",
-            "title": "Osmanli Imparatorlugu",
+            "name": "Osmanlı",
+            "title": "Osmanlı İmparatorluğu",
             "period": "M.S. 1299 - M.S. 1922",
-            "text": "Uc kitaya hukmeden muhtesem imparatorluk. Camilerin kubbeleri altin isikla parlar, tezhip sanati kagidi mucevhere cevirir.",
-            "mystery": "Topkapi Sarayi'nin muhurlu avlusunda saklanan gecitleri ac ve kayip fermanin izini sur!",
-            "facts": ["3 kitaya hukmetti", "Lale devri sanati", "Topkapi Sarayi", "600 yillik imparatorluk"]
+            "text": "Üç kıtaya hükmeden muhteşem imparatorluk. Camilerin kubbeleri altın ışıkla parlar, tezhip sanatı kağıdı mücevhere çevirir.",
+            "mystery": "Topkapı Sarayı'nın mühürlü avlusunda saklanan geçitleri aç ve kayıp fermanın izini sür!",
+            "facts": ["3 kıtaya hükmetti", "Lale devri sanatı", "Topkapı Sarayı", "600 yıllık imparatorluk"]
         },
         "6": {
-            "name": "Cin",
-            "title": "Antik Cin",
-            "period": "M.O. 2070 - M.S. 1912",
-            "text": "Cin Seddi ufukta kaybolur, ipek yolu dunya medeniyetlerini birbirine baglar. Ejderha efsaneleri bulutlarin arasinda saklanir.",
-            "mystery": "Yasak Sehir'in gizli odasindaki ejderha haritasini coz ve imparatorun kayip muhurunu bul!",
-            "facts": ["Barut icadi", "Kagit ve matbaa", "Pusula icadi", "Cin Seddi 21.000km"]
+            "name": "Çin",
+            "title": "Antik Çin",
+            "period": "M.Ö. 2070 - M.S. 1912",
+            "text": "Çin Seddi ufukta kaybolur, ipek yolu dünya medeniyetlerini birbirine bağlar. Ejderha efsaneleri bulutların arasında saklanır.",
+            "mystery": "Yasak Şehir'in gizli odasındaki ejderha haritasını çöz ve imparatorun kayıp mührünü bul!",
+            "facts": ["Barut icadı", "Kağıt ve matbaa", "Pusula icadı", "Çin Seddi 21.000km"]
         },
         "7": {
             "name": "Maya",
             "title": "Maya Medeniyeti",
-            "period": "M.O. 2000 - M.S. 1500",
-            "text": "Ormanin derinliklerinde gokyuzune yukselen tas piramitler, yildizlari izleyen rasathaneler. Maya takvimi zamani olcmekte inanilmaz hassasti.",
-            "mystery": "Maya takviminin ok sembollerini coz ve gunes tutulmasinin sirrini ac!",
-            "facts": ["Maya takvimi", "Astronomi uzmanligi", "Misir ve kakao", "Basamakli piramitler"]
+            "period": "M.Ö. 2000 - M.S. 1500",
+            "text": "Ormanın derinliklerinde gökyüzüne yükselen taş piramitler, yıldızları izleyen rasathaneler. Maya takvimi zamanı ölçmekte inanılmaz hassastı.",
+            "mystery": "Maya takviminin ok sembollerini çöz ve güneş tutulmasının sırrını aç!",
+            "facts": ["Maya takvimi", "Astronomi uzmanlığı", "Mısır ve kakao", "Basamaklı piramitler"]
         },
         "8": {
             "name": "Hint",
             "title": "Antik Hindistan",
-            "period": "M.O. 3300 - M.S. 1800",
-            "text": "Tac Mahal'in beyaz mermeri ay isiginda parlar, Ganj Nehri kutsal sularini tasir. Mandala desenleri sonsuzlugu simgeler.",
-            "mystery": "Tac Mahal'in gizli bahcesindeki lotus desenlerinin arasina gizlenmis ok yollarini coz!",
-            "facts": ["Tac Mahal harikasi", "Yoga ve meditasyon", "Sifir sayisini buldular", "Lotus ve baharat yolu"]
+            "period": "M.Ö. 3300 - M.S. 1800",
+            "text": "Tac Mahal'in beyaz mermeri ay ışığında parlar, Ganj Nehri kutsal sularını taşır. Mandala desenleri sonsuzluğu simgeler.",
+            "mystery": "Tac Mahal'in gizli bahçesindeki lotus desenlerinin arasına gizlenmiş ok yollarını çöz!",
+            "facts": ["Tac Mahal harikası", "Yoga ve meditasyon", "Sıfır sayısını buldular", "Lotus ve baharat yolu"]
         },
         "9": {
-            "name": "Ortacag Avrupa",
-            "title": "Ortacag Avrupasi",
+            "name": "Ortaçağ Avrupa",
+            "title": "Ortaçağ Avrupası",
             "period": "M.S. 500 - M.S. 1500",
-            "text": "Karanlik cagda kaleler sisli tepelerde yukselir, sovalyelerin kilici ay isiginda parlar. Gotik katedrallerin vitray camlari hikayeler anlatir.",
-            "mystery": "Simyacinin labirent gibi kalesindeki ok isaretlerini coz ve felsefe tasinin formulunu ac!",
-            "facts": ["Gotik katedraller", "Hacli seferleri", "Simya ve bilim", "Kesfif cagi baslangici"]
+            "text": "Karanlık çağda kaleler sisli tepelerde yükselir, şövalyelerin kılıcı ay ışığında parlar. Gotik katedrallerin vitray camları hikayeler anlatır.",
+            "mystery": "Simyacının labirent gibi kalesindeki ok işaretlerini çöz ve felsefe taşının formülünü aç!",
+            "facts": ["Gotik katedraller", "Haçlı seferleri", "Simya ve bilim", "Keşif çağı başlangıcı"]
         },
         "10": {
             "name": "Final",
-            "title": "Medeniyetlerin Bulusmasi",
-            "period": "Zamansiz",
-            "text": "Tum antik medeniyetlerin bilgeligi tek bir noktada bulusuyor. Her kultur kendi parcasini birakti. Simdi tum parcalar bir araya gelmeli.",
-            "mystery": "Tum medeniyetlerin biraktigi ok isaretlerini birlestir ve insanligin en buyuk sirrini coz!",
-            "facts": ["10 medeniyet", "Son meydan okuma", "Tum bilgeler burada", "Efsanevi zorluk"]
+            "title": "Medeniyetlerin Buluşması",
+            "period": "Zamansız",
+            "text": "Tüm antik medeniyetlerin bilgeliği tek bir noktada buluşuyor. Her kültür kendi parçasını bıraktı. Şimdi tüm parçalar bir araya gelmeli.",
+            "mystery": "Tüm medeniyetlerin bıraktığı ok işaretlerini birleştir ve insanlığın en büyük sırrını çöz!",
+            "facts": ["10 medeniyet", "Son meydan okuma", "Tüm bilgeler burada", "Efsanevi zorluk"]
         }
     },
     "appstore": {
         "title": "Okchu: Arrow Puzzle - Antik Yolculuk",
         "subtitle": "Ok Bulmaca Oyunu",
-        "description": "10 antik medeniyeti kesfet, 50 zorlu bulmacayi coz! Piramitlerden kalelere, pagodalardan tapınaklara uzanan epik bir ok bulmaca macerasi.",
-        "keywords": "ok,bulmaca,puzzle,antik,medeniyet,misir,roma,viking,osmanli,strateji"
+        "description": "10 antik medeniyeti keşfet, 50 zorlu bulmacayı çöz! Piramitlerden kalelere, pagodalardan tapınaklara uzanan epik bir ok bulmaca macerası.",
+        "keywords": "ok,bulmaca,puzzle,antik,medeniyet,mısır,roma,viking,osmanlı,strateji"
     }
 }

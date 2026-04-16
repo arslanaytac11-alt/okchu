@@ -118,6 +118,7 @@ export class Renderer {
         ctx.scale(this.scale, this.scale);
 
         this.drawGridDots(grid);
+        this.drawWalls(grid);
 
         // Viewport culling bounds for performance
         const dpr = window.devicePixelRatio || 1;
@@ -168,8 +169,24 @@ export class Renderer {
         const gs = this.gridStyle;
         const dotColor = this.theme.gridDot;
 
-        for (let x = 0; x <= grid.width; x++) {
-            for (let y = 0; y <= grid.height; y++) {
+        // Viewport bounds in world coordinates — skip dots that are off-screen.
+        // Important for large grids (20x20+) where dot count grows quadratically.
+        const dpr = window.devicePixelRatio || 1;
+        const vw = this.canvas.width / dpr;
+        const vh = this.canvas.height / dpr;
+        const viewLeft = (-this.panX / this.scale) - this.cellSize;
+        const viewTop = (-this.panY / this.scale) - this.cellSize;
+        const viewRight = viewLeft + (vw / this.scale) + this.cellSize * 2;
+        const viewBottom = viewTop + (vh / this.scale) + this.cellSize * 2;
+
+        const minX = Math.max(0, Math.floor((viewLeft - this.gridOffsetX) / this.cellSize));
+        const maxX = Math.min(grid.width, Math.ceil((viewRight - this.gridOffsetX) / this.cellSize));
+        const minY = Math.max(0, Math.floor((viewTop - this.gridOffsetY) / this.cellSize));
+        const maxY = Math.min(grid.height, Math.ceil((viewBottom - this.gridOffsetY) / this.cellSize));
+
+        ctx.fillStyle = dotColor;
+        for (let x = minX; x <= maxX; x++) {
+            for (let y = minY; y <= maxY; y++) {
                 const px = this.gridOffsetX + x * this.cellSize;
                 const py = this.gridOffsetY + y * this.cellSize;
                 const isLandmark = x % gs.landmarkInterval === 0 && y % gs.landmarkInterval === 0;
@@ -177,26 +194,58 @@ export class Renderer {
 
                 ctx.beginPath();
                 ctx.arc(px, py, size / 2, 0, Math.PI * 2);
-                ctx.fillStyle = dotColor;
                 ctx.fill();
             }
         }
 
-        // Faint grid lines
+        // Faint grid lines — also clipped to visible range
         ctx.strokeStyle = `rgba(120, 90, 50, ${gs.lineAlpha})`;
         ctx.lineWidth = 0.5;
-        for (let x = 0; x <= grid.width; x++) {
+        const lineTop = this.gridOffsetY + minY * this.cellSize;
+        const lineBottom = this.gridOffsetY + maxY * this.cellSize;
+        for (let x = minX; x <= maxX; x++) {
             const px = this.gridOffsetX + x * this.cellSize;
             ctx.beginPath();
-            ctx.moveTo(px, this.gridOffsetY);
-            ctx.lineTo(px, this.gridOffsetY + grid.height * this.cellSize);
+            ctx.moveTo(px, lineTop);
+            ctx.lineTo(px, lineBottom);
             ctx.stroke();
         }
-        for (let y = 0; y <= grid.height; y++) {
+        const lineLeft = this.gridOffsetX + minX * this.cellSize;
+        const lineRight = this.gridOffsetX + maxX * this.cellSize;
+        for (let y = minY; y <= maxY; y++) {
             const py = this.gridOffsetY + y * this.cellSize;
             ctx.beginPath();
-            ctx.moveTo(this.gridOffsetX, py);
-            ctx.lineTo(this.gridOffsetX + grid.width * this.cellSize, py);
+            ctx.moveTo(lineLeft, py);
+            ctx.lineTo(lineRight, py);
+            ctx.stroke();
+        }
+    }
+
+    drawWalls(grid) {
+        if (!grid.walls || grid.walls.length === 0) return;
+        const ctx = this.ctx;
+        const cs = this.cellSize;
+        const pad = Math.max(2, cs * 0.08);
+        for (const [wx, wy] of grid.walls) {
+            const px = this.gridOffsetX + wx * cs + pad;
+            const py = this.gridOffsetY + wy * cs + pad;
+            const sz = cs - pad * 2;
+            // Stone block: warm gray gradient with brick outlining
+            const grad = ctx.createLinearGradient(px, py, px, py + sz);
+            grad.addColorStop(0, '#6e6357');
+            grad.addColorStop(1, '#47403a');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.roundRect(px, py, sz, sz, Math.max(3, cs * 0.1));
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = Math.max(1, cs * 0.04);
+            ctx.stroke();
+            // Inner highlight
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            ctx.lineWidth = Math.max(1, cs * 0.03);
+            ctx.beginPath();
+            ctx.roundRect(px + pad * 0.5, py + pad * 0.5, sz - pad, sz - pad, Math.max(2, cs * 0.08));
             ctx.stroke();
         }
     }

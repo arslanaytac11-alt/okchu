@@ -11,7 +11,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <link rel="icon" type="image/jpeg" href="assets/icons/icon-192.png">
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
     <!-- Splash Screen -->
@@ -28,9 +28,11 @@
             <h1 class="game-title">Okchu</h1>
             <p class="game-subtitle">Arrow Puzzle</p>
             <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Oyna</button>
-            <button id="btn-daily" class="btn btn-menu-secondary">Gunluk Meydan Okuma</button>
+            <button id="btn-daily" class="btn btn-menu-secondary">Günlük Meydan Okuma</button>
             <div class="menu-bottom-buttons">
-                <button id="btn-achievements" class="btn-menu-icon">Basarimlar</button>
+                <button id="btn-achievements" class="btn-menu-icon">Başarımlar</button>
+                <button id="btn-collection" class="btn-menu-icon">Koleksiyon</button>
+                <button id="btn-leaderboard" class="btn-menu-icon">Lider Tablosu</button>
                 <button id="btn-settings" class="btn-menu-icon">Ayarlar</button>
             </div>
             <div class="menu-top-buttons">
@@ -43,7 +45,7 @@
         <div id="screen-chapters" class="screen">
             <div class="screen-header">
                 <button class="btn-back" id="btn-chapters-back">&larr;</button>
-                <h2>Bolumler</h2>
+                <h2>Bölümler</h2>
             </div>
             <div id="chapter-list" class="chapter-list"></div>
         </div>
@@ -92,12 +94,15 @@
                 <div class="stat-item"><span class="stat-label" data-i18n="game.score">Skor</span><span id="game-score" class="stat-value">0</span></div>
                 <div class="stat-item"><span id="game-combo" class="combo-badge"></span></div>
                 <div class="stat-item"><span class="stat-label" data-i18n="game.moves">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
-                <div class="stat-item"><span class="stat-label" data-i18n="game.time">Sure</span><span id="game-timer" class="stat-value">0:00</span></div>
+                <div class="stat-item"><span class="stat-label" data-i18n="game.time">Süre</span><span id="game-timer" class="stat-value">0:00</span></div>
+                <button id="btn-undo" class="stat-undo" aria-label="Geri Al" title="Geri Al (Undo)">↶<span id="undo-count" class="stat-undo-count">3</span></button>
+                <button id="btn-powerup-hint" class="stat-powerup" aria-label="İpucu" title="İpucu Kullan">💡<span id="powerup-hint-count" class="stat-undo-count">0</span></button>
+                <button id="btn-powerup-freeze" class="stat-powerup" aria-label="Zamanı Dondur" title="Zamanı Dondur (+15sn)">❄<span id="powerup-freeze-count" class="stat-undo-count">0</span></button>
             </div>
-            <canvas id="game-canvas"></canvas>
-            <div id="zoom-hint" class="zoom-hint hidden">Yakinlastirmak icin iki parmakla ac</div>
+            <canvas id="game-canvas" role="img" aria-label="Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun." tabindex="0"></canvas>
+            <div id="zoom-hint" class="zoom-hint hidden">Yakınlaştırmak için iki parmakla aç</div>
             <div id="banner-ad" class="banner-ad">
-                <span class="banner-ad-label">Reklam Alani</span>
+                <span class="banner-ad-label">Reklam Alanı</span>
             </div>
         </div>
 
@@ -115,9 +120,9 @@
         <!-- Lives Empty Overlay -->
         <div id="overlay-no-lives" class="overlay hidden">
             <div class="overlay-content">
-                <h2 data-i18n="overlay.no_lives_title">Canin Bitti!</h2>
+                <h2 data-i18n="overlay.no_lives_title">Canın Bitti!</h2>
                 <p id="lives-timer-text">--:--</p>
-                <button id="btn-watch-ad" class="btn btn-primary" data-i18n="overlay.watch_ad">Reklam Izle (+1 Can)</button>
+                <button id="btn-watch-ad" class="btn btn-primary" data-i18n="overlay.watch_ad">Reklam İzle (+1 Can)</button>
                 <button id="btn-wait" class="btn btn-secondary" data-i18n="overlay.wait">Bekle</button>
             </div>
         </div>
@@ -139,9 +144,29 @@
         <!-- Achievements Overlay -->
         <div id="overlay-achievements" class="overlay hidden">
             <div class="overlay-content overlay-large">
-                <h2>Basarimlar</h2>
+                <h2>Başarımlar</h2>
                 <div id="achievements-list" class="achievements-list"></div>
                 <button id="btn-ach-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Collection Overlay -->
+        <div id="overlay-collection" class="overlay hidden">
+            <div class="overlay-content overlay-large">
+                <h2>Koleksiyon</h2>
+                <p class="collection-hint">Bölümde 13+ yıldız toplayınca eser açılır</p>
+                <div id="collection-list" class="collection-list"></div>
+                <button id="btn-collection-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Overlay -->
+        <div id="overlay-leaderboard" class="overlay hidden">
+            <div class="overlay-content overlay-large">
+                <h2>Haftalık Lider Tablosu</h2>
+                <p class="leaderboard-hint">Son 7 günün günlük meydan okuma skorları</p>
+                <div id="leaderboard-list" class="leaderboard-list"></div>
+                <button id="btn-leaderboard-close" class="btn btn-secondary">Kapat</button>
             </div>
         </div>
 
@@ -159,12 +184,12 @@
                         <button id="setting-lang" class="setting-value">TR</button>
                     </div>
                     <div class="setting-row">
-                        <span>Reklamsiz Premium</span>
-                        <button id="setting-premium" class="btn btn-primary setting-buy">Satin Al</button>
+                        <span>Reklamsız Premium</span>
+                        <button id="setting-premium" class="btn btn-primary setting-buy">Satın Al</button>
                     </div>
                     <div class="setting-row danger">
-                        <span>Ilerlemeyi Sifirla</span>
-                        <button id="setting-reset" class="btn btn-secondary setting-danger">Sifirla</button>
+                        <span>İlerlemeyi Sıfırla</span>
+                        <button id="setting-reset" class="btn btn-secondary setting-danger">Sıfırla</button>
                     </div>
                 </div>
                 <p class="settings-version">Okchu v1.0</p>
@@ -190,7 +215,7 @@
                     <button class="lang-option" data-lang="en">English</button>
                     <button class="lang-option" data-lang="es">Espanol</button>
                     <button class="lang-option" data-lang="fr">Francais</button>
-                    <button class="lang-option" data-lang="ja">\u65e5\u672c\u8a9e</button>
+                    <button class="lang-option" data-lang="ja">日本語</button>
                 </div>
             </div>
         </div>
@@ -198,15 +223,15 @@
         <!-- Time Up Overlay -->
         <div id="overlay-time-up" class="overlay hidden">
             <div class="overlay-content">
-                <h2 data-i18n="overlay.time_up_title">Sure Doldu!</h2>
-                <p class="time-up-message" data-i18n="overlay.time_up_text">Zamani yetistiremdin</p>
-                <button id="btn-ad-continue" class="btn btn-primary">Reklam Izle + Devam Et</button>
+                <h2 data-i18n="overlay.time_up_title">Süre Doldu!</h2>
+                <p class="time-up-message" data-i18n="overlay.time_up_text">Zamanı yetiştiremedin</p>
+                <button id="btn-ad-continue" class="btn btn-primary">Reklam İzle + Devam Et</button>
                 <button id="btn-retry" class="btn btn-secondary" data-i18n="overlay.retry">Tekrar Dene</button>
-                <button id="btn-time-up-back" class="btn-ghost" data-i18n="overlay.back_chapters">Bolumler</button>
+                <button id="btn-time-up-back" class="btn-ghost" data-i18n="overlay.back_chapters">Bölümler</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=14"></script>
+    <script type="module" src="js/main.js?v=19"></script>
 </body>
 </html>

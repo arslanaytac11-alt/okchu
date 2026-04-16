@@ -7,7 +7,6 @@ import { HintManager } from './hints.js';
 import { storage } from './storage.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
-// sounds removed
 
 const TIME_CONFIG = {
     // [baseSec, perPathSec] indexed by chapter
@@ -17,6 +16,18 @@ const TIME_CONFIG = {
     7: [25, 1.5], 8: [25, 1.5],
     9: [20, 1.0], 10: [20, 1.0],
 };
+
+// Combo reward tiers — threshold must be descending, first match wins.
+const COMBO_TIERS = [
+    { min: 10, burstCount: 64, burstSpeed: 200, shake: 5, shape: 'spark' },
+    { min: 9,  burstCount: 48, burstSpeed: 180, shake: 4, shape: 'spark' },
+    { min: 6,  burstCount: 32, burstSpeed: 160, shake: 3, shape: 'circle' },
+    { min: 4,  burstCount: 24, burstSpeed: 140, shake: 2, shape: 'circle' },
+    { min: 2,  burstCount: 16, burstSpeed: 120, shake: 1, shape: 'circle' },
+    { min: 0,  burstCount: 8,  burstSpeed: 80,  shake: 0, shape: 'circle' },
+];
+const COMBO_COLORS = ['#ffffff', '#fff4a0', '#ffaa40', '#ff5030', '#ff2020'];
+const MEGA_COMBO_THRESHOLD = 10;
 
 // Fixed time - no bonus/penalty, solve before time runs out
 
@@ -49,7 +60,15 @@ export class Game {
         this.timeLimit = 0;
         this.timeRemaining = 0;
         this.onTimeUp = null;
-        this._lastHeartbeat = 0;
+
+        // Auto-hint: show a hint automatically after 2 consecutive wrong moves
+        this._consecutiveWrongs = 0;
+        // Undo history: last N successful moves, capped at UNDO_MAX
+        this._moveHistory = [];
+        this.undoCharges = 3;
+
+        // Zen mode: no timer, no wrong-move penalties — casual solve
+        this.zenMode = false;
 
         this.setupInput();
     }
@@ -61,7 +80,7 @@ export class Game {
         this.applyChapterTheme(chapterData);
 
         this.grid = new Grid(levelData.gridWidth, levelData.gridHeight);
-        this.grid.loadFromData(levelData.paths);
+        this.grid.loadFromData(levelData.paths, levelData.walls || []);
 
         this.renderer.setTheme(chapterData.theme, chapterData.id);
         this.renderer.resize(levelData.gridWidth, levelData.gridHeight);
@@ -80,13 +99,31 @@ export class Game {
         this.wrongMoves = 0;
         this.usedHint = false;
         this.totalPaths = this.grid.paths.length;
+        this._consecutiveWrongs = 0;
+        this._moveHistory = [];
+        // Base 3 undos + any inventory extraUndo powerups auto-consumed at level start
+        const invAtStart = storage.getPowerups();
+        this.undoCharges = 3 + (invAtStart.extraUndo || 0);
+        if (invAtStart.extraUndo > 0) {
+            for (let i = 0; i < invAtStart.extraUndo; i++) storage.usePowerup('extraUndo');
+        }
+        this._updateUndoButton();
+        this._updatePowerupButtons();
 
-        // Countdown timer
+        // Countdown timer — mode-aware (classic/timed/zen)
+        this.gameMode = storage.getGameMode() || 'classic';
         const chapterId = chapterData.id;
         const [baseSec, perPathSec] = TIME_CONFIG[chapterId] || [60, 3.0];
-        this.timeLimit = baseSec + Math.round(this.totalPaths * perPathSec);
-        this.timeRemaining = this.timeLimit;
-        this._startCountdown();
+        let limit = baseSec + Math.round(this.totalPaths * perPathSec);
+        if (this.gameMode === 'timed') limit = Math.round(limit * 0.65);
+        this.timeLimit = limit;
+        this.timeRemaining = limit;
+        if (this.gameMode !== 'zen') {
+            this._startCountdown();
+        } else {
+            // Zen: freeze timer display but don't count down
+            this._updateTimerDisplay();
+        }
         this._updateScoreDisplay();
 
         this.updateHintButton();
@@ -124,11 +161,6 @@ export class Game {
                 this.renderer.setVignetteAlpha(0);
             }
 
-            // Heartbeat sound at critical time
-            if (ratio < 0.05 && (!this._lastHeartbeat || Date.now() - this._lastHeartbeat > 600)) {
-                this._lastHeartbeat = Date.now();
-            }
-
             if (this.timeRemaining <= 0) {
                 this._handleTimeUp();
             }
@@ -151,6 +183,11 @@ export class Game {
     _updateTimerDisplay() {
         const el = document.getElementById('game-timer');
         if (!el) return;
+        if (this.gameMode === 'zen') {
+            el.textContent = '\u221E';
+            el.classList.remove('timer-warning', 'timer-critical');
+            return;
+        }
         const totalSecs = Math.ceil(this.timeRemaining);
         const mins = Math.floor(totalSecs / 60);
         const secs = totalSecs % 60;
@@ -172,6 +209,16 @@ export class Game {
         }
         const movesEl = document.getElementById('game-moves');
         if (movesEl) movesEl.textContent = `${this.moves}/${this.totalPaths}`;
+
+        // Combo heat glow on game screen — tier bands at 3/5/8 for escalating intensity.
+        const screen = document.getElementById('screen-game');
+        if (screen) {
+            screen.classList.remove('game-canvas-combo-3', 'game-canvas-combo-5', 'game-canvas-combo-8');
+            if (this.combo >= 8) screen.classList.add('game-canvas-combo-8');
+            else if (this.combo >= 5) screen.classList.add('game-canvas-combo-5');
+            else if (this.combo >= 3) screen.classList.add('game-canvas-combo-3');
+        }
+
         if (this.onScoreChanged) this.onScoreChanged({ score: this.score, combo: this.combo, moves: this.moves });
     }
 
@@ -299,11 +346,27 @@ export class Game {
     removePathWithAnimation(path) {
 
         this.isAnimating = true;
+        // Snapshot BEFORE removing — undo restores path.state to this and re-runs updateRemovableStates.
+        // We also snapshot the PREVIOUS removable set so undo doesn't retroactively invalidate hints.
+        this._moveHistory.push({
+            pathRef: path,
+            prevState: path.state,
+            snakeCells: path.cells.map(c => ({ x: c.x, y: c.y })),
+            score: this.score,
+            combo: this.combo,
+            moves: this.moves,
+            consecutiveWrongs: this._consecutiveWrongs,
+        });
+        if (this._moveHistory.length > 20) this._moveHistory.shift();
+
         this.grid.removePath(path);
 
         // Scoring: correct move
         this.combo++;
         this.moves++;
+        this._consecutiveWrongs = 0;
+        // Successful play dismisses the auto-hint — player doesn't need it anymore.
+        this.hintedPath = null;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
         const points = this._calculatePoints(path);
         this.score += points;
@@ -320,40 +383,25 @@ export class Game {
         const dirVec = getDirectionVector(path.direction);
         const burstAngle = Math.atan2(dirVec.dy, dirVec.dx);
 
-        let burstCount, burstSpeed, shakeIntensity;
-        if (this.combo >= 10) {
-            burstCount = 64; burstSpeed = 200; shakeIntensity = 5;
-        } else if (this.combo >= 9) {
-            burstCount = 48; burstSpeed = 180; shakeIntensity = 4;
-        } else if (this.combo >= 6) {
-            burstCount = 32; burstSpeed = 160; shakeIntensity = 3;
-        } else if (this.combo >= 4) {
-            burstCount = 24; burstSpeed = 140; shakeIntensity = 2;
-        } else if (this.combo >= 2) {
-            burstCount = 16; burstSpeed = 120; shakeIntensity = 1;
-        } else {
-            burstCount = 8; burstSpeed = 80; shakeIntensity = 0;
-        }
+        const tier = COMBO_TIERS.find(t => this.combo >= t.min);
+        const colorIdx = Math.min(Math.floor(this.combo / 2), COMBO_COLORS.length - 1);
 
-        const comboColors = ['#ffffff', '#fff4a0', '#ffaa40', '#ff5030', '#ff2020'];
-        const colorIdx = Math.min(Math.floor(this.combo / 2), comboColors.length - 1);
-
-        this.renderer.burstParticles.burst(burstCx, burstCy, burstCount, {
-            speed: burstSpeed,
+        this.renderer.burstParticles.burst(burstCx, burstCy, tier.burstCount, {
+            speed: tier.burstSpeed,
             spread: Math.PI * 0.8,
             angle: burstAngle,
             life: 0.5 + this.combo * 0.05,
             size: 2 + this.combo * 0.3,
-            colors: [comboColors[colorIdx], '#ffffff', this.renderer.theme.arrowIdle],
+            colors: [COMBO_COLORS[colorIdx], '#ffffff', this.renderer.theme.arrowIdle],
             gravity: 80,
-            shape: this.combo >= 9 ? 'spark' : 'circle',
+            shape: tier.shape,
         });
 
-        if (shakeIntensity > 0) {
-            this._doScreenShake(shakeIntensity, 80 + this.combo * 10);
+        if (tier.shake > 0) {
+            this._doScreenShake(tier.shake, 80 + this.combo * 10);
         }
 
-        if (this.combo >= 10) {
+        if (this.combo >= MEGA_COMBO_THRESHOLD) {
             this._showFloatingText('MUHTESEM!', burstCx, burstCy - 40, '#ffd700', 28);
         }
 
@@ -417,6 +465,8 @@ export class Game {
                 path._snakeCellStates = null;
                 this.grid.finalizeRemoval(path);
                 this.isAnimating = false;
+                this._updateUndoButton();
+                this._updatePowerupButtons();
                 this.renderer.drawGrid(this.grid);
                 if (this.grid.isCleared()) {
                     this.handleLevelComplete();
@@ -439,7 +489,19 @@ export class Game {
         // Scoring: wrong move breaks combo + time penalty
         this.combo = 0;
         this.wrongMoves++;
+        this._consecutiveWrongs++;
         this._updateScoreDisplay();
+
+        // Auto-hint after 2 consecutive wrong moves — shows a removable path
+        // as gentle guidance without consuming the player's free hint charge.
+        if (this._consecutiveWrongs >= 2 && !this.hintedPath) {
+            const hintPath = this.hintManager.findHintArrow(this.grid);
+            if (hintPath) {
+                this.hintedPath = hintPath;
+                this.renderer.drawGrid(this.grid);
+                this.renderer.drawHintHighlight(hintPath);
+            }
+        }
 
         // Crack effect
         const wrongHead = path.getHead();
@@ -552,6 +614,8 @@ export class Game {
         if (this.wrongMoves === 0) this.score += 200;
 
         const stars = this.calculateStars();
+        const prevScore = storage.getLevelScore(this.currentLevel.id);
+        const prevStars = prevScore?.stars || 0;
 
         // Save score
         storage.saveLevelScore(this.currentLevel.id, {
@@ -562,6 +626,25 @@ export class Game {
             time: elapsedTime,
             bestCombo: this.maxCombo,
         });
+
+        // Grant power-ups on new 3-star completion
+        let rewardedPowerup = null;
+        if (stars === 3 && prevStars < 3) {
+            const pool = ['hint', 'freeze', 'extraUndo'];
+            const pick = pool[Math.floor(Math.random() * pool.length)];
+            storage.earnPowerup(pick, 1);
+            rewardedPowerup = pick;
+        }
+
+        // Collect chapter artifact when a chapter reaches 13+ stars and not yet collected
+        let newArtifact = null;
+        if (this.currentChapter && !storage.hasArtifact(this.currentChapter.id)) {
+            if (storage.getChapterStars(this.currentChapter.id) >= 13) {
+                if (storage.collectArtifact(this.currentChapter.id)) {
+                    newArtifact = this.currentChapter.id;
+                }
+            }
+        }
 
         this._updateScoreDisplay();
 
@@ -577,6 +660,8 @@ export class Game {
                     time: elapsedTime,
                     timeRemaining: Math.round(this.timeRemaining),
                     maxCombo: this.maxCombo,
+                    rewardedPowerup,
+                    newArtifact,
                 });
             }
         });
@@ -758,25 +843,104 @@ export class Game {
         requestAnimationFrame(animate);
     }
 
+    undoLastMove() {
+        if (this.isAnimating) return false;
+        if (this.undoCharges <= 0) return false;
+        const last = this._moveHistory.pop();
+        if (!last) return false;
+
+        const path = last.pathRef;
+        // Restore cell positions (in case snake animation offset them)
+        for (let i = 0; i < path.cells.length; i++) {
+            path.cells[i].x = last.snakeCells[i].x;
+            path.cells[i].y = last.snakeCells[i].y;
+        }
+        path._snakeCellStates = null;
+        path.state = last.prevState;
+        this.score = last.score;
+        this.combo = last.combo;
+        this.moves = last.moves;
+        this._consecutiveWrongs = last.consecutiveWrongs;
+        this.undoCharges--;
+
+        this.grid.updateRemovableStates();
+        this._updateScoreDisplay();
+        this._updateUndoButton();
+        this.renderer.drawGrid(this.grid);
+        return true;
+    }
+
+    _updateUndoButton() {
+        const btn = document.getElementById('btn-undo');
+        if (!btn) return;
+        const countEl = document.getElementById('undo-count');
+        if (countEl) countEl.textContent = this.undoCharges;
+        btn.disabled = this.undoCharges <= 0 || this._moveHistory.length === 0;
+        btn.style.opacity = btn.disabled ? '0.35' : '1';
+    }
+
     useHint() {
         if (!this.grid) return;
-
-        if (!this.hintManager.hasFreeHint()) return;
 
         const hintPath = this.hintManager.findHintArrow(this.grid);
         if (!hintPath) return;
 
-        this.hintManager.useFreeHint();
+        // Prefer inventory hint; fall back to free-per-level hint
+        const invPowerups = storage.getPowerups();
+        if (invPowerups.hint > 0) {
+            storage.usePowerup('hint');
+        } else if (this.hintManager.hasFreeHint()) {
+            this.hintManager.useFreeHint();
+        } else {
+            return;
+        }
+
         this.usedHint = true;
         this.hintedPath = hintPath;
         this.renderer.drawGrid(this.grid);
         this.renderer.drawHintHighlight(hintPath);
         this.updateHintButton();
+        this._updatePowerupButtons();
     }
 
     updateHintButton() {
         const btn = document.getElementById('btn-hint');
         if (btn) btn.style.opacity = this.hintManager.hasFreeHint() ? '1' : '0.4';
+    }
+
+    useFreezePowerup() {
+        if (!this.grid || this.timeLimit <= 0) return;
+        if (!storage.usePowerup('freeze')) return;
+        // +15s to the timer
+        this.timeRemaining = Math.min(this.timeLimit, this.timeRemaining + 15);
+        this._updateScoreDisplay();
+        this._updatePowerupButtons();
+        // Brief visual pulse on the timer
+        const el = document.getElementById('game-timer');
+        if (el) {
+            el.classList.add('timer-freeze-pulse');
+            setTimeout(() => el.classList.remove('timer-freeze-pulse'), 900);
+        }
+    }
+
+    _updatePowerupButtons() {
+        const p = storage.getPowerups();
+        const hintBtn = document.getElementById('btn-powerup-hint');
+        const freezeBtn = document.getElementById('btn-powerup-freeze');
+        const hintCount = document.getElementById('powerup-hint-count');
+        const freezeCount = document.getElementById('powerup-freeze-count');
+        if (hintCount) hintCount.textContent = p.hint;
+        if (freezeCount) freezeCount.textContent = p.freeze;
+        if (hintBtn) {
+            const canUseHint = p.hint > 0 || (this.currentLevel && this.hintManager.hasFreeHint());
+            hintBtn.disabled = !canUseHint || this.hintedPath !== null;
+            hintBtn.style.opacity = hintBtn.disabled ? '0.4' : '1';
+        }
+        if (freezeBtn) {
+            const canUseFreeze = p.freeze > 0 && this.timeLimit > 0;
+            freezeBtn.disabled = !canUseFreeze;
+            freezeBtn.style.opacity = freezeBtn.disabled ? '0.4' : '1';
+        }
     }
 
     startRenderLoop() {

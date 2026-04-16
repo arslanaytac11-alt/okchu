@@ -57,7 +57,7 @@ export class ScreenManager {
         // Total stars in header
         const header = document.querySelector('#screen-chapters .screen-header h2');
         if (header) {
-            header.textContent = `Bolumler \u2605 ${storage.getTotalStars()}/150`;
+            header.textContent = `Bölümler \u2605 ${storage.getTotalStars()}/150`;
         }
 
         for (const chapter of chapters) {
@@ -231,13 +231,35 @@ export class ScreenManager {
 
         const levels = getLevelsByChapter(chapter.id);
 
+        // Game mode selector
+        const modeBar = document.createElement('div');
+        modeBar.className = 'mode-selector';
+        const modes = [
+            { id: 'classic', label: 'Klasik', icon: '\u{1F3AE}' },
+            { id: 'timed', label: 'Hızlı', icon: '\u26A1' },
+            { id: 'zen', label: 'Zen', icon: '\u{1F33F}' },
+        ];
+        const activeMode = storage.getGameMode();
+        for (const m of modes) {
+            const btn = document.createElement('button');
+            btn.className = 'mode-btn' + (m.id === activeMode ? ' active' : '');
+            btn.innerHTML = `<span class="mode-icon">${m.icon}</span><span>${m.label}</span>`;
+            btn.addEventListener('click', () => {
+                storage.setGameMode(m.id);
+                this.showLevels(chapter);
+            });
+            modeBar.appendChild(btn);
+        }
+        list.appendChild(modeBar);
+
         // Path map layout - zigzag pattern
         const pathContainer = document.createElement('div');
         pathContainer.className = 'level-path';
 
-        // SVG for connecting lines
+        // SVG for connecting lines — SVGElement.className is a read-only
+        // SVGAnimatedString; use setAttribute('class', ...) instead.
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.className = 'level-path-svg';
+        svg.setAttribute('class', 'level-path-svg');
         svg.setAttribute('viewBox', '0 0 300 600');
         svg.setAttribute('preserveAspectRatio', 'none');
         pathContainer.appendChild(svg);
@@ -299,17 +321,23 @@ export class ScreenManager {
             const completed = storage.isLevelCompleted(level.id);
             const score = storage.getLevelScore(level.id);
             const stars = score?.stars || 0;
-            const isAccessible = true;
+            const levelNumInChapter = i + 1;
+            const isBoss = levelNumInChapter === 5;
+            const bossLocked = isBoss && storage.isBossLocked(chapter.id, levelNumInChapter);
+            const isAccessible = !bossLocked;
 
             const node = document.createElement('div');
-            node.className = 'level-node' + (completed ? ' completed' : ' current');
+            let cls = 'level-node' + (completed ? ' completed' : ' current');
+            if (isBoss) cls += ' boss';
+            if (bossLocked) cls += ' locked-boss';
+            node.className = cls;
             node.style.left = positions[i].x + '%';
             node.style.top = positions[i].y + 'px';
 
             // Level number circle
             const circle = document.createElement('div');
             circle.className = 'level-node-circle';
-            circle.textContent = level.level;
+            circle.textContent = isBoss ? '\u{1F451}' : level.level;
             node.appendChild(circle);
 
             // Level name
@@ -317,6 +345,15 @@ export class ScreenManager {
             name.className = 'level-node-name';
             name.textContent = level.name;
             node.appendChild(name);
+
+            // Boss gate progress
+            if (bossLocked) {
+                const gate = storage.getBossGateProgress(chapter.id);
+                const gateEl = document.createElement('div');
+                gateEl.className = 'level-node-gate';
+                gateEl.textContent = `\u{1F512} \u2605 ${gate.current}/${gate.required}`;
+                node.appendChild(gateEl);
+            }
 
             // Stars
             if (stars > 0) {

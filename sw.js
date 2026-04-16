@@ -1,4 +1,8 @@
-const CACHE_NAME = 'okchu-v1';
+// Bump APP_VERSION on every deploy — the cache name derives from it so clients
+// pick up new assets and old caches are cleaned up on activate.
+const APP_VERSION = '4';
+const CACHE_NAME = `okchu-v${APP_VERSION}`;
+
 const ASSETS = [
     '/',
     '/index.html',
@@ -15,6 +19,14 @@ const ASSETS = [
     '/js/themes.js',
     '/js/lives.js',
     '/js/hints.js',
+    '/js/i18n.js',
+    '/js/daily.js',
+    '/js/achievements.js',
+    '/js/tutorial.js',
+    '/js/easing.js',
+    '/js/menu-bg.js',
+    '/js/sound.js',
+    '/js/level-validator.js',
     '/js/data/chapters.js',
     '/js/data/levels/egypt.js',
     '/js/data/levels/greek.js',
@@ -26,7 +38,13 @@ const ASSETS = [
     '/js/data/levels/india.js',
     '/js/data/levels/medieval.js',
     '/js/data/levels/final.js',
+    '/lang/tr.json',
+    '/lang/en.json',
+    '/lang/es.json',
+    '/lang/fr.json',
+    '/lang/ja.json',
     '/assets/menu-bg.png',
+    '/assets/icons/icon-192.png',
     '/assets/backgrounds/bg-egypt.jpg',
     '/assets/backgrounds/bg-greek.jpg',
     '/assets/backgrounds/bg-rome.jpg',
@@ -41,7 +59,12 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+        // Individually cache assets so one 404 (e.g. removed file) doesn't abort the whole install.
+        caches.open(CACHE_NAME).then((cache) =>
+            Promise.all(ASSETS.map((url) =>
+                cache.add(url).catch(() => { /* skip missing asset */ })
+            ))
+        )
     );
     self.skipWaiting();
 });
@@ -55,16 +78,21 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+// Stale-while-revalidate for GETs: serve cache instantly, refresh in background.
+// This means users get new content on the SECOND visit after a deploy — bump
+// APP_VERSION above to force immediate eviction for critical releases.
 self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') return;
     event.respondWith(
         caches.match(event.request).then((cached) => {
-            return cached || fetch(event.request).then((response) => {
-                if (response.ok && event.request.method === 'GET') {
+            const networkPromise = fetch(event.request).then((response) => {
+                if (response && response.ok) {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
                 }
                 return response;
-            });
-        }).catch(() => caches.match('/index.html'))
+            }).catch(() => cached || caches.match('/index.html'));
+            return cached || networkPromise;
+        })
     );
 });

@@ -1,7 +1,7 @@
 // js/main.js
 
 import { Game } from './game.js';
-import { ScreenManager } from './screens.js';
+import { ScreenManager } from './screens.js?v=3';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
@@ -71,6 +71,29 @@ setTimeout(() => {
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
 const screenManager = new ScreenManager();
+
+// Undo button — uses a single listener; the button is only interactable when game is active.
+const undoBtn = document.getElementById('btn-undo');
+if (undoBtn) {
+    undoBtn.addEventListener('click', () => {
+        game.undoLastMove();
+    });
+}
+
+const hintPowerBtn = document.getElementById('btn-powerup-hint');
+if (hintPowerBtn) {
+    hintPowerBtn.addEventListener('click', () => {
+        game.useHint();
+    });
+}
+
+const freezePowerBtn = document.getElementById('btn-powerup-freeze');
+if (freezePowerBtn) {
+    freezePowerBtn.addEventListener('click', () => {
+        game.useFreezePowerup();
+    });
+}
+if (typeof window !== 'undefined') { window.__DEBUG__ = { game, screenManager, chapters, storage }; }
 const livesDisplay = document.getElementById('lives-display');
 const tutorial = new Tutorial();
 
@@ -109,6 +132,7 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
     // Daily + achievements
     if (game._isDailyChallenge) {
         completeDaily(stats.score, stats.stars);
+        storage.recordDailyScore(stats.score, stats.stars);
         game._isDailyChallenge = false;
     }
     setTimeout(() => checkAndShowAchievements(), 1500);
@@ -142,27 +166,36 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
         const mins = Math.floor(timeSecs / 60);
         const secs = timeSecs % 60;
         const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-        const parts = [`Sure: ${timeStr}`];
+        const parts = [`Süre: ${timeStr}`];
         if (stats.timeRemaining > 0) parts.push(`Kalan: ${stats.timeRemaining}s`);
         parts.push(`Hamle: ${stats.moves}`);
         if (stats.maxCombo > 1) parts.push(`Max Combo: x${stats.maxCombo}`);
         if (stats.wrongMoves > 0) parts.push(`Yanlis: ${stats.wrongMoves}`);
+        if (stats.rewardedPowerup) {
+            const emoji = { hint: '💡', freeze: '❄', extraUndo: '↶' }[stats.rewardedPowerup] || '🎁';
+            const label = { hint: 'İpucu', freeze: 'Dondurma', extraUndo: 'Ekstra Geri Al' }[stats.rewardedPowerup];
+            parts.push(`Ödül: ${emoji} +1 ${label}`);
+        }
+        if (stats.newArtifact) {
+            parts.push(`🏺 Yeni Eser!`);
+        }
         statsEl.textContent = parts.join(' | ');
     }
 
-    const nextBtn = document.getElementById('btn-next-level');
-    const handler = () => {
+    // Replace the button node to guarantee any stale handler from a prior
+    // overlay open is discarded (overlay can reopen across levels).
+    const oldBtn = document.getElementById('btn-next-level');
+    const nextBtn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(nextBtn, oldBtn);
+    nextBtn.addEventListener('click', () => {
         overlay.classList.add('hidden');
-        nextBtn.removeEventListener('click', handler);
-
         if (nextLevel && nextLevel.chapter === completedLevel.chapter) {
             const chapter = chapters.find(c => c.id === nextLevel.chapter);
             game.startLevel(nextLevel, chapter);
         } else {
             screenManager.showChapters();
         }
-    };
-    nextBtn.addEventListener('click', handler);
+    }, { once: true });
 };
 
 // When lives run out
@@ -176,49 +209,55 @@ game.onTimeUp = () => {
     const overlay = document.getElementById('overlay-time-up');
     overlay.classList.remove('hidden');
 
-    const adBtn = document.getElementById('btn-ad-continue');
-    const retryBtn = document.getElementById('btn-retry');
-    const backBtn = document.getElementById('btn-time-up-back');
-
-    const cleanup = () => {
-        overlay.classList.add('hidden');
-        adBtn.removeEventListener('click', adHandler);
-        retryBtn.removeEventListener('click', retryHandler);
-        backBtn.removeEventListener('click', backHandler);
+    // Clone-replace pattern: discards any prior handlers so repeated time-ups
+    // don't stack listeners. Each open wires fresh, once-firing handlers.
+    const freshen = (id) => {
+        const old = document.getElementById(id);
+        const clone = old.cloneNode(true);
+        old.parentNode.replaceChild(clone, old);
+        return clone;
     };
+    const adBtn = freshen('btn-ad-continue');
+    const retryBtn = freshen('btn-retry');
+    const backBtn = freshen('btn-time-up-back');
 
-    const adHandler = () => {
+    const close = () => overlay.classList.add('hidden');
+
+    adBtn.addEventListener('click', () => {
         // TODO: Show rewarded ad, then continue with extra time
-        cleanup();
-        game.timeRemaining = 60; // +60 seconds after ad
+        close();
+        game.timeRemaining = 60;
         game._startCountdown();
         game.startRenderLoop();
-    };
+    }, { once: true });
 
-    const retryHandler = () => {
-        cleanup();
+    retryBtn.addEventListener('click', () => {
+        close();
         game.startLevel(game.currentLevel, game.currentChapter);
-    };
+    }, { once: true });
 
-    const backHandler = () => {
-        cleanup();
+    backBtn.addEventListener('click', () => {
+        close();
         screenManager.showChapters();
-    };
-
-    adBtn.addEventListener('click', adHandler);
-    retryBtn.addEventListener('click', retryHandler);
-    backBtn.addEventListener('click', backHandler);
+    }, { once: true });
 };
 
 function showNoLivesOverlay() {
     const overlay = document.getElementById('overlay-no-lives');
     const timerText = document.getElementById('lives-timer-text');
-    const adBtn = document.getElementById('btn-watch-ad');
-    const waitBtn = document.getElementById('btn-wait');
+
+    // Freshen buttons to prevent listener stacking across repeated opens.
+    const freshen = (id) => {
+        const old = document.getElementById(id);
+        const clone = old.cloneNode(true);
+        old.parentNode.replaceChild(clone, old);
+        return clone;
+    };
+    const adBtn = freshen('btn-watch-ad');
+    const waitBtn = freshen('btn-wait');
 
     overlay.classList.remove('hidden');
 
-    // Timer update
     if (noLivesTimerInterval) clearInterval(noLivesTimerInterval);
 
     const updateTimer = () => {
@@ -234,24 +273,22 @@ function showNoLivesOverlay() {
 
     const closeOverlay = () => {
         overlay.classList.add('hidden');
-        if (noLivesTimerInterval) clearInterval(noLivesTimerInterval);
-        adBtn.removeEventListener('click', adHandler);
-        waitBtn.removeEventListener('click', waitHandler);
+        if (noLivesTimerInterval) {
+            clearInterval(noLivesTimerInterval);
+            noLivesTimerInterval = null;
+        }
     };
 
-    const adHandler = () => {
+    adBtn.addEventListener('click', () => {
         game.livesManager.addLife();
         game.livesManager.renderLives(livesDisplay);
         closeOverlay();
-    };
+    }, { once: true });
 
-    const waitHandler = () => {
+    waitBtn.addEventListener('click', () => {
         closeOverlay();
         screenManager.showChapters();
-    };
-
-    adBtn.addEventListener('click', adHandler);
-    waitBtn.addEventListener('click', waitHandler);
+    }, { once: true });
 }
 
 // Hint button
@@ -362,6 +399,72 @@ document.getElementById('btn-ach-close').addEventListener('click', () => {
     document.getElementById('overlay-achievements').classList.add('hidden');
 });
 
+// === COLLECTION ===
+const COLLECTION_ICONS = {
+    1: '\u{1F3DB}', 2: '\u{1F3DB}', 3: '\u{2694}', 4: '\u{26F5}', 5: '\u{1F319}',
+    6: '\u{1F409}', 7: '\u{1F4C5}', 8: '\u{1F54C}', 9: '\u{1F3F0}', 10: '\u{1F451}'
+};
+const COLLECTION_NAMES = {
+    1: 'Firavun Mührü', 2: 'Zeus Asası', 3: 'Lejyon Kalkanı', 4: 'Viking Baltası',
+    5: 'Osmanlı Tuğrası', 6: 'Çin Ejderi', 7: 'Maya Takvimi', 8: 'Lotus Çiçeği',
+    9: 'Gotik Haç', 10: 'Bilgelik Tacı'
+};
+
+document.getElementById('btn-collection').addEventListener('click', () => {
+    const list = document.getElementById('collection-list');
+    list.innerHTML = '';
+    for (const chapter of chapters) {
+        const collected = storage.hasArtifact(chapter.id);
+        const stars = storage.getChapterStars(chapter.id);
+        const item = document.createElement('div');
+        item.className = 'collection-item' + (collected ? ' collected' : ' locked');
+        const icon = COLLECTION_ICONS[chapter.id] || '\u{1F3FA}';
+        const name = COLLECTION_NAMES[chapter.id] || chapter.name;
+        item.innerHTML = `
+            <div class="collection-icon">${collected ? icon : '\u{1F512}'}</div>
+            <div class="collection-name">${name}</div>
+            <div class="collection-chapter">${chapter.name}</div>
+            <div class="collection-progress">\u2605 ${Math.min(stars, 13)}/13</div>
+        `;
+        list.appendChild(item);
+    }
+    document.getElementById('overlay-collection').classList.remove('hidden');
+});
+
+document.getElementById('btn-collection-close').addEventListener('click', () => {
+    document.getElementById('overlay-collection').classList.add('hidden');
+});
+
+// === LEADERBOARD ===
+document.getElementById('btn-leaderboard').addEventListener('click', () => {
+    const list = document.getElementById('leaderboard-list');
+    list.innerHTML = '';
+    const entries = storage.getWeeklyLeaderboard();
+    if (entries.length === 0) {
+        list.innerHTML = '<p class="leaderboard-empty">Henüz skor yok. Günlük meydan okumayı oyna!</p>';
+    } else {
+        for (let i = 0; i < entries.length; i++) {
+            const e = entries[i];
+            const row = document.createElement('div');
+            row.className = 'leaderboard-row' + (i === 0 ? ' top' : '');
+            const medal = i === 0 ? '\u{1F947}' : i === 1 ? '\u{1F948}' : i === 2 ? '\u{1F949}' : `#${i + 1}`;
+            const starStr = '\u2605'.repeat(e.stars || 0);
+            row.innerHTML = `
+                <span class="lb-rank">${medal}</span>
+                <span class="lb-date">${e.date}</span>
+                <span class="lb-stars">${starStr}</span>
+                <span class="lb-score">${e.score}</span>
+            `;
+            list.appendChild(row);
+        }
+    }
+    document.getElementById('overlay-leaderboard').classList.remove('hidden');
+});
+
+document.getElementById('btn-leaderboard-close').addEventListener('click', () => {
+    document.getElementById('overlay-leaderboard').classList.add('hidden');
+});
+
 // === SETTINGS ===
 document.getElementById('btn-settings').addEventListener('click', () => {
     // Update toggle states
@@ -405,6 +508,8 @@ document.getElementById('setting-reset').addEventListener('click', () => {
 function showConfetti() {
     const container = document.createElement('div');
     container.className = 'confetti-container';
+    container.setAttribute('aria-hidden', 'true');
+    container.setAttribute('role', 'presentation');
     document.body.appendChild(container);
 
     const colors = ['#d4a843', '#c04030', '#2b8a9a', '#3a8a6e', '#8040a0', '#ff6b6b', '#ffd93d', '#6bcb77'];

@@ -7,6 +7,7 @@ export class Grid {
         this.width = width;
         this.height = height;
         this.paths = [];
+        this.walls = []; // [[x,y], ...] immovable obstacles that block path clearance
     }
 
     addPath(cells, direction, colorIndex) {
@@ -15,13 +16,18 @@ export class Grid {
         return path;
     }
 
+    isWall(x, y) {
+        return this.walls.some(w => w[0] === x && w[1] === y);
+    }
+
     // Find which non-removed path owns a cell
     getPathAt(x, y) {
         return this.paths.find(p => !p.isRemoved() && p.state !== ArrowState.REMOVING && p.hasCell(x, y)) || null;
     }
 
-    // Check if any non-removed path has a cell at (x, y)
+    // Check if any non-removed path has a cell at (x, y) — walls also count as occupied
     isCellOccupied(x, y) {
+        if (this.isWall(x, y)) return true;
         return this.paths.some(p => !p.isRemoved() && p.state !== ArrowState.REMOVING && p.hasCell(x, y));
     }
 
@@ -35,6 +41,8 @@ export class Grid {
         let cy = head.y + dy;
 
         while (cx >= 0 && cx < this.width && cy >= 0 && cy < this.height) {
+            // Walls always block
+            if (this.isWall(cx, cy)) return false;
             // Check if any OTHER path occupies this cell
             for (const other of this.paths) {
                 if (other === path || other.isRemoved() || other.state === ArrowState.REMOVING) continue;
@@ -75,8 +83,9 @@ export class Grid {
         return this.paths.filter(p => p.state === ArrowState.REMOVABLE);
     }
 
-    loadFromData(pathsData) {
+    loadFromData(pathsData, walls = []) {
         this.paths = [];
+        this.walls = walls.map(w => [w[0], w[1]]);
         for (let i = 0; i < pathsData.length; i++) {
             const data = pathsData[i];
             this.addPath(data.cells, data.direction, i % 8);

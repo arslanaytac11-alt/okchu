@@ -13,13 +13,25 @@ function seededRandom(seed) {
     return () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
 }
 
+const DAILY_DEFAULT = { streak: 0, lastDay: null, completed: {} };
+
 export function getDailyData() {
     const raw = localStorage.getItem(DAILY_KEY);
-    return raw ? JSON.parse(raw) : { streak: 0, lastDay: null, completed: {} };
+    if (!raw) return { ...DAILY_DEFAULT };
+    try {
+        const parsed = JSON.parse(raw);
+        return { ...DAILY_DEFAULT, ...parsed };
+    } catch {
+        return { ...DAILY_DEFAULT };
+    }
 }
 
 function saveDaily(data) {
-    localStorage.setItem(DAILY_KEY, JSON.stringify(data));
+    try {
+        localStorage.setItem(DAILY_KEY, JSON.stringify(data));
+    } catch (e) {
+        // storage quota or privacy mode — fail silently
+    }
 }
 
 export function isDailyCompleted() {
