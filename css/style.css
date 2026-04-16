@@ -422,6 +422,11 @@ html, body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.story-card > *:last-child {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
 .story-image-container {
@@ -524,11 +529,10 @@ html, body {
 }
 
 .story-body {
-    padding: 24px 24px 40px;
+    padding: 24px 24px 32px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    flex: 1;
 }
 
 .story-divider {

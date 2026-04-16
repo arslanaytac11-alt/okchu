@@ -109,6 +109,7 @@ export class Renderer {
     }
 
     drawGrid(grid) {
+        if (!grid || this.cellSize <= 0) return;
         this.clear();
         const ctx = this.ctx;
 
