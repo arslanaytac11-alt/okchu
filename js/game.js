@@ -46,8 +46,6 @@ export class Game {
         this.maxCombo = 0;
         this.moves = 0;
         this.wrongMoves = 0;
-        this.startTime = 0;
-        this.elapsedTime = 0;
         this.totalPaths = 0;
         this.usedHint = false;
         this.timeLimit = 0;
