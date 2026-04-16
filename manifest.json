@@ -1,6 +1,6 @@
 {
-    "name": "Ok Bulmacasi - Antik Yolculuk",
-    "short_name": "Ok Bulmacasi",
+    "name": "Okchu: Arrow Puzzle",
+    "short_name": "Okchu",
     "description": "Ok puzzle oyunu - 10 antik medeniyet, 50 seviye",
     "start_url": "/index.html",
     "display": "standalone",

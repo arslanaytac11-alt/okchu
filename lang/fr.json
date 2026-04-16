@@ -2,8 +2,8 @@
     "lang": "fr",
     "langName": "Francais",
     "app": {
-        "title": "Arrow Legacy",
-        "subtitle": "Voyage Antique"
+        "title": "Okchu",
+        "subtitle": "Arrow Puzzle"
     },
     "menu": {
         "play": "Jouer",
@@ -57,7 +57,7 @@
         "play_button": "Aller aux Niveaux"
     },
     "tutorial": {
-        "step1_title": "Bienvenue dans Arrow Legacy!",
+        "step1_title": "Bienvenue dans Okchu!",
         "step1_text": "Votre objectif est de retirer toutes les fleches de la grille dans le bon ordre.",
         "step2_title": "Quelle Fleche Toucher?",
         "step2_text": "Une fleche peut etre retiree si le chemin dans la direction qu'elle pointe est libre. Si une autre fleche la bloque, vous ne pouvez pas la toucher!",
@@ -86,7 +86,7 @@
         "10": { "name": "Final", "title": "Convergence des Civilisations", "period": "Intemporel", "text": "La sagesse de toutes les civilisations antiques converge en un seul point.", "mystery": "Unissez les signes de fleches de toutes les civilisations et resolvez le plus grand mystere de l'humanite!", "facts": ["10 civilisations", "Defi ultime", "Tous les sages reunis", "Difficulte legendaire"] }
     },
     "appstore": {
-        "title": "Arrow Legacy - Voyage Antique",
+        "title": "Okchu: Arrow Puzzle - Voyage Antique",
         "subtitle": "Jeu de Puzzle de Fleches",
         "description": "Explorez 10 civilisations anciennes, resolvez 50 puzzles! Une aventure epique de puzzles de fleches.",
         "keywords": "fleche,puzzle,antique,civilisation,egypte,rome,viking,ottoman,strategie,cerveau"

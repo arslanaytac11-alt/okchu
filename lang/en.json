@@ -2,8 +2,8 @@
     "lang": "en",
     "langName": "English",
     "app": {
-        "title": "Arrow Legacy",
-        "subtitle": "Ancient Journey"
+        "title": "Okchu",
+        "subtitle": "Arrow Puzzle"
     },
     "menu": {
         "play": "Play",
@@ -57,7 +57,7 @@
         "play_button": "Go to Levels"
     },
     "tutorial": {
-        "step1_title": "Welcome to Arrow Legacy!",
+        "step1_title": "Welcome to Okchu!",
         "step1_text": "Your goal is to remove all arrows from the grid in the correct order.",
         "step2_title": "Which Arrow to Tap?",
         "step2_text": "An arrow can be removed if the path in the direction it points is clear. If another arrow blocks it, you can't tap it!",
@@ -156,7 +156,7 @@
         }
     },
     "appstore": {
-        "title": "Arrow Legacy - Ancient Journey",
+        "title": "Okchu: Arrow Puzzle - Ancient Journey",
         "subtitle": "Arrow Puzzle Game",
         "description": "Explore 10 ancient civilizations, solve 50 challenging puzzles! An epic arrow puzzle adventure spanning from pyramids to castles, pagodas to temples.",
         "keywords": "arrow,puzzle,ancient,civilization,egypt,rome,viking,ottoman,strategy,brain"

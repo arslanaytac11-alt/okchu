@@ -2,7 +2,7 @@
     "lang": "tr",
     "langName": "Turkce",
     "app": {
-        "title": "Arrow Legacy",
+        "title": "Okchu",
         "subtitle": "Antik Yolculuk"
     },
     "menu": {
@@ -57,7 +57,7 @@
         "play_button": "Seviyelere Git"
     },
     "tutorial": {
-        "step1_title": "Arrow Legacy'ye Hos Geldin!",
+        "step1_title": "Okchu'ya Hos Geldin!",
         "step1_text": "Amacin gridde bulunan tum oklari dogru sirayla kaldirmak.",
         "step2_title": "Hangi Oku Tiklayacaksin?",
         "step2_text": "Bir ok, ucunun gosterdigi yonde yolu aciksa kaldirilabilir. Onunu baska bir ok engelliyorsa tiklanmaz!",
@@ -156,7 +156,7 @@
         }
     },
     "appstore": {
-        "title": "Arrow Legacy - Antik Yolculuk",
+        "title": "Okchu: Arrow Puzzle - Antik Yolculuk",
         "subtitle": "Ok Bulmaca Oyunu",
         "description": "10 antik medeniyeti kesfet, 50 zorlu bulmacayi coz! Piramitlerden kalelere, pagodalardan tapınaklara uzanan epik bir ok bulmaca macerasi.",
         "keywords": "ok,bulmaca,puzzle,antik,medeniyet,misir,roma,viking,osmanli,strateji"

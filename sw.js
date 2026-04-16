@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ok-bulmacasi-v1';
+const CACHE_NAME = 'okchu-v1';
 const ASSETS = [
     '/',
     '/index.html',

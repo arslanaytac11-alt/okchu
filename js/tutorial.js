@@ -6,7 +6,7 @@ const TUTORIAL_KEY = 'ok_bulmacasi_tutorial_done';
 const STEPS = [
     {
         icon: '\u{1F3AF}',
-        title: 'Ok Bulmacasina Hos Geldin!',
+        title: 'Okchu\'ya Hos Geldin!',
         text: 'Amacin gridde bulunan tum oklari dogru sirayla kaldirmak.',
     },
     {
