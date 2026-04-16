@@ -302,22 +302,44 @@ export class Renderer {
             }
         }
 
-        // Main line
+        // Main line with chapter-based style
+        const style = this.arrowStyle;
         ctx.strokeStyle = color;
-        ctx.lineWidth = metrics.width;
+        ctx.lineWidth = style.lineWidth * this.cellSize;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+
+        if (style.dash) {
+            ctx.setLineDash(style.dash);
+        }
         this._strokePoints(ctx, points);
+        if (style.dash) {
+            ctx.setLineDash([]);
+        }
 
         // Arrow head
-        this._drawArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
+        if (style.headStyle === 'forked') {
+            this._drawForkedArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
+        } else {
+            this._drawArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
+        }
 
         // Tail rounded cap
         const tail = points[0];
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(tail.x, tail.y, metrics.width * 0.5, 0, Math.PI * 2);
+        ctx.arc(tail.x, tail.y, (style.lineWidth * this.cellSize) * 0.5, 0, Math.PI * 2);
         ctx.fill();
+
+        // Golden shimmer for chapter 10
+        if (style.shimmer) {
+            const shimmerAlpha = 0.15 + 0.1 * Math.sin(this.animTime / 400 + (path.colorIndex || 0));
+            ctx.strokeStyle = `rgba(255, 215, 0, ${shimmerAlpha})`;
+            ctx.lineWidth = (style.lineWidth + 0.02) * this.cellSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            this._strokePoints(ctx, points);
+        }
 
         if (touchScale !== 1) {
             ctx.restore();
@@ -399,6 +421,36 @@ export class Renderer {
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
         ctx.lineTo(p3.x, p3.y);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    _drawForkedArrowHead(ctx, tipX, tipY, direction, color, metrics) {
+        const size = metrics.headSize;
+        const spread = size * metrics.headSpread;
+        const forkGap = size * 0.25;
+        const { dx, dy } = getDirectionVector(direction);
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+
+        if (dx !== 0) {
+            // Horizontal
+            ctx.moveTo(tipX + dx * size, tipY);
+            ctx.lineTo(tipX, tipY - spread);
+            ctx.lineTo(tipX + dx * size * 0.3, tipY - forkGap);
+            ctx.lineTo(tipX + dx * size * 0.15, tipY);
+            ctx.lineTo(tipX + dx * size * 0.3, tipY + forkGap);
+            ctx.lineTo(tipX, tipY + spread);
+        } else {
+            // Vertical
+            ctx.moveTo(tipX, tipY + dy * size);
+            ctx.lineTo(tipX - spread, tipY);
+            ctx.lineTo(tipX - forkGap, tipY + dy * size * 0.3);
+            ctx.lineTo(tipX, tipY + dy * size * 0.15);
+            ctx.lineTo(tipX + forkGap, tipY + dy * size * 0.3);
+            ctx.lineTo(tipX + spread, tipY);
+        }
         ctx.closePath();
         ctx.fill();
     }
