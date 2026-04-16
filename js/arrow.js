@@ -25,12 +25,19 @@ export function getDirectionVector(direction) {
 }
 
 export class ArrowPath {
-    constructor(cells, direction) {
+    constructor(cells, direction, colorIndex) {
         // cells: array of [x, y] pairs forming the connected path
         this.cells = cells.map(c => ({ x: c[0], y: c[1] }));
         this.direction = direction;
         this.state = ArrowState.IDLE;
         this.animProgress = 0;
+        this.colorIndex = colorIndex || 0;
+
+        // Mechanic fields (set by level loader based on chapter)
+        this.armor = 0;           // >0 means armored, decrements on tap
+        this.frozenUntil = 0;     // timestamp when freeze expires
+        this.mirrorPairId = null;  // string id linking mirror pairs
+        this.chainGroupId = null;  // string id linking chain groups
     }
 
     // The arrow head cell (last cell in array)
