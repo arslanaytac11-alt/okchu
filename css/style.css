@@ -235,7 +235,35 @@ body.dark-mode .screen-header {
 }
 
 body.dark-mode .game-header {
-    background: linear-gradient(180deg, rgba(20,20,40,0.9) 0%, rgba(20,20,40,0.3) 100%);
+    background: linear-gradient(180deg, rgba(20,20,40,0.95) 0%, rgba(20,20,40,0.4) 100%);
+}
+
+body.dark-mode #screen-game {
+    background: linear-gradient(180deg, #1a1a2e 0%, #0e0e1a 100%);
+}
+
+body.dark-mode #screen-game::before {
+    opacity: 0.15;
+}
+
+body.dark-mode .game-stats .stat-label {
+    color: #a09880;
+}
+
+body.dark-mode .game-stats .stat-value {
+    color: #d4c8b0;
+}
+
+body.dark-mode .combo-badge {
+    color: #d4a843;
+}
+
+body.dark-mode .zoom-hint {
+    background: rgba(255,255,255,0.15);
+}
+
+body.dark-mode .banner-ad {
+    border-top-color: rgba(200,170,120,0.08);
 }
 
 body.dark-mode .story-back {

@@ -15,6 +15,11 @@ if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('da
 document.getElementById('btn-dark-mode').addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    // Re-apply theme to canvas if in game
+    if (game.currentChapter) {
+        game.renderer.setTheme(game.currentChapter.theme, game.currentChapter.id);
+        if (game.grid) game.renderer.drawGrid(game.grid);
+    }
 });
 
 // Language system

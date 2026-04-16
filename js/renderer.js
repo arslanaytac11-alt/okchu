@@ -488,6 +488,20 @@ export class Renderer {
         this.ambientParticles.clear();
         this.burstParticles.clear();
         this._loadBgImage(this.chapterId);
+        this._applyDarkMode();
+    }
+
+    _applyDarkMode() {
+        if (!document.body.classList.contains('dark-mode')) return;
+        this.theme.backgroundGradient = ['#1a1a2e', '#0e0e1a'];
+        this.theme.background = '#121220';
+        this.theme.gridDot = 'rgba(180,160,120,0.08)';
+        this.theme.arrowIdle = '#c4b896';
+        this.theme.arrowRemovable = '#c4b896';
+        this.theme.arrowRemoving = '#e06050';
+        this.theme.arrowRemoved = 'rgba(180,160,120,0.06)';
+        this.theme.removableGlow = 'rgba(200,180,120,0.1)';
+        this.theme.hintColor = '#c49a5c';
     }
 
     _loadBgImage(chapterId) {
