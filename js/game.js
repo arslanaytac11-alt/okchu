@@ -232,8 +232,34 @@ export class Game {
             this.hintedPath = null;
             this.renderer.touchFeedback = { path, startTime: performance.now() };
 
+            // Check frozen
+            if (path.frozenUntil && Date.now() < path.frozenUntil) {
+                return; // Frozen, can't interact
+            }
+
+            // Check armor on a clear path
+            if (path.armor > 0 && this.grid.isPathClear(path)) {
+                if (this._handleArmorHit(path)) return;
+            }
+
             if (this.grid.isPathClear(path)) {
                 this.removePathWithAnimation(path);
+
+                // Chain removal
+                const chainPaths = this._handleChainRemoval(path);
+                for (let ci = 0; ci < chainPaths.length; ci++) {
+                    const cp = chainPaths[ci];
+                    setTimeout(() => this.removePathWithAnimation(cp), 150 * (ci + 1));
+                }
+
+                // Mirror removal
+                const mirror = this._handleMirrorRemoval(path);
+                if (mirror) {
+                    setTimeout(() => this.removePathWithAnimation(mirror), 200);
+                }
+
+                // Freeze spread
+                this._handleFreezeSpread(path);
             } else {
                 this.handleWrongMove(path);
             }
@@ -535,6 +561,57 @@ export class Game {
         };
 
         requestAnimationFrame(animate);
+    }
+
+    // --- Chapter-specific mechanics ---
+
+    _handleArmorHit(path) {
+        if (path.armor > 1) {
+            path.armor--;
+            const head = path.getHead();
+            const cx = this.renderer.gridOffsetX + (head.x + 0.5) * this.renderer.cellSize;
+            const cy = this.renderer.gridOffsetY + (head.y + 0.5) * this.renderer.cellSize;
+            this.renderer.burstParticles.burst(cx, cy, 6, {
+                speed: 60, life: 0.3, size: 2,
+                colors: ['#a0a0a0', '#c0c0c0', '#808080'],
+                gravity: 100, shape: 'square',
+            });
+            this.addTime(1);
+            return true; // Consumed the tap
+        }
+        return false; // Armor depleted, proceed with normal removal
+    }
+
+    _handleFreezeSpread(removedPath) {
+        if (!removedPath._isFreezeSource) return;
+        const head = removedPath.getHead();
+        for (const p of this.grid.paths) {
+            if (p === removedPath || p.state !== 'idle') continue;
+            const isNear = p.cells.some(c =>
+                Math.abs(c.x - head.x) <= 1 && Math.abs(c.y - head.y) <= 1
+            );
+            if (isNear) {
+                p.frozenUntil = Date.now() + 3000;
+            }
+        }
+    }
+
+    _handleChainRemoval(path) {
+        if (!path.chainGroupId) return [];
+        return this.grid.paths.filter(p =>
+            p !== path &&
+            p.chainGroupId === path.chainGroupId &&
+            p.state === 'removable'
+        );
+    }
+
+    _handleMirrorRemoval(path) {
+        if (!path.mirrorPairId) return null;
+        return this.grid.paths.find(p =>
+            p !== path &&
+            p.mirrorPairId === path.mirrorPairId &&
+            p.state === 'removable'
+        ) || null;
     }
 
     handleLevelComplete() {

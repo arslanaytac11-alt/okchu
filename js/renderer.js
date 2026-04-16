@@ -341,6 +341,76 @@ export class Renderer {
             this._strokePoints(ctx, points);
         }
 
+        // Mechanic visual overlays
+        if (path.armor > 0) {
+            ctx.save();
+            ctx.strokeStyle = `rgba(180, 190, 200, ${0.4 + 0.1 * Math.sin(this.animTime / 500)})`;
+            ctx.lineWidth = (style.lineWidth + 0.03) * this.cellSize;
+            ctx.setLineDash([3, 3]);
+            this._strokePoints(ctx, points);
+            ctx.setLineDash([]);
+            const hd = path.getHead();
+            const hx = this.gridOffsetX + (hd.x + 0.5) * this.cellSize;
+            const hy = this.gridOffsetY + (hd.y + 0.5) * this.cellSize;
+            ctx.fillStyle = '#c0c0c0';
+            ctx.font = `bold ${this.cellSize * 0.3}px Georgia`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(path.armor.toString(), hx, hy);
+            ctx.restore();
+        }
+
+        if (path.frozenUntil && Date.now() < path.frozenUntil) {
+            ctx.save();
+            const iceAlpha = 0.3 + 0.1 * Math.sin(this.animTime / 300);
+            ctx.strokeStyle = `rgba(100, 180, 220, ${iceAlpha})`;
+            ctx.lineWidth = (style.lineWidth + 0.04) * this.cellSize;
+            this._strokePoints(ctx, points);
+            const hd = path.getHead();
+            const hx = this.gridOffsetX + (hd.x + 0.5) * this.cellSize;
+            const hy = this.gridOffsetY + (hd.y + 0.5) * this.cellSize;
+            ctx.strokeStyle = `rgba(150, 210, 240, ${iceAlpha})`;
+            ctx.lineWidth = 1;
+            for (let j = 0; j < 4; j++) {
+                const a = (j / 4) * Math.PI * 2 + this.animTime / 2000;
+                ctx.beginPath();
+                ctx.moveTo(hx, hy);
+                ctx.lineTo(hx + Math.cos(a) * this.cellSize * 0.3, hy + Math.sin(a) * this.cellSize * 0.3);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        if (path.chainGroupId) {
+            const tl = path.cells[0];
+            const tx = this.gridOffsetX + (tl.x + 0.5) * this.cellSize;
+            const ty = this.gridOffsetY + (tl.y + 0.5) * this.cellSize;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(200, 160, 60, 0.5)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(tx, ty, this.cellSize * 0.15, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(tx + this.cellSize * 0.1, ty, this.cellSize * 0.15, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (path.mirrorPairId) {
+            const hd = path.getHead();
+            const hx = this.gridOffsetX + (hd.x + 0.5) * this.cellSize;
+            const hy = this.gridOffsetY + (hd.y + 0.5) * this.cellSize;
+            ctx.save();
+            const shimmer = 0.3 + 0.2 * Math.sin(this.animTime / 600);
+            ctx.strokeStyle = `rgba(200, 200, 255, ${shimmer})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(hx, hy, this.cellSize * 0.25, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         if (touchScale !== 1) {
             ctx.restore();
         }
