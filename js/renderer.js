@@ -3,6 +3,8 @@
 // Supports L-shaped, U-shaped multi-cell arrow paths
 
 import { ArrowState, getDirectionVector } from './arrow.js';
+import { ParticleSystem } from './particles.js';
+import { AMBIENT_PARTICLES, SILHOUETTES, getArrowStyle, getGridStyle } from './themes.js';
 
 export class Renderer {
     constructor(canvas) {
@@ -20,6 +22,15 @@ export class Renderer {
         this.shakeY = 0;
         this.animTime = 0;
         this.touchFeedback = null;
+        this.ambientParticles = new ParticleSystem();
+        this.burstParticles = new ParticleSystem();
+        this.chapterId = 1;
+        this.arrowStyle = getArrowStyle(1);
+        this.gridStyle = getGridStyle();
+        this._ambientTimer = 0;
+        this._lastTime = 0;
+        this._vignetteAlpha = 0;
+        this._crackEffect = null;
         this.theme = {
             background: '#e8dcc0',
             backgroundGradient: ['#f0e4c8', '#e0d0a8'],
@@ -48,10 +59,10 @@ export class Renderer {
         this.canvas.height = rect.height * dpr;
         this.ctx.scale(dpr, dpr);
 
-        const padding = 16;
+        const padding = 8;
         const maxCellW = (rect.width - padding * 2) / gridWidth;
         const maxCellH = (rect.height - padding * 2) / gridHeight;
-        this.cellSize = Math.floor(Math.min(maxCellW, maxCellH, 40));
+        this.cellSize = Math.floor(Math.min(maxCellW, maxCellH));
 
         const totalW = this.cellSize * gridWidth;
         const totalH = this.cellSize * gridHeight;
@@ -82,17 +93,21 @@ export class Renderer {
     }
 
     clear() {
-        const ctx = this.ctx;
-        const rect = this.canvas.getBoundingClientRect();
-        if (this.theme.backgroundGradient) {
-            const grad = ctx.createLinearGradient(0, 0, 0, rect.height);
-            grad.addColorStop(0, this.theme.backgroundGradient[0]);
-            grad.addColorStop(1, this.theme.backgroundGradient[1]);
-            ctx.fillStyle = grad;
-        } else {
-            ctx.fillStyle = this.theme.background;
+        const { ctx, canvas } = this;
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = canvas.height / (window.devicePixelRatio || 1);
+
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, this.theme.backgroundGradient?.[0] || this.theme.background);
+        grad.addColorStop(1, this.theme.backgroundGradient?.[1] || this.theme.background);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Background silhouettes
+        const drawSilhouette = SILHOUETTES[this.chapterId];
+        if (drawSilhouette) {
+            drawSilhouette(ctx, w, h, 0.07);
         }
-        ctx.fillRect(0, 0, rect.width, rect.height);
     }
 
     drawGrid(grid) {
@@ -119,22 +134,52 @@ export class Renderer {
             if (path.state === ArrowState.REMOVING) this.drawPath(path, false, true);
         }
 
+        // Particles in world space
+        this.ambientParticles.draw(ctx);
+        this.burstParticles.draw(ctx);
+
         ctx.restore();
+
+        // Screen-space overlays
+        this._drawCrackEffect();
+        this._drawVignette();
     }
 
     drawGridDots(grid) {
         const ctx = this.ctx;
+        const gs = this.gridStyle;
+        const dotColor = this.theme.gridDot;
+
         for (let x = 0; x <= grid.width; x++) {
             for (let y = 0; y <= grid.height; y++) {
-                ctx.fillStyle = this.theme.gridDot;
+                const px = this.gridOffsetX + x * this.cellSize;
+                const py = this.gridOffsetY + y * this.cellSize;
+                const isLandmark = x % gs.landmarkInterval === 0 && y % gs.landmarkInterval === 0;
+                const size = isLandmark ? gs.landmarkDotSize : gs.dotSize;
+
                 ctx.beginPath();
-                ctx.arc(
-                    this.gridOffsetX + x * this.cellSize,
-                    this.gridOffsetY + y * this.cellSize,
-                    1, 0, Math.PI * 2
-                );
+                ctx.arc(px, py, size / 2, 0, Math.PI * 2);
+                ctx.fillStyle = dotColor;
                 ctx.fill();
             }
+        }
+
+        // Faint grid lines
+        ctx.strokeStyle = `rgba(120, 90, 50, ${gs.lineAlpha})`;
+        ctx.lineWidth = 0.5;
+        for (let x = 0; x <= grid.width; x++) {
+            const px = this.gridOffsetX + x * this.cellSize;
+            ctx.beginPath();
+            ctx.moveTo(px, this.gridOffsetY);
+            ctx.lineTo(px, this.gridOffsetY + grid.height * this.cellSize);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= grid.height; y++) {
+            const py = this.gridOffsetY + y * this.cellSize;
+            ctx.beginPath();
+            ctx.moveTo(this.gridOffsetX, py);
+            ctx.lineTo(this.gridOffsetX + grid.width * this.cellSize, py);
+            ctx.stroke();
         }
     }
 
@@ -285,43 +330,44 @@ export class Renderer {
         const states = path._snakeCellStates;
         const color = this.theme.arrowRemoving || '#c04030';
 
+        // Collect visible cells with their alpha
+        const visibleCells = [];
         for (let i = 0; i < path.cells.length; i++) {
             if (!states[i].visible) continue;
-            const cell = path.cells[i];
-            const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
-            const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
-            const alpha = states[i].alpha;
+            visibleCells.push({ cell: path.cells[i], alpha: states[i].alpha, idx: i });
+        }
+        if (visibleCells.length === 0) return;
 
-            ctx.globalAlpha = alpha;
-            ctx.fillStyle = color;
+        // Use min alpha of all visible cells for consistent look
+        const minAlpha = Math.min(...visibleCells.map(v => v.alpha));
+        ctx.globalAlpha = minAlpha;
+
+        // Build a temporary path object with only visible cells for normal drawing
+        const tempPath = {
+            cells: visibleCells.map(v => v.cell),
+            direction: path.direction,
+            colorIndex: path.colorIndex,
+            _flashColor: null,
+        };
+
+        // Draw using normal path rendering
+        const { points, tipX, tipY } = this._buildPathPoints(tempPath, metrics);
+        if (points.length >= 2) {
             ctx.strokeStyle = color;
             ctx.lineWidth = metrics.width;
             ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            this._strokePoints(ctx, points);
+            this._drawArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
 
-            // Draw cell dot
+            // Tail cap
+            const tail = points[0];
+            ctx.fillStyle = color;
             ctx.beginPath();
-            ctx.arc(cx, cy, metrics.width * 0.6, 0, Math.PI * 2);
+            ctx.arc(tail.x, tail.y, metrics.width * 0.5, 0, Math.PI * 2);
             ctx.fill();
-
-            // Connect to next visible cell
-            if (i < path.cells.length - 1 && states[i + 1].visible) {
-                const nextCell = path.cells[i + 1];
-                const nx = this.gridOffsetX + nextCell.x * this.cellSize + this.cellSize / 2;
-                const ny = this.gridOffsetY + nextCell.y * this.cellSize + this.cellSize / 2;
-                ctx.globalAlpha = Math.min(alpha, states[i + 1].alpha);
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(nx, ny);
-                ctx.stroke();
-            }
-
-            // Arrow head on last visible cell
-            const isLastVisible = !states.slice(i + 1).some(s => s.visible);
-            if (isLastVisible || i === path.cells.length - 1) {
-                ctx.globalAlpha = alpha;
-                this._drawArrowHead(ctx, cx, cy, path.direction, color, metrics);
-            }
         }
+
         ctx.globalAlpha = 1;
     }
 
@@ -414,11 +460,111 @@ export class Renderer {
         };
     }
 
-    setTheme(theme) {
+    setTheme(theme, chapterId) {
         Object.assign(this.theme, theme);
+        this.chapterId = chapterId || 1;
+        this.arrowStyle = getArrowStyle(this.chapterId);
+        this.gridStyle = getGridStyle();
+        this.ambientParticles.clear();
+        this.burstParticles.clear();
     }
 
     tick(time) {
+        const dt = this._lastTime ? (time - this._lastTime) / 1000 : 0.016;
+        this._lastTime = time;
         this.animTime = time;
+
+        this.ambientParticles.update(dt);
+        this.burstParticles.update(dt);
+
+        this._ambientTimer -= dt;
+        if (this._ambientTimer <= 0) {
+            this._spawnAmbientParticle();
+            this._ambientTimer = 0.3 + Math.random() * 0.4;
+        }
+    }
+
+    _spawnAmbientParticle() {
+        let config = AMBIENT_PARTICLES[this.chapterId];
+        if (!config) return;
+
+        if (config.mixed) {
+            const idx = config.cycle[Math.floor(Math.random() * config.cycle.length)];
+            config = AMBIENT_PARTICLES[idx];
+        }
+
+        if (this.ambientParticles.count >= (config.count || 15)) return;
+
+        const w = this.canvas.width / (window.devicePixelRatio || 1);
+        const h = this.canvas.height / (window.devicePixelRatio || 1);
+        let x, y;
+
+        switch (config.spawnArea) {
+            case 'top':    x = Math.random() * w; y = -10; break;
+            case 'bottom': x = Math.random() * w; y = h + 10; break;
+            case 'left':   x = -10; y = Math.random() * h; break;
+            case 'random': x = Math.random() * w; y = Math.random() * h; break;
+            default:       x = Math.random() * w; y = -10;
+        }
+
+        const vx = (Math.random() - 0.3) * (config.vx || 10);
+        const vy = config.vy || 10;
+
+        this.ambientParticles.spawn(x, y, vx, vy, {
+            life: config.life || 4,
+            size: config.size || 2,
+            color: config.color || '#ffffff',
+            gravity: config.gravity || 0,
+            rotationSpeed: 1,
+            shape: config.shape || 'circle',
+        });
+    }
+
+    setVignetteAlpha(alpha) {
+        this._vignetteAlpha = alpha;
+    }
+
+    _drawVignette() {
+        if (!this._vignetteAlpha || this._vignetteAlpha <= 0) return;
+        const { ctx, canvas } = this;
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = canvas.height / (window.devicePixelRatio || 1);
+        const grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.3, w / 2, h / 2, w * 0.7);
+        grad.addColorStop(0, 'rgba(200, 30, 30, 0)');
+        grad.addColorStop(1, `rgba(200, 30, 30, ${this._vignetteAlpha})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+    }
+
+    showCrackEffect(cx, cy) {
+        this._crackEffect = { cx, cy, start: performance.now(), duration: 300 };
+    }
+
+    _drawCrackEffect() {
+        if (!this._crackEffect) return;
+        const elapsed = performance.now() - this._crackEffect.start;
+        if (elapsed > this._crackEffect.duration) {
+            this._crackEffect = null;
+            return;
+        }
+        const { ctx } = this;
+        const alpha = 1 - elapsed / this._crackEffect.duration;
+        const { cx, cy } = this._crackEffect;
+
+        ctx.save();
+        ctx.strokeStyle = `rgba(200, 40, 40, ${alpha * 0.6})`;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + 0.3;
+            const len = 20 + Math.random() * 30;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            const midX = cx + Math.cos(angle) * len * 0.5 + (Math.random() - 0.5) * 8;
+            const midY = cy + Math.sin(angle) * len * 0.5 + (Math.random() - 0.5) * 8;
+            ctx.lineTo(midX, midY);
+            ctx.lineTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
+            ctx.stroke();
+        }
+        ctx.restore();
     }
 }

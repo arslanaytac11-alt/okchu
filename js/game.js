@@ -67,7 +67,7 @@ export class Game {
         this.grid = new Grid(levelData.gridWidth, levelData.gridHeight);
         this.grid.loadFromData(levelData.paths);
 
-        this.renderer.setTheme(chapterData.theme);
+        this.renderer.setTheme(chapterData.theme, chapterData.id);
         this.renderer.resize(levelData.gridWidth, levelData.gridHeight);
         this.renderer.drawGrid(this.grid);
 
@@ -106,6 +106,22 @@ export class Game {
             this._lastTick = now;
             this.timeRemaining = Math.max(0, this.timeRemaining - dt);
             this._updateTimerDisplay();
+
+            // Vignette urgency
+            const ratio = this.timeRemaining / this.timeLimit;
+            if (ratio < 0.15) {
+                this.renderer.setVignetteAlpha(0.15 * (1 + 0.3 * Math.sin(Date.now() / 300)));
+            } else if (ratio < 0.3) {
+                this.renderer.setVignetteAlpha(0.05);
+            } else {
+                this.renderer.setVignetteAlpha(0);
+            }
+
+            // Heartbeat sound at critical time
+            if (ratio < 0.05 && (!this._lastHeartbeat || Date.now() - this._lastHeartbeat > 600)) {
+                sound.play('heartbeat');
+                this._lastHeartbeat = Date.now();
+            }
 
             if (this.timeRemaining <= 0) {
                 this._handleTimeUp();
