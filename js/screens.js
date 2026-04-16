@@ -107,6 +107,16 @@ export class ScreenManager {
     showLevels(chapter) {
         this.applyChapterTheme(chapter);
         document.getElementById('level-screen-title').textContent = chapter.name;
+
+        // Set chapter-specific background image for levels screen
+        const bgNames = {
+            1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
+            6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
+        };
+        const bgName = bgNames[chapter.id] || 'final';
+        document.getElementById('screen-levels').style.setProperty(
+            '--chapter-bg', `url('../assets/backgrounds/bg-${bgName}.jpg')`
+        );
         const list = document.getElementById('level-list');
         list.innerHTML = '';
 

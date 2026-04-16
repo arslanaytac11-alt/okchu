@@ -380,10 +380,16 @@ html, body {
 }
 
 /* === CHAPTER/LEVEL SELECT === */
-#screen-chapters, #screen-levels {
+#screen-chapters {
     background:
-        radial-gradient(circle at top, var(--theme-accent-soft) 0%, transparent 36%),
-        linear-gradient(180deg, var(--theme-bg-top) 0%, var(--theme-bg-bottom) 100%);
+        linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%),
+        url('../assets/backgrounds/bg-final.jpg') center/cover no-repeat;
+}
+
+#screen-levels {
+    background:
+        linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%),
+        var(--chapter-bg, url('../assets/backgrounds/bg-final.jpg')) center/cover no-repeat;
 }
 
 /* === STORY CARD === */

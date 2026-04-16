@@ -100,33 +100,12 @@ export class Renderer {
         const w = canvas.width / (window.devicePixelRatio || 1);
         const h = canvas.height / (window.devicePixelRatio || 1);
 
-        // Background image (old map) or gradient fallback
-        if (this._bgImageLoaded && this._bgImage) {
-            // Cover the canvas, maintaining aspect ratio
-            const img = this._bgImage;
-            const imgRatio = img.width / img.height;
-            const canvasRatio = w / h;
-            let drawW, drawH, drawX, drawY;
-            if (canvasRatio > imgRatio) {
-                drawW = w; drawH = w / imgRatio;
-                drawX = 0; drawY = (h - drawH) / 2;
-            } else {
-                drawH = h; drawW = h * imgRatio;
-                drawX = (w - drawW) / 2; drawY = 0;
-            }
-            ctx.drawImage(img, drawX, drawY, drawW, drawH);
-
-            // Semi-transparent overlay to soften the image so arrows are readable
-            ctx.fillStyle = 'rgba(240, 228, 200, 0.35)';
-            ctx.fillRect(0, 0, w, h);
-        } else {
-            // Gradient fallback while image loads
-            const grad = ctx.createLinearGradient(0, 0, 0, h);
-            grad.addColorStop(0, this.theme.backgroundGradient?.[0] || this.theme.background);
-            grad.addColorStop(1, this.theme.backgroundGradient?.[1] || this.theme.background);
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, h);
-        }
+        // Gradient background
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, this.theme.backgroundGradient?.[0] || this.theme.background);
+        grad.addColorStop(1, this.theme.backgroundGradient?.[1] || this.theme.background);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
     }
 
     drawGrid(grid) {
