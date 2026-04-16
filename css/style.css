@@ -61,8 +61,8 @@ html, body {
     justify-content: center;
     gap: 0;
     background:
-        radial-gradient(ellipse at 50% 30%, rgba(180,140,80,0.12) 0%, transparent 60%),
-        linear-gradient(180deg, #f0e4c8 0%, #e0d0a8 50%, #d8c8a0 100%);
+        linear-gradient(180deg, rgba(240,228,200,0.3) 0%, rgba(220,200,170,0.4) 100%),
+        url('../assets/menu-bg.png') center/cover no-repeat;
     position: relative;
     overflow: hidden;
 }

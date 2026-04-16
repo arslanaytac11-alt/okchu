@@ -31,6 +31,9 @@ export class Renderer {
         this._lastTime = 0;
         this._vignetteAlpha = 0;
         this._crackEffect = null;
+        this._bgImage = null;
+        this._bgImageLoaded = false;
+        this._preloadedBgs = {};
         this.theme = {
             background: '#e8dcc0',
             backgroundGradient: ['#f0e4c8', '#e0d0a8'],
@@ -97,16 +100,32 @@ export class Renderer {
         const w = canvas.width / (window.devicePixelRatio || 1);
         const h = canvas.height / (window.devicePixelRatio || 1);
 
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, this.theme.backgroundGradient?.[0] || this.theme.background);
-        grad.addColorStop(1, this.theme.backgroundGradient?.[1] || this.theme.background);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
+        // Background image (old map) or gradient fallback
+        if (this._bgImageLoaded && this._bgImage) {
+            // Cover the canvas, maintaining aspect ratio
+            const img = this._bgImage;
+            const imgRatio = img.width / img.height;
+            const canvasRatio = w / h;
+            let drawW, drawH, drawX, drawY;
+            if (canvasRatio > imgRatio) {
+                drawW = w; drawH = w / imgRatio;
+                drawX = 0; drawY = (h - drawH) / 2;
+            } else {
+                drawH = h; drawW = h * imgRatio;
+                drawX = (w - drawW) / 2; drawY = 0;
+            }
+            ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
-        // Background silhouettes
-        const drawSilhouette = SILHOUETTES[this.chapterId];
-        if (drawSilhouette) {
-            drawSilhouette(ctx, w, h, 0.07);
+            // Semi-transparent overlay to soften the image so arrows are readable
+            ctx.fillStyle = 'rgba(240, 228, 200, 0.35)';
+            ctx.fillRect(0, 0, w, h);
+        } else {
+            // Gradient fallback while image loads
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, this.theme.backgroundGradient?.[0] || this.theme.background);
+            grad.addColorStop(1, this.theme.backgroundGradient?.[1] || this.theme.background);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
         }
     }
 
@@ -589,6 +608,33 @@ export class Renderer {
         this.gridStyle = getGridStyle();
         this.ambientParticles.clear();
         this.burstParticles.clear();
+        this._loadBgImage(this.chapterId);
+    }
+
+    _loadBgImage(chapterId) {
+        const names = {
+            1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
+            6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
+        };
+        const name = names[chapterId];
+        if (!name) return;
+
+        // Use cached if available
+        if (this._preloadedBgs[name]) {
+            this._bgImage = this._preloadedBgs[name];
+            this._bgImageLoaded = true;
+            return;
+        }
+
+        this._bgImageLoaded = false;
+        this._bgImage = null;
+        const img = new Image();
+        img.onload = () => {
+            this._bgImage = img;
+            this._bgImageLoaded = true;
+            this._preloadedBgs[name] = img;
+        };
+        img.src = `assets/backgrounds/bg-${name}.jpg`;
     }
 
     tick(time) {
