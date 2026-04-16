@@ -115,7 +115,10 @@ export class ScreenManager {
         };
         const bgName = bgNames[chapter.id] || 'final';
         const levelsScreen = document.getElementById('screen-levels');
-        levelsScreen.style.background = `linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%), url('assets/backgrounds/bg-${bgName}.jpg') center/cover no-repeat`;
+        levelsScreen.style.backgroundImage = `linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%), url('assets/backgrounds/bg-${bgName}.jpg')`;
+        levelsScreen.style.backgroundSize = 'auto, cover';
+        levelsScreen.style.backgroundPosition = 'center, center';
+        levelsScreen.style.backgroundRepeat = 'no-repeat, no-repeat';
         const list = document.getElementById('level-list');
         list.innerHTML = '';
 
