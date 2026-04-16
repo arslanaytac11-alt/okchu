@@ -320,6 +320,51 @@ export class Game {
         // Time bonus
         this.addTime(TIME_BONUS_CORRECT);
         if (this.combo >= 3) this.addTime(TIME_BONUS_COMBO);
+        sound.setComboLevel(this.combo);
+
+        // Combo-scaled particle burst
+        const head = path.getHead();
+        const burstCx = this.renderer.gridOffsetX + (head.x + 0.5) * this.renderer.cellSize;
+        const burstCy = this.renderer.gridOffsetY + (head.y + 0.5) * this.renderer.cellSize;
+        const dirVec = getDirectionVector(path.direction);
+        const burstAngle = Math.atan2(dirVec.dy, dirVec.dx);
+
+        let burstCount, burstSpeed, shakeIntensity;
+        if (this.combo >= 10) {
+            burstCount = 64; burstSpeed = 200; shakeIntensity = 5;
+        } else if (this.combo >= 9) {
+            burstCount = 48; burstSpeed = 180; shakeIntensity = 4;
+        } else if (this.combo >= 6) {
+            burstCount = 32; burstSpeed = 160; shakeIntensity = 3;
+        } else if (this.combo >= 4) {
+            burstCount = 24; burstSpeed = 140; shakeIntensity = 2;
+        } else if (this.combo >= 2) {
+            burstCount = 16; burstSpeed = 120; shakeIntensity = 1;
+        } else {
+            burstCount = 8; burstSpeed = 80; shakeIntensity = 0;
+        }
+
+        const comboColors = ['#ffffff', '#fff4a0', '#ffaa40', '#ff5030', '#ff2020'];
+        const colorIdx = Math.min(Math.floor(this.combo / 2), comboColors.length - 1);
+
+        this.renderer.burstParticles.burst(burstCx, burstCy, burstCount, {
+            speed: burstSpeed,
+            spread: Math.PI * 0.8,
+            angle: burstAngle,
+            life: 0.5 + this.combo * 0.05,
+            size: 2 + this.combo * 0.3,
+            colors: [comboColors[colorIdx], '#ffffff', this.renderer.theme.arrowIdle],
+            gravity: 80,
+            shape: this.combo >= 9 ? 'spark' : 'circle',
+        });
+
+        if (shakeIntensity > 0) {
+            this._doScreenShake(shakeIntensity, 80 + this.combo * 10);
+        }
+
+        if (this.combo >= 10) {
+            this._showFloatingText('MUHTESEM!', burstCx, burstCy - 40, '#ffd700', 28);
+        }
 
         const cells = path.cells;
         const totalCells = cells.length;
@@ -394,6 +439,13 @@ export class Game {
         this.wrongMoves++;
         this.removeTime(TIME_PENALTY_WRONG);
         this._updateScoreDisplay();
+
+        // Crack effect
+        const wrongHead = path.getHead();
+        this.renderer.showCrackEffect(
+            this.renderer.gridOffsetX + (wrongHead.x + 0.5) * this.renderer.cellSize,
+            this.renderer.gridOffsetY + (wrongHead.y + 0.5) * this.renderer.cellSize
+        );
 
         // 4-phase wrong move animation:
         // Phase 1 (0-60ms):    Forward lunge 0.4 cells
@@ -531,36 +583,65 @@ export class Game {
 
     _showFloatingScore(points, path) {
         const head = path.getHead();
-        const cx = this.renderer.gridOffsetX + head.x * this.renderer.cellSize + this.renderer.cellSize / 2;
-        const cy = this.renderer.gridOffsetY + head.y * this.renderer.cellSize;
-        const ctx = this.renderer.ctx;
-        const dpr = window.devicePixelRatio || 1;
-        const startTime = performance.now();
-        const duration = 800;
+        const cx = this.renderer.gridOffsetX + (head.x + 0.5) * this.renderer.cellSize;
+        const cy = this.renderer.gridOffsetY + (head.y + 0.5) * this.renderer.cellSize;
+
+        let color, fontSize;
+        if (this.combo >= 10) { color = '#ff2020'; fontSize = 28; }
+        else if (this.combo >= 6) { color = '#ff8c00'; fontSize = 22; }
+        else if (this.combo >= 3) { color = '#ffd700'; fontSize = 18; }
+        else { color = '#ffffff'; fontSize = 14; }
+
         const text = this.combo > 1 ? `+${points} x${this.combo}` : `+${points}`;
+        this._showFloatingText(text, cx, cy, color, fontSize);
+    }
 
-        const animate = (time) => {
-            const elapsed = time - startTime;
+    _showFloatingText(text, x, y, color, fontSize) {
+        const start = performance.now();
+        const duration = 1000;
+        const draw = () => {
+            const elapsed = performance.now() - start;
             if (elapsed > duration) return;
-            const p = elapsed / duration;
-            const alpha = 1 - p;
-            const yOff = p * -30;
+            const progress = elapsed / duration;
+            const alpha = 1 - progress;
+            const offsetY = -progress * 50;
+            const scale = 1 + Math.sin(progress * Math.PI) * 0.2;
 
-            this.renderer.drawGrid(this.grid);
+            const ctx = this.renderer.ctx;
+            const dpr = window.devicePixelRatio || 1;
             ctx.save();
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            const sx = (cx * this.renderer.scale + this.renderer.panX);
-            const sy = ((cy + yOff) * this.renderer.scale + this.renderer.panY);
+            const sx = x * this.renderer.scale + this.renderer.panX;
+            const sy = (y + offsetY) * this.renderer.scale + this.renderer.panY;
             ctx.globalAlpha = alpha;
-            ctx.fillStyle = this.combo > 2 ? '#c88020' : '#5c3d2e';
-            ctx.font = `bold ${this.combo > 2 ? 16 : 13}px sans-serif`;
+            ctx.font = `bold ${Math.round(fontSize * scale)}px Georgia`;
+            ctx.fillStyle = color;
             ctx.textAlign = 'center';
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 4;
             ctx.fillText(text, sx, sy);
             ctx.restore();
 
-            requestAnimationFrame(animate);
+            requestAnimationFrame(draw);
         };
-        requestAnimationFrame(animate);
+        requestAnimationFrame(draw);
+    }
+
+    _doScreenShake(intensity, duration) {
+        const start = performance.now();
+        const shake = () => {
+            const elapsed = performance.now() - start;
+            if (elapsed > duration) {
+                this.renderer.shakeX = 0;
+                this.renderer.shakeY = 0;
+                return;
+            }
+            const decay = 1 - elapsed / duration;
+            this.renderer.shakeX = Math.sin(elapsed * 0.05) * intensity * decay;
+            this.renderer.shakeY = Math.cos(elapsed * 0.05) * intensity * decay;
+            requestAnimationFrame(shake);
+        };
+        shake();
     }
 
     playCelebration(callback) {
