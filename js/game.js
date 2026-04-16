@@ -368,6 +368,8 @@ export class Game {
         // Successful play dismisses the auto-hint — player doesn't need it anymore.
         this.hintedPath = null;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+        // Light haptic on iOS PWA / Android — scales with combo for reward feel.
+        if (navigator.vibrate) navigator.vibrate(this.combo >= 5 ? 25 : 12);
         const points = this._calculatePoints(path);
         this.score += points;
         this._updateScoreDisplay();
@@ -603,6 +605,8 @@ export class Game {
 
     handleLevelComplete() {
         this._stopTimer();
+        // Celebratory haptic — 3-pulse fanfare for iOS PWA / Android.
+        if (navigator.vibrate) navigator.vibrate([40, 40, 40, 40, 80]);
         const elapsedTime = Math.round((this.timeLimit - this.timeRemaining) * 1000);
         storage.completeLevel(this.currentLevel.id, this.currentChapter.id);
 
