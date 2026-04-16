@@ -477,12 +477,13 @@ html, body {
 }
 
 .game-title {
-    font-size: 2.6rem;
-    color: #5c3d2e;
+    font-size: 3rem;
+    color: #fff;
     text-shadow:
-        0 1px 2px rgba(0,0,0,0.12),
-        0 0 30px rgba(140,90,40,0.08);
-    letter-spacing: 2px;
+        0 0 15px rgba(0,0,0,0.9),
+        0 0 30px rgba(0,0,0,0.6),
+        0 2px 4px rgba(0,0,0,0.8);
+    letter-spacing: 4px;
     animation: menuTitleEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
     margin: 0;
     line-height: 1.2;
@@ -496,17 +497,18 @@ html, body {
 }
 
 .game-subtitle {
-    font-size: 1.1rem;
-    color: #f5eed8;
-    letter-spacing: 5px;
+    font-size: 1.15rem;
+    color: #fff;
+    letter-spacing: 6px;
     text-transform: uppercase;
     font-weight: 700;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4);
-    background: rgba(0,0,0,0.25);
-    padding: 6px 20px;
-    border-radius: 20px;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    background: rgba(0,0,0,0.55);
+    padding: 10px 28px;
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     animation: menuFadeIn 0.8s ease-out 0.8s both;
     margin: 0;
 }
@@ -542,7 +544,7 @@ html, body {
     background: linear-gradient(135deg, #8b5e3c 0%, #6a4028 100%);
     color: #f0e8d8;
     font-weight: bold;
-    box-shadow: 0 3px 8px rgba(100,60,30,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .btn-play-menu {
@@ -1544,6 +1546,16 @@ body[data-theme='ottoman'] .level-card.current {
 }
 
 /* === MENU BOTTOM BUTTONS === */
+.btn-menu-secondary {
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
 .menu-bottom-buttons {
     display: flex;
     gap: 12px;
@@ -1552,16 +1564,18 @@ body[data-theme='ottoman'] .level-card.current {
 
 .btn-menu-icon {
     padding: 10px 20px;
-    border: 1px solid rgba(120,80,40,0.2);
+    border: 1px solid rgba(255,255,255,0.2);
     border-radius: 12px;
-    background: rgba(255,255,255,0.2);
-    color: var(--theme-ink);
+    background: rgba(0,0,0,0.5);
+    color: #fff;
     font-family: inherit;
     font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 body.dark-mode .btn-menu-icon {
