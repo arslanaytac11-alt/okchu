@@ -155,23 +155,28 @@ game.onNoLives = () => showNoLivesOverlay();
 // When lives change (wrong move)
 game.onLivesChanged = () => game.livesManager.renderLives(livesDisplay);
 
-// When time runs out
+// When time runs out - no life loss, just retry or watch ad
 game.onTimeUp = () => {
-    game.livesManager.renderLives(livesDisplay);
-    if (!game.livesManager.hasLives()) {
-        showNoLivesOverlay();
-        return;
-    }
     const overlay = document.getElementById('overlay-time-up');
     overlay.classList.remove('hidden');
 
+    const adBtn = document.getElementById('btn-ad-continue');
     const retryBtn = document.getElementById('btn-retry');
     const backBtn = document.getElementById('btn-time-up-back');
 
     const cleanup = () => {
         overlay.classList.add('hidden');
+        adBtn.removeEventListener('click', adHandler);
         retryBtn.removeEventListener('click', retryHandler);
         backBtn.removeEventListener('click', backHandler);
+    };
+
+    const adHandler = () => {
+        // TODO: Show rewarded ad, then continue with extra time
+        cleanup();
+        game.timeRemaining = 60; // +60 seconds after ad
+        game._startCountdown();
+        game.startRenderLoop();
     };
 
     const retryHandler = () => {
@@ -184,6 +189,7 @@ game.onTimeUp = () => {
         screenManager.showChapters();
     };
 
+    adBtn.addEventListener('click', adHandler);
     retryBtn.addEventListener('click', retryHandler);
     backBtn.addEventListener('click', backHandler);
 };

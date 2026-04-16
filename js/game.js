@@ -18,9 +18,7 @@ const TIME_CONFIG = {
     9: [20, 1.0], 10: [20, 1.0],
 };
 
-const TIME_BONUS_CORRECT = 3;
-const TIME_PENALTY_WRONG = 5;
-const TIME_BONUS_COMBO = 1;
+// Fixed time - no bonus/penalty, solve before time runs out
 
 export class Game {
     constructor(canvas) {
@@ -136,8 +134,6 @@ export class Game {
     _handleTimeUp() {
         this._stopTimer();
         this.stopRenderLoop();
-        this.livesManager.loseLife();
-        if (this.onLivesChanged) this.onLivesChanged();
         if (this.onTimeUp) this.onTimeUp();
     }
 
@@ -154,15 +150,6 @@ export class Game {
         el.classList.toggle('timer-critical', ratio < 0.15);
     }
 
-    addTime(seconds) {
-        this.timeRemaining = Math.min(this.timeLimit, this.timeRemaining + seconds);
-        this._updateTimerDisplay();
-    }
-
-    removeTime(seconds) {
-        this.timeRemaining = Math.max(0, this.timeRemaining - seconds);
-        this._updateTimerDisplay();
-    }
 
     _updateScoreDisplay() {
         const scoreEl = document.getElementById('game-score');
@@ -313,9 +300,6 @@ export class Game {
         this._showFloatingScore(points, path);
 
 
-        // Time bonus
-        this.addTime(TIME_BONUS_CORRECT);
-        if (this.combo >= 3) this.addTime(TIME_BONUS_COMBO);
 
 
         // Combo-scaled particle burst
@@ -444,7 +428,6 @@ export class Game {
         // Scoring: wrong move breaks combo + time penalty
         this.combo = 0;
         this.wrongMoves++;
-        this.removeTime(TIME_PENALTY_WRONG);
         this._updateScoreDisplay();
 
         // Crack effect
