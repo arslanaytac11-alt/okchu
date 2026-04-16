@@ -1297,9 +1297,18 @@ body[data-theme='ottoman'] .level-card.current {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 4px 12px 6px;
-    flex-wrap: wrap;
+    gap: 10px;
+    padding: 4px 8px 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.game-stats::-webkit-scrollbar { display: none; }
+@media (max-width: 480px) {
+    .game-stats { gap: 6px; padding: 3px 6px 5px; }
+    .game-stats .stat-item { gap: 0; }
+    .game-stats .stat-label { font-size: 0.55rem; }
+    .stat-undo, .stat-powerup { width: 32px; height: 32px; font-size: 0.95rem; }
 }
 
 .stat-item {
