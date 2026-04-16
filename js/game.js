@@ -389,36 +389,42 @@ export class Game {
             this._showFloatingText('MUHTESEM!', burstCx, burstCy - 40, '#ffd700', 28);
         }
 
+        // Snake slither animation: the arrow slides out in its direction
+        // Head leads, body follows like a snake crawling away
         const cells = path.cells;
         const totalCells = cells.length;
-        // Snake animation: each cell departs in sequence, tail first → head last
-        const cellDelay = Math.max(40, 120 - totalCells * 3); // slower for short arrows, faster for long
-        const cellAnimDur = 250; // each cell's exit animation duration
-        const holdTime = 80; // brief hold before snake starts
         const { dx, dy } = getDirectionVector(path.direction);
         const origCells = cells.map(c => ({ x: c.x, y: c.y }));
         const startTime = performance.now();
-        const totalDuration = holdTime + totalCells * cellDelay + cellAnimDur + 100;
+
+        // Speed: the arrow travels its own length + extra to fully exit
+        const travelDistance = totalCells + 3; // cells to travel before gone
+        const speed = 0.008; // cells per ms (tuned for smooth slither)
+        const totalDuration = travelDistance / speed;
+        // Each cell starts moving with a wave delay (tail follows head)
+        const waveDelay = 60; // ms between each cell starting to move
 
         const cellStates = cells.map(() => ({ visible: true, offsetX: 0, offsetY: 0, alpha: 1 }));
 
         const animate = (time) => {
-            const elapsed = time - startTime - holdTime; // subtract hold time
+            const elapsed = time - startTime;
 
+            // Head cell (last in array) leads, tail (first) follows
             for (let i = 0; i < totalCells; i++) {
-                if (elapsed < 0) continue; // still in hold phase
-                const cellStart = i * cellDelay;
-                const cellElapsed = elapsed - cellStart;
-                if (cellElapsed < 0) continue;
-                if (cellElapsed < cellAnimDur) {
-                    const p = cellElapsed / cellAnimDur;
-                    // Smooth ease-out with slight overshoot for satisfying feel
-                    const ease = 1 - Math.pow(1 - p, 2.5);
-                    cellStates[i].offsetX = dx * ease * 2.0;
-                    cellStates[i].offsetY = dy * ease * 2.0;
-                    cellStates[i].alpha = Math.max(0, 1 - ease * 1.2);
-                } else {
+                // Reverse: head (last cell) has 0 delay, tail has most delay
+                const delay = (totalCells - 1 - i) * waveDelay;
+                const cellElapsed = Math.max(0, elapsed - delay);
+                const travel = cellElapsed * speed; // how many cells this cell has moved
+
+                if (travel > travelDistance) {
                     cellStates[i].visible = false;
+                } else {
+                    // Smooth acceleration at start
+                    const accel = Math.min(1, cellElapsed / 150);
+                    const smoothTravel = travel * (0.3 + 0.7 * accel);
+                    cellStates[i].offsetX = dx * smoothTravel;
+                    cellStates[i].offsetY = dy * smoothTravel;
+                    cellStates[i].alpha = Math.max(0, 1 - travel / travelDistance);
                 }
             }
 
@@ -432,7 +438,8 @@ export class Game {
             path._snakeCellStates = cellStates;
             this.renderer.drawGrid(this.grid);
 
-            if (elapsed < totalDuration) {
+            const allGone = cellStates.every(s => !s.visible);
+            if (!allGone && elapsed < totalDuration) {
                 requestAnimationFrame(animate);
             } else {
                 for (let i = 0; i < totalCells; i++) {

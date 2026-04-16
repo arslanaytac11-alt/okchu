@@ -1,7 +1,7 @@
 // js/sound.js
 export class SoundManager {
     constructor() {
-        this.enabled = true;
+        this.enabled = false; // Sounds disabled
         this.ctx = null;
     }
 
