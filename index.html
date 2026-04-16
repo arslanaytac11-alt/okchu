@@ -8,6 +8,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#f0e4c8">
     <title>Ok Bulmacasi - Antik Yolculuk</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -26,6 +28,26 @@
                 <h2>Bolumler</h2>
             </div>
             <div id="chapter-list" class="chapter-list"></div>
+        </div>
+
+        <!-- Chapter Story Screen -->
+        <div id="screen-story" class="screen">
+            <div class="story-card">
+                <div class="story-image-container">
+                    <img id="story-image" class="story-image" src="" alt="">
+                    <div class="story-image-overlay"></div>
+                    <button class="btn-back story-back" id="btn-story-back">&larr;</button>
+                </div>
+                <div class="story-body">
+                    <div class="story-period" id="story-period"></div>
+                    <h2 class="story-title" id="story-title"></h2>
+                    <p class="story-text" id="story-text"></p>
+                    <div class="story-divider"></div>
+                    <p class="story-mystery" id="story-mystery"></p>
+                    <div class="story-facts" id="story-facts"></div>
+                    <button id="btn-story-play" class="btn btn-primary story-play-btn">Seviyelere Git</button>
+                </div>
+            </div>
         </div>
 
         <!-- Level Select Screen -->
@@ -89,6 +111,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=8"></script>
+    <script type="module" src="js/main.js?v=9"></script>
 </body>
 </html>

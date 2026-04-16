@@ -173,3 +173,8 @@ if (hintBtn) hintBtn.addEventListener('click', () => game.useHint());
 
 // Resize handler
 window.addEventListener('resize', () => game.handleResize());
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+}

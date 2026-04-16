@@ -9,6 +9,7 @@ export class ScreenManager {
         this.screens = {
             menu: document.getElementById('screen-menu'),
             chapters: document.getElementById('screen-chapters'),
+            story: document.getElementById('screen-story'),
             levels: document.getElementById('screen-levels'),
             game: document.getElementById('screen-game')
         };
@@ -30,6 +31,14 @@ export class ScreenManager {
 
         document.getElementById('btn-chapters-back').addEventListener('click', () => {
             this.showScreen('menu');
+        });
+
+        document.getElementById('btn-story-back').addEventListener('click', () => {
+            this.showChapters();
+        });
+
+        document.getElementById('btn-story-play').addEventListener('click', () => {
+            if (this.currentChapter) this.showLevels(this.currentChapter);
         });
 
         document.getElementById('btn-levels-back').addEventListener('click', () => {
@@ -94,7 +103,7 @@ export class ScreenManager {
             if (unlocked) {
                 card.addEventListener('click', () => {
                     this.currentChapter = chapter;
-                    this.showLevels(chapter);
+                    this.showStory(chapter);
                 });
             }
 
@@ -102,6 +111,105 @@ export class ScreenManager {
         }
 
         this.showScreen('chapters');
+    }
+
+    showStory(chapter) {
+        this.applyChapterTheme(chapter);
+
+        const story = chapter.story || {};
+        const bgNames = {
+            1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
+            6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
+        };
+
+        // Set image
+        const img = document.getElementById('story-image');
+        img.src = `assets/backgrounds/bg-${bgNames[chapter.id] || 'final'}.jpg`;
+
+        // Set text content
+        document.getElementById('story-title').textContent = story.title || chapter.name;
+        document.getElementById('story-period').textContent = story.period || '';
+        document.getElementById('story-text').textContent = story.text || '';
+        document.getElementById('story-mystery').textContent = story.mystery || '';
+
+        // Fun facts per civilization
+        const facts = this._getChapterFacts(chapter.id);
+        const factsEl = document.getElementById('story-facts');
+        factsEl.innerHTML = '';
+        for (const fact of facts) {
+            const tag = document.createElement('span');
+            tag.className = 'story-fact';
+            tag.innerHTML = `<span class="story-fact-icon">${fact.icon}</span>${fact.text}`;
+            factsEl.appendChild(tag);
+        }
+
+        this.showScreen('story');
+    }
+
+    _getChapterFacts(chapterId) {
+        const allFacts = {
+            1: [
+                { icon: '\u{1F3DB}', text: 'Keops Piramidi 146m' },
+                { icon: '\u{1F4DC}', text: 'Hiyeroglif yazisi' },
+                { icon: '\u{1F3A8}', text: 'Mumyalama sanati' },
+                { icon: '\u{2B50}', text: 'Yildiz haritaciligi' },
+            ],
+            2: [
+                { icon: '\u{1F3DB}', text: 'Parthenon tapinagi' },
+                { icon: '\u{1F4D6}', text: 'Felsefe ve demokrasi' },
+                { icon: '\u{1F3C5}', text: 'Olimpiyat oyunlari' },
+                { icon: '\u{2696}', text: 'Matematik ve geometri' },
+            ],
+            3: [
+                { icon: '\u{1F3DB}', text: 'Kolezyum 50.000 kisi' },
+                { icon: '\u{1F6E3}', text: 'Roma yollari 80.000km' },
+                { icon: '\u{2694}', text: 'Gladyator dovusleri' },
+                { icon: '\u{1F4A7}', text: 'Su kemeri muhendisligi' },
+            ],
+            4: [
+                { icon: '\u{26F5}', text: 'Ejderha gemiler' },
+                { icon: '\u{1F9ED}', text: "Amerika'yi kesfettiler" },
+                { icon: '\u{2702}', text: 'Runik alfabe' },
+                { icon: '\u{2744}', text: 'Fiyort cografyasi' },
+            ],
+            5: [
+                { icon: '\u{1F54C}', text: '3 kitaya hukmetti' },
+                { icon: '\u{1F338}', text: 'Lale devri sanati' },
+                { icon: '\u{1F3F0}', text: 'Topkapi Sarayi' },
+                { icon: '\u{2696}', text: '600 yillik imparatorluk' },
+            ],
+            6: [
+                { icon: '\u{1F9E8}', text: 'Barut icadi' },
+                { icon: '\u{1F4DC}', text: 'Kagit ve matbaa' },
+                { icon: '\u{1F9ED}', text: 'Pusula icadi' },
+                { icon: '\u{1F409}', text: 'Cin Seddi 21.000km' },
+            ],
+            7: [
+                { icon: '\u{1F4C5}', text: 'Maya takvimi' },
+                { icon: '\u{2B50}', text: 'Astronomi uzmanligi' },
+                { icon: '\u{1F33D}', text: 'Misir ve kakao' },
+                { icon: '\u{1F3DB}', text: 'Basamakli piramitler' },
+            ],
+            8: [
+                { icon: '\u{1F54C}', text: 'Tac Mahal harikasi' },
+                { icon: '\u{1F9D8}', text: 'Yoga ve meditasyon' },
+                { icon: '\u{1F4D0}', text: 'Sifir sayisini buldular' },
+                { icon: '\u{1F338}', text: 'Lotus ve baharat yolu' },
+            ],
+            9: [
+                { icon: '\u{1F3F0}', text: 'Gotik katedraller' },
+                { icon: '\u{2694}', text: 'Haclı seferleri' },
+                { icon: '\u{1F9EA}', text: 'Simya ve bilim' },
+                { icon: '\u{1F5FA}', text: 'Kesfif cagi baslangici' },
+            ],
+            10: [
+                { icon: '\u{1F30D}', text: '10 medeniyet' },
+                { icon: '\u{1F3C6}', text: 'Son meydan okuma' },
+                { icon: '\u{2728}', text: 'Tum bilgeler burada' },
+                { icon: '\u{1F451}', text: 'Efsanevi zorluk' },
+            ],
+        };
+        return allFacts[chapterId] || [];
     }
 
     showLevels(chapter) {

@@ -411,10 +411,8 @@ html, body {
 
 /* === STORY CARD === */
 #screen-story {
-    background:
-        radial-gradient(circle at top, var(--theme-accent-soft) 0%, transparent 34%),
-        linear-gradient(180deg, var(--theme-bg-top) 0%, var(--theme-bg-bottom) 100%);
-    justify-content: center;
+    background: linear-gradient(180deg, var(--theme-bg-top) 0%, var(--theme-bg-bottom) 100%);
+    padding: 0;
 }
 
 .story-card {
@@ -508,11 +506,69 @@ html, body {
     margin: 4px 0;
 }
 
-#btn-story-continue {
+.story-back {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.story-body {
+    padding: 24px 24px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+}
+
+.story-divider {
+    width: 60px;
+    height: 2px;
+    background: var(--theme-accent);
+    opacity: 0.4;
+    margin: 4px 0;
+}
+
+.story-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.story-fact {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.04);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--theme-ink);
+}
+
+.story-fact-icon {
+    font-size: 1rem;
+}
+
+.story-play-btn {
     align-self: center;
-    margin-top: 8px;
+    margin-top: 12px;
     padding: 16px 48px;
     font-size: 1.15rem;
+    border-radius: 50px;
+    width: 100%;
+    max-width: 280px;
 }
 
 .screen-header {

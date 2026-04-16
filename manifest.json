@@ -1,0 +1,26 @@
+{
+    "name": "Ok Bulmacasi - Antik Yolculuk",
+    "short_name": "Ok Bulmacasi",
+    "description": "Ok puzzle oyunu - 10 antik medeniyet, 50 seviye",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#f0e4c8",
+    "theme_color": "#6a4028",
+    "categories": ["games", "puzzle"],
+    "lang": "tr",
+    "icons": [
+        {
+            "src": "assets/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "assets/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
