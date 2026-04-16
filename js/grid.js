@@ -79,12 +79,7 @@ export class Grid {
         this.paths = [];
         for (let i = 0; i < pathsData.length; i++) {
             const data = pathsData[i];
-            const path = this.addPath(data.cells, data.direction, i % 8);
-            // Load mechanic fields
-            if (data.armor) path.armor = data.armor;
-            if (data.freezeSource) path._isFreezeSource = true;
-            if (data.chainGroup) path.chainGroupId = data.chainGroup;
-            if (data.mirrorPair) path.mirrorPairId = data.mirrorPair;
+            this.addPath(data.cells, data.direction, i % 8);
         }
         this.updateRemovableStates();
     }

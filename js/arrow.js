@@ -32,12 +32,6 @@ export class ArrowPath {
         this.state = ArrowState.IDLE;
         this.animProgress = 0;
         this.colorIndex = colorIndex || 0;
-
-        // Mechanic fields (set by level loader based on chapter)
-        this.armor = 0;           // >0 means armored, decrements on tap
-        this.frozenUntil = 0;     // timestamp when freeze expires
-        this.mirrorPairId = null;  // string id linking mirror pairs
-        this.chainGroupId = null;  // string id linking chain groups
     }
 
     // The arrow head cell (last cell in array)
