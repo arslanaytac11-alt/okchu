@@ -144,6 +144,7 @@ export class Renderer {
     }
 
     drawGridDots(grid) {
+        if (this.cellSize <= 0) return;
         const ctx = this.ctx;
         const gs = this.gridStyle;
         const dotColor = this.theme.gridDot;

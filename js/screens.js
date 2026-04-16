@@ -108,17 +108,6 @@ export class ScreenManager {
         this.applyChapterTheme(chapter);
         document.getElementById('level-screen-title').textContent = chapter.name;
 
-        // Set chapter-specific background image for levels screen
-        const bgNames = {
-            1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
-            6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
-        };
-        const bgName = bgNames[chapter.id] || 'final';
-        const levelsScreen = document.getElementById('screen-levels');
-        levelsScreen.style.backgroundImage = `linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%), url('assets/backgrounds/bg-${bgName}.jpg')`;
-        levelsScreen.style.backgroundSize = 'auto, cover';
-        levelsScreen.style.backgroundPosition = 'center, center';
-        levelsScreen.style.backgroundRepeat = 'no-repeat, no-repeat';
         const list = document.getElementById('level-list');
         list.innerHTML = '';
 
@@ -166,5 +155,19 @@ export class ScreenManager {
         root.style.setProperty('--theme-border', theme.borderColor || 'rgba(100,70,40,0.15)');
         root.style.setProperty('--theme-pattern', theme.patternColor || 'rgba(120,80,40,0.08)');
         document.body.dataset.theme = chapter.id === 5 ? 'ottoman' : 'default';
+
+        // Set chapter map background on levels screen
+        const bgNames = {
+            1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
+            6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
+        };
+        const bgName = bgNames[chapter.id] || 'final';
+        const levelsScreen = document.getElementById('screen-levels');
+        if (levelsScreen) {
+            levelsScreen.style.backgroundImage = `linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%), url('assets/backgrounds/bg-${bgName}.jpg')`;
+            levelsScreen.style.backgroundSize = 'auto, cover';
+            levelsScreen.style.backgroundPosition = 'center, center';
+            levelsScreen.style.backgroundRepeat = 'no-repeat, no-repeat';
+        }
     }
 }
