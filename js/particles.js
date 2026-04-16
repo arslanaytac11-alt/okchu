@@ -62,7 +62,9 @@ export class ParticleSystem {
             shape = 'circle',
         } = config;
 
-        for (let i = 0; i < count; i++) {
+        // Performance: cap total particles at 200
+        const maxSpawn = Math.min(count, 200 - this.particles.length);
+        for (let i = 0; i < maxSpawn; i++) {
             const a = angle + (Math.random() - 0.5) * spread;
             const s = speed * (0.5 + Math.random() * 0.5);
             const c = colors ? colors[Math.floor(Math.random() * colors.length)] : color;

@@ -91,6 +91,17 @@ export class Game {
 
         this.updateHintButton();
         this.startRenderLoop();
+
+        // Zoom hint for large grids
+        const zoomHint = document.getElementById('zoom-hint');
+        if (zoomHint) {
+            if (levelData.gridWidth > 20 || levelData.gridHeight > 20) {
+                zoomHint.classList.remove('hidden');
+                setTimeout(() => zoomHint.classList.add('hidden'), 3500);
+            } else {
+                zoomHint.classList.add('hidden');
+            }
+        }
     }
 
     _startCountdown() {

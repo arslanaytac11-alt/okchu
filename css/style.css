@@ -997,43 +997,97 @@ html, body {
 
 .level-list {
     width: 100%;
-    padding: 16px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    justify-items: center;
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
 }
 
-.level-card {
-    width: 80px;
-    height: 80px;
-    border-radius: 12px;
+/* === LEVEL PATH MAP === */
+.level-path {
+    position: relative;
+    width: 100%;
+    min-height: 640px;
+    padding: 20px 0;
+}
+
+.level-path-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.level-node {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: transform 0.15s;
+    z-index: 2;
+}
+
+.level-node:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
+.level-node-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.1s;
-    border: 1px solid rgba(255,255,255,0.08);
+    transition: box-shadow 0.3s;
 }
 
-.level-card.completed {
-    background: linear-gradient(135deg, #6b9b6b 0%, #4a7a4a 100%);
-    color: #f0f8f0;
-    box-shadow: 0 2px 6px rgba(60,100,60,0.2);
-}
-
-.level-card.current {
-    background: linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-ink) 100%);
+.level-node.current .level-node-circle {
+    background: linear-gradient(135deg, var(--theme-accent), var(--theme-ink));
     color: #f9f3eb;
-    box-shadow: 0 2px 10px var(--theme-accent-soft);
+    box-shadow: 0 3px 12px var(--theme-accent-soft), 0 0 0 3px rgba(255,255,255,0.3);
+    animation: levelPulse 2s ease-in-out infinite;
 }
 
-.level-card.locked {
-    background: rgba(0,0,0,0.06);
-    color: #b0a088;
-    cursor: not-allowed;
+.level-node.completed .level-node-circle {
+    background: linear-gradient(135deg, #6b9b6b, #4a7a4a);
+    color: #f0f8f0;
+    box-shadow: 0 2px 8px rgba(60,100,60,0.25);
+}
+
+@keyframes levelPulse {
+    0%, 100% { box-shadow: 0 3px 12px var(--theme-accent-soft), 0 0 0 3px rgba(255,255,255,0.3); }
+    50% { box-shadow: 0 3px 20px var(--theme-accent-soft), 0 0 0 5px rgba(255,255,255,0.15); }
+}
+
+.level-node-name {
+    font-size: 0.75rem;
+    color: var(--theme-ink);
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.5);
+}
+
+.level-node-stars {
+    font-size: 0.65rem;
+    color: #d4a843;
+    letter-spacing: 1px;
+}
+
+.level-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+    margin-top: 2px;
+}
+
+body.dark-mode .level-node-name {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* === GAME SCREEN === */
@@ -1713,6 +1767,70 @@ body.dark-mode .banner-ad {
 /* Premium users: hide banner */
 body.premium .banner-ad {
     display: none;
+}
+
+/* === ZOOM HINT === */
+.zoom-hint {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    z-index: 5;
+    animation: zoomHintFade 3s ease forwards;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.zoom-hint.hidden { display: none; }
+
+/* === LOADING SKELETON === */
+.skeleton {
+    background: linear-gradient(90deg,
+        rgba(0,0,0,0.04) 25%,
+        rgba(0,0,0,0.08) 50%,
+        rgba(0,0,0,0.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+body.dark-mode .skeleton {
+    background: linear-gradient(90deg,
+        rgba(255,255,255,0.04) 25%,
+        rgba(255,255,255,0.08) 50%,
+        rgba(255,255,255,0.04) 75%
+    );
+    background-size: 200% 100%;
+}
+
+@keyframes skeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-chapter {
+    height: 60px;
+    margin: 8px 16px;
+}
+
+.skeleton-level {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+}
+
+@keyframes zoomHintFade {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 /* === CONFETTI CELEBRATION === */

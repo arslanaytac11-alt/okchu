@@ -119,13 +119,31 @@ export class Renderer {
 
         this.drawGridDots(grid);
 
+        // Viewport culling bounds for performance
+        const dpr = window.devicePixelRatio || 1;
+        const vw = this.canvas.width / dpr;
+        const vh = this.canvas.height / dpr;
+        const margin = this.cellSize * 2;
+        const viewLeft = (-this.panX / this.scale) - margin;
+        const viewTop = (-this.panY / this.scale) - margin;
+        const viewRight = viewLeft + (vw / this.scale) + margin * 2;
+        const viewBottom = viewTop + (vh / this.scale) + margin * 2;
+
+        const isVisible = (path) => {
+            for (const c of path.cells) {
+                const px = this.gridOffsetX + c.x * this.cellSize;
+                const py = this.gridOffsetY + c.y * this.cellSize;
+                if (px >= viewLeft && px <= viewRight && py >= viewTop && py <= viewBottom) return true;
+            }
+            return false;
+        };
+
         // Layer order: removed -> idle/removable -> removing
-        // NO visual difference between idle and removable - player must figure it out
         for (const path of grid.paths) {
-            if (path.state === ArrowState.REMOVED) this.drawRemovedPath(path);
+            if (path.state === ArrowState.REMOVED && isVisible(path)) this.drawRemovedPath(path);
         }
         for (const path of grid.paths) {
-            if (path.state === ArrowState.IDLE || path.state === ArrowState.REMOVABLE) {
+            if ((path.state === ArrowState.IDLE || path.state === ArrowState.REMOVABLE) && isVisible(path)) {
                 this.drawPath(path, false);
             }
         }

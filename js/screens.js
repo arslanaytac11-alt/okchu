@@ -230,34 +230,150 @@ export class ScreenManager {
         list.innerHTML = '';
 
         const levels = getLevelsByChapter(chapter.id);
+
+        // Path map layout - zigzag pattern
+        const pathContainer = document.createElement('div');
+        pathContainer.className = 'level-path';
+
+        // SVG for connecting lines
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.className = 'level-path-svg';
+        svg.setAttribute('viewBox', '0 0 300 600');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        pathContainer.appendChild(svg);
+
+        // Zigzag positions: alternate left-center-right
+        const positions = [
+            { x: 50, y: 90 },
+            { x: 75, y: 210 },
+            { x: 35, y: 330 },
+            { x: 70, y: 450 },
+            { x: 45, y: 560 },
+        ];
+
+        // Draw path lines
+        let pathD = '';
+        for (let i = 0; i < positions.length; i++) {
+            const px = positions[i].x * 3;
+            const py = positions[i].y;
+            if (i === 0) pathD += `M ${px} ${py}`;
+            else pathD += ` L ${px} ${py}`;
+        }
+
+        const pathLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathLine.setAttribute('d', pathD);
+        pathLine.setAttribute('stroke', 'rgba(140,110,70,0.25)');
+        pathLine.setAttribute('stroke-width', '4');
+        pathLine.setAttribute('stroke-dasharray', '8 6');
+        pathLine.setAttribute('fill', 'none');
+        pathLine.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(pathLine);
+
+        // Draw completed path overlay
+        let completedCount = 0;
+        for (const level of levels) {
+            if (storage.isLevelCompleted(level.id)) completedCount++;
+            else break;
+        }
+
+        if (completedCount > 0) {
+            let completedD = '';
+            for (let i = 0; i <= Math.min(completedCount, positions.length - 1); i++) {
+                const px = positions[i].x * 3;
+                const py = positions[i].y;
+                if (i === 0) completedD += `M ${px} ${py}`;
+                else completedD += ` L ${px} ${py}`;
+            }
+            const completedLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            completedLine.setAttribute('d', completedD);
+            completedLine.setAttribute('stroke', 'var(--theme-accent, #a07030)');
+            completedLine.setAttribute('stroke-width', '4');
+            completedLine.setAttribute('fill', 'none');
+            completedLine.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(completedLine);
+        }
+
+        // Create level nodes on the path
         for (let i = 0; i < levels.length; i++) {
             const level = levels[i];
             const completed = storage.isLevelCompleted(level.id);
-            const isAccessible = true; // TEST MODE: all levels unlocked
+            const score = storage.getLevelScore(level.id);
+            const stars = score?.stars || 0;
+            const isAccessible = true;
 
-            const card = document.createElement('div');
-            card.className = 'level-card';
-            if (completed) {
-                card.classList.add('completed');
-            } else if (isAccessible) {
-                card.classList.add('current');
-            } else {
-                card.classList.add('locked');
+            const node = document.createElement('div');
+            node.className = 'level-node' + (completed ? ' completed' : ' current');
+            node.style.left = positions[i].x + '%';
+            node.style.top = positions[i].y + 'px';
+
+            // Level number circle
+            const circle = document.createElement('div');
+            circle.className = 'level-node-circle';
+            circle.textContent = level.level;
+            node.appendChild(circle);
+
+            // Level name
+            const name = document.createElement('div');
+            name.className = 'level-node-name';
+            name.textContent = level.name;
+            node.appendChild(name);
+
+            // Stars
+            if (stars > 0) {
+                const starsEl = document.createElement('div');
+                starsEl.className = 'level-node-stars';
+                starsEl.textContent = '\u2605'.repeat(stars) + '\u2606'.repeat(3 - stars);
+                node.appendChild(starsEl);
             }
 
-            card.textContent = level.level;
-            card.title = level.name;
+            // Thumbnail preview (mini grid)
+            const thumb = document.createElement('canvas');
+            thumb.className = 'level-thumb';
+            thumb.width = 60;
+            thumb.height = 60;
+            this._drawLevelThumbnail(thumb, level);
+            node.appendChild(thumb);
 
             if (isAccessible && this.onStartLevel) {
-                card.addEventListener('click', () => {
+                node.addEventListener('click', () => {
                     this.onStartLevel(level, chapter);
                 });
             }
 
-            list.appendChild(card);
+            pathContainer.appendChild(node);
         }
 
+        list.appendChild(pathContainer);
         this.showScreen('levels');
+    }
+
+    _drawLevelThumbnail(canvas, level) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const gw = level.gridWidth;
+        const gh = level.gridHeight;
+        const cs = Math.min(w / gw, h / gh);
+        const ox = (w - gw * cs) / 2;
+        const oy = (h - gh * cs) / 2;
+
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(80,60,30,0.5)';
+        ctx.lineWidth = Math.max(1, cs * 0.15);
+        ctx.lineCap = 'round';
+
+        for (const p of level.paths) {
+            if (p.cells.length === 0) continue;
+            ctx.beginPath();
+            const c0 = p.cells[0];
+            ctx.moveTo(ox + c0[0] * cs + cs / 2, oy + c0[1] * cs + cs / 2);
+            for (let i = 1; i < p.cells.length; i++) {
+                ctx.lineTo(ox + p.cells[i][0] * cs + cs / 2, oy + p.cells[i][1] * cs + cs / 2);
+            }
+            ctx.stroke();
+        }
     }
 
     applyChapterTheme(chapter) {
