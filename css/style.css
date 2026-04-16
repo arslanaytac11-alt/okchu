@@ -1248,6 +1248,7 @@ body[data-theme='ottoman'] .level-card.current {
     position: relative;
     z-index: 1;
     width: 100%;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     padding: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-right, 0px) + 16px) 12px calc(env(safe-area-inset-left, 0px) + 16px);
@@ -1294,6 +1295,7 @@ body[data-theme='ottoman'] .level-card.current {
 .game-stats {
     position: relative;
     z-index: 1;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1488,7 +1490,8 @@ body.dark-mode .stat-powerup {
 
 #game-canvas {
     width: 100%;
-    flex: 1;
+    flex: 1 1 0;
+    min-height: 0;
     touch-action: none;
 }
 
