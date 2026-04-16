@@ -57,19 +57,13 @@ export const SILHOUETTES = {
     10: drawPanorama,
 };
 
-// Arrow style config per chapter bracket
+// Arrow style - clean solid for all chapters
 export const ARROW_STYLES = {
-    simple: { lineWidth: 0.09, dash: null, headStyle: 'simple', shimmer: false },
-    patterned: { lineWidth: 0.09, dash: [4, 3], headStyle: 'simple', shimmer: false },
-    ornate: { lineWidth: 0.09, dash: null, headStyle: 'forked', shimmer: false },
-    golden: { lineWidth: 0.10, dash: null, headStyle: 'forked', shimmer: true },
+    standard: { lineWidth: 0.09, dash: null, headStyle: 'simple', shimmer: false },
 };
 
-export function getArrowStyle(chapterId) {
-    if (chapterId <= 3) return ARROW_STYLES.simple;
-    if (chapterId <= 6) return ARROW_STYLES.patterned;
-    if (chapterId <= 9) return ARROW_STYLES.ornate;
-    return ARROW_STYLES.golden;
+export function getArrowStyle() {
+    return ARROW_STYLES.standard;
 }
 
 export function getGridStyle() {
