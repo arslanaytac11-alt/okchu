@@ -27,8 +27,11 @@
         <div id="screen-menu" class="screen active">
             <h1 class="game-title">Ok Bulmacasi</h1>
             <p class="game-subtitle">Antik Yolculuk</p>
-            <button id="btn-play" class="btn btn-primary">Oyna</button>
-            <button id="btn-dark-mode" class="btn-dark-toggle" aria-label="Gece modu"></button>
+            <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Oyna</button>
+            <div class="menu-top-buttons">
+                <button id="btn-dark-mode" class="btn-dark-toggle" aria-label="Gece modu"></button>
+                <button id="btn-language" class="btn-lang-toggle" aria-label="Dil">TR</button>
+            </div>
         </div>
 
         <!-- Chapter Select Screen -->
@@ -81,10 +84,10 @@
             </div>
             <div class="game-stats">
                 <div id="lives-display" class="lives-display"></div>
-                <div class="stat-item"><span class="stat-label">Skor</span><span id="game-score" class="stat-value">0</span></div>
+                <div class="stat-item"><span class="stat-label" data-i18n="game.score">Skor</span><span id="game-score" class="stat-value">0</span></div>
                 <div class="stat-item"><span id="game-combo" class="combo-badge"></span></div>
-                <div class="stat-item"><span class="stat-label">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
-                <div class="stat-item"><span class="stat-label">Sure</span><span id="game-timer" class="stat-value">0:00</span></div>
+                <div class="stat-item"><span class="stat-label" data-i18n="game.moves">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
+                <div class="stat-item"><span class="stat-label" data-i18n="game.time">Sure</span><span id="game-timer" class="stat-value">0:00</span></div>
             </div>
             <canvas id="game-canvas"></canvas>
         </div>
@@ -92,21 +95,21 @@
         <!-- Level Complete Overlay -->
         <div id="overlay-complete" class="overlay hidden">
             <div class="overlay-content">
-                <h2>Tebrikler!</h2>
+                <h2 data-i18n="overlay.complete_title">Tebrikler!</h2>
                 <div id="complete-stars" class="stars-display"></div>
                 <p id="complete-score" class="complete-score"></p>
                 <p id="complete-stats" class="complete-stats"></p>
-                <button id="btn-next-level" class="btn btn-primary">Sonraki Seviye</button>
+                <button id="btn-next-level" class="btn btn-primary" data-i18n="overlay.next_level">Sonraki Seviye</button>
             </div>
         </div>
 
         <!-- Lives Empty Overlay -->
         <div id="overlay-no-lives" class="overlay hidden">
             <div class="overlay-content">
-                <h2>Canin Bitti!</h2>
-                <p id="lives-timer-text">Yeni can: --:--</p>
-                <button id="btn-watch-ad" class="btn btn-primary">Reklam Izle (+1 Can)</button>
-                <button id="btn-wait" class="btn btn-secondary">Bekle</button>
+                <h2 data-i18n="overlay.no_lives_title">Canin Bitti!</h2>
+                <p id="lives-timer-text">--:--</p>
+                <button id="btn-watch-ad" class="btn btn-primary" data-i18n="overlay.watch_ad">Reklam Izle (+1 Can)</button>
+                <button id="btn-wait" class="btn btn-secondary" data-i18n="overlay.wait">Bekle</button>
             </div>
         </div>
 
@@ -124,17 +127,31 @@
             </div>
         </div>
 
+        <!-- Language Select Overlay -->
+        <div id="overlay-language" class="overlay hidden">
+            <div class="overlay-content lang-picker">
+                <h2 id="lang-picker-title">Dil / Language</h2>
+                <div class="lang-list">
+                    <button class="lang-option" data-lang="tr">Turkce</button>
+                    <button class="lang-option" data-lang="en">English</button>
+                    <button class="lang-option" data-lang="es">Espanol</button>
+                    <button class="lang-option" data-lang="fr">Francais</button>
+                    <button class="lang-option" data-lang="ja">\u65e5\u672c\u8a9e</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Time Up Overlay -->
         <div id="overlay-time-up" class="overlay hidden">
             <div class="overlay-content">
-                <h2>Sure Doldu!</h2>
-                <p class="time-up-message">Zamani yetistiremdin</p>
-                <button id="btn-retry" class="btn btn-primary">Tekrar Dene</button>
-                <button id="btn-time-up-back" class="btn btn-secondary">Bolumler</button>
+                <h2 data-i18n="overlay.time_up_title">Sure Doldu!</h2>
+                <p class="time-up-message" data-i18n="overlay.time_up_text">Zamani yetistiremdin</p>
+                <button id="btn-retry" class="btn btn-primary" data-i18n="overlay.retry">Tekrar Dene</button>
+                <button id="btn-time-up-back" class="btn btn-secondary" data-i18n="overlay.back_chapters">Bolumler</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=11"></script>
+    <script type="module" src="js/main.js?v=12"></script>
 </body>
 </html>

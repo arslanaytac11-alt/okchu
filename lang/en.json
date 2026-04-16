@@ -1,0 +1,164 @@
+{
+    "lang": "en",
+    "langName": "English",
+    "app": {
+        "title": "Arrow Legacy",
+        "subtitle": "Ancient Journey"
+    },
+    "menu": {
+        "play": "Play",
+        "language": "Language"
+    },
+    "chapters": {
+        "title": "Chapters",
+        "locked": "Locked"
+    },
+    "levels": {
+        "title": "Levels"
+    },
+    "game": {
+        "score": "Score",
+        "moves": "Moves",
+        "time": "Time",
+        "lives": "Lives"
+    },
+    "difficulty": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "hard_plus": "Hard+",
+        "very_hard": "Very Hard",
+        "very_hard_plus": "Very Hard+",
+        "legendary": "Legendary",
+        "legendary_plus": "Legendary+",
+        "nightmare": "Nightmare",
+        "nightmare_plus": "Nightmare+"
+    },
+    "overlay": {
+        "complete_title": "Congratulations!",
+        "complete_score": "Score",
+        "complete_time": "Time",
+        "complete_remaining": "Remaining",
+        "complete_moves": "Moves",
+        "complete_combo": "Max Combo",
+        "complete_wrong": "Wrong",
+        "next_level": "Next Level",
+        "no_lives_title": "Out of Lives!",
+        "new_life_ready": "New life ready!",
+        "new_life_in": "New life in",
+        "watch_ad": "Watch Ad (+1 Life)",
+        "wait": "Wait",
+        "time_up_title": "Time's Up!",
+        "time_up_text": "You ran out of time",
+        "retry": "Retry",
+        "back_chapters": "Chapters"
+    },
+    "story": {
+        "play_button": "Go to Levels"
+    },
+    "tutorial": {
+        "step1_title": "Welcome to Arrow Legacy!",
+        "step1_text": "Your goal is to remove all arrows from the grid in the correct order.",
+        "step2_title": "Which Arrow to Tap?",
+        "step2_text": "An arrow can be removed if the path in the direction it points is clear. If another arrow blocks it, you can't tap it!",
+        "step3_title": "Correct Move",
+        "step3_text": "Tap a clear arrow and it slides off the screen like a snake. You earn points!",
+        "step4_title": "Wrong Move",
+        "step4_text": "Tap a blocked arrow and you lose a life plus 5 seconds. You have 3 lives, be careful!",
+        "step5_title": "Race Against Time",
+        "step5_text": "Each level has a time limit. Correct moves add +3 seconds. Use your time wisely!",
+        "step6_title": "Collect Stars",
+        "step6_text": "Finish fast with no mistakes to earn 3 stars! Stars unlock new chapters.",
+        "next": "Next",
+        "start": "Start!",
+        "skip": "Skip"
+    },
+    "civilizations": {
+        "1": {
+            "name": "Egypt",
+            "title": "Ancient Egypt",
+            "period": "3100 BC - 30 BC",
+            "text": "In the land of pharaohs, pyramids reach for the sky. Hieroglyphic inscriptions hold mysteries unsolved for millennia. Built on the fertile banks of the Nile, this civilization left humanity's most fascinating structures.",
+            "mystery": "Decode the arrow signs hidden in the secret chambers of the pyramids and find the path to the pharaoh's treasure!",
+            "facts": ["Great Pyramid 146m tall", "Hieroglyphic writing", "Art of mummification", "Star cartography"]
+        },
+        "2": {
+            "name": "Greece",
+            "title": "Ancient Greece",
+            "period": "800 BC - 146 BC",
+            "text": "The birthplace of philosophy, democracy, and the Olympics. White marble temples dedicated to the gods, columns reflected in the blue Mediterranean.",
+            "mystery": "Follow the arrow signs hidden among the marble columns of the Parthenon and solve the riddle of the gods!",
+            "facts": ["The Parthenon", "Philosophy & democracy", "Olympic Games", "Mathematics & geometry"]
+        },
+        "3": {
+            "name": "Rome",
+            "title": "Roman Empire",
+            "period": "753 BC - 476 AD",
+            "text": "Echoing cheers in the Colosseum, engineering marvels of aqueducts, an empire where all roads led to Rome.",
+            "mystery": "Solve the lost arrow map in the dark corridors of the Colosseum and open the gladiator's path to freedom!",
+            "facts": ["Colosseum: 50,000 seats", "80,000km of Roman roads", "Gladiator battles", "Aqueduct engineering"]
+        },
+        "4": {
+            "name": "Vikings",
+            "title": "Viking Age",
+            "period": "793 AD - 1066 AD",
+            "text": "Dragon ships sailing from icy fjords, prophecies carved into runic stones. The fearless warriors of the North set sail not just to conquer, but to discover new lands.",
+            "mystery": "Decode the arrow symbols on the runic stones in the correct order and unlock the secret of the Viking treasure map!",
+            "facts": ["Dragon longships", "Discovered America", "Runic alphabet", "Fjord geography"]
+        },
+        "5": {
+            "name": "Ottoman",
+            "title": "Ottoman Empire",
+            "period": "1299 AD - 1922 AD",
+            "text": "A magnificent empire ruling three continents. Mosque domes shine with golden light, the art of illumination turns paper into jewels.",
+            "mystery": "Open the sealed passages in Topkapi Palace courtyard and follow the trail of the lost decree!",
+            "facts": ["Ruled 3 continents", "Tulip era art", "Topkapi Palace", "600-year empire"]
+        },
+        "6": {
+            "name": "China",
+            "title": "Ancient China",
+            "period": "2070 BC - 1912 AD",
+            "text": "The Great Wall vanishes into the horizon, the Silk Road connects world civilizations. Dragon legends hide among the clouds.",
+            "mystery": "Solve the dragon map in the forbidden chamber of the Forbidden City and find the emperor's lost seal!",
+            "facts": ["Invented gunpowder", "Paper & printing", "Invented compass", "Great Wall: 21,000km"]
+        },
+        "7": {
+            "name": "Maya",
+            "title": "Maya Civilization",
+            "period": "2000 BC - 1500 AD",
+            "text": "Stone pyramids rising to the sky deep in the jungle, observatories tracking the stars. The Maya calendar was incredibly precise in measuring time.",
+            "mystery": "Solve the arrow symbols on the Maya calendar and unlock the secret of the solar eclipse!",
+            "facts": ["Maya calendar", "Astronomy expertise", "Corn & cacao", "Stepped pyramids"]
+        },
+        "8": {
+            "name": "India",
+            "title": "Ancient India",
+            "period": "3300 BC - 1800 AD",
+            "text": "The white marble of the Taj Mahal gleams in moonlight, the Ganges carries its sacred waters. Mandala patterns symbolize infinity.",
+            "mystery": "Solve the arrow paths hidden among the lotus patterns in the secret garden of the Taj Mahal!",
+            "facts": ["Taj Mahal wonder", "Yoga & meditation", "Invented zero", "Lotus & spice route"]
+        },
+        "9": {
+            "name": "Medieval Europe",
+            "title": "Medieval Europe",
+            "period": "500 AD - 1500 AD",
+            "text": "In the dark ages, castles rise on misty hilltops, knights' swords gleam in moonlight. Gothic cathedral stained glass tells ancient stories.",
+            "mystery": "Solve the arrow signs in the alchemist's labyrinth-like castle and unlock the formula of the philosopher's stone!",
+            "facts": ["Gothic cathedrals", "The Crusades", "Alchemy & science", "Age of Discovery begins"]
+        },
+        "10": {
+            "name": "Final",
+            "title": "Convergence of Civilizations",
+            "period": "Timeless",
+            "text": "The wisdom of all ancient civilizations converges at a single point. Each culture left its piece. Now all pieces must come together.",
+            "mystery": "Unite the arrow signs left by all civilizations and solve humanity's greatest mystery!",
+            "facts": ["10 civilizations", "Ultimate challenge", "All sages united", "Legendary difficulty"]
+        }
+    },
+    "appstore": {
+        "title": "Arrow Legacy - Ancient Journey",
+        "subtitle": "Arrow Puzzle Game",
+        "description": "Explore 10 ancient civilizations, solve 50 challenging puzzles! An epic arrow puzzle adventure spanning from pyramids to castles, pagodas to temples.",
+        "keywords": "arrow,puzzle,ancient,civilization,egypt,rome,viking,ottoman,strategy,brain"
+    }
+}

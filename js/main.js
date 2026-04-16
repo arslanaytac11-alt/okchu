@@ -5,12 +5,49 @@ import { ScreenManager } from './screens.js';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
+import { initLanguage, loadLanguage, t, getLang } from './i18n.js';
 
 // Dark mode
 if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
 document.getElementById('btn-dark-mode').addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+});
+
+// Language system
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const val = t(key);
+        if (val && val !== key) el.textContent = val;
+    });
+    // Update language button text
+    const langBtn = document.getElementById('btn-language');
+    if (langBtn) langBtn.textContent = getLang().toUpperCase();
+}
+
+initLanguage().then(() => applyTranslations());
+
+// Language picker
+document.getElementById('btn-language').addEventListener('click', () => {
+    const overlay = document.getElementById('overlay-language');
+    overlay.classList.remove('hidden');
+    // Mark active language
+    overlay.querySelectorAll('.lang-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === getLang());
+    });
+});
+
+document.querySelectorAll('.lang-option').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        await loadLanguage(btn.dataset.lang);
+        applyTranslations();
+        document.getElementById('overlay-language').classList.add('hidden');
+        // Refresh chapters if visible
+        if (document.getElementById('screen-chapters').classList.contains('active')) {
+            screenManager.showChapters();
+        }
+    });
 });
 
 // Splash screen -> app transition

@@ -91,11 +91,17 @@
     transition: opacity 0.3s ease;
 }
 
-/* === DARK MODE TOGGLE === */
-.btn-dark-toggle {
+/* === MENU TOP BUTTONS === */
+.menu-top-buttons {
     position: absolute;
     top: env(safe-area-inset-top, 16px);
     right: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.btn-dark-toggle, .btn-lang-toggle {
     width: 44px;
     height: 44px;
     border: none;
@@ -107,7 +113,49 @@
     align-items: center;
     justify-content: center;
     transition: background 0.3s;
-    z-index: 10;
+}
+
+.btn-lang-toggle {
+    font-size: 0.75rem;
+    font-weight: bold;
+    font-family: inherit;
+    color: var(--theme-ink);
+    letter-spacing: 0.5px;
+}
+
+/* Language picker */
+.lang-picker {
+    gap: 12px;
+}
+
+.lang-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.lang-option {
+    padding: 14px 20px;
+    border: 1px solid var(--theme-border);
+    border-radius: 12px;
+    background: var(--theme-surface);
+    color: var(--theme-ink);
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    text-align: left;
+}
+
+.lang-option:active {
+    transform: scale(0.97);
+}
+
+.lang-option.active {
+    border-color: var(--theme-accent);
+    background: rgba(160,112,48,0.1);
+    font-weight: bold;
 }
 
 .btn-dark-toggle::after {

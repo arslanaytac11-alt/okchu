@@ -1,0 +1,94 @@
+{
+    "lang": "es",
+    "langName": "Espanol",
+    "app": {
+        "title": "Arrow Legacy",
+        "subtitle": "Viaje Antiguo"
+    },
+    "menu": {
+        "play": "Jugar",
+        "language": "Idioma"
+    },
+    "chapters": {
+        "title": "Capitulos",
+        "locked": "Bloqueado"
+    },
+    "levels": {
+        "title": "Niveles"
+    },
+    "game": {
+        "score": "Puntos",
+        "moves": "Movim.",
+        "time": "Tiempo",
+        "lives": "Vidas"
+    },
+    "difficulty": {
+        "easy": "Facil",
+        "medium": "Medio",
+        "hard": "Dificil",
+        "hard_plus": "Dificil+",
+        "very_hard": "Muy Dificil",
+        "very_hard_plus": "Muy Dificil+",
+        "legendary": "Legendario",
+        "legendary_plus": "Legendario+",
+        "nightmare": "Pesadilla",
+        "nightmare_plus": "Pesadilla+"
+    },
+    "overlay": {
+        "complete_title": "Felicidades!",
+        "complete_score": "Puntos",
+        "complete_time": "Tiempo",
+        "complete_remaining": "Restante",
+        "complete_moves": "Movimientos",
+        "complete_combo": "Max Combo",
+        "complete_wrong": "Errores",
+        "next_level": "Siguiente Nivel",
+        "no_lives_title": "Sin Vidas!",
+        "new_life_ready": "Nueva vida lista!",
+        "new_life_in": "Nueva vida en",
+        "watch_ad": "Ver Anuncio (+1 Vida)",
+        "wait": "Esperar",
+        "time_up_title": "Tiempo Agotado!",
+        "time_up_text": "Se acabo el tiempo",
+        "retry": "Reintentar",
+        "back_chapters": "Capitulos"
+    },
+    "story": {
+        "play_button": "Ir a Niveles"
+    },
+    "tutorial": {
+        "step1_title": "Bienvenido a Arrow Legacy!",
+        "step1_text": "Tu objetivo es eliminar todas las flechas del tablero en el orden correcto.",
+        "step2_title": "Que Flecha Tocar?",
+        "step2_text": "Una flecha se puede eliminar si el camino en la direccion que apunta esta libre. Si otra flecha la bloquea, no puedes tocarla!",
+        "step3_title": "Movimiento Correcto",
+        "step3_text": "Toca una flecha libre y se desliza fuera de la pantalla como una serpiente. Ganas puntos!",
+        "step4_title": "Movimiento Incorrecto",
+        "step4_text": "Toca una flecha bloqueada y pierdes una vida mas 5 segundos. Tienes 3 vidas, ten cuidado!",
+        "step5_title": "Carrera Contra el Tiempo",
+        "step5_text": "Cada nivel tiene un limite de tiempo. Los movimientos correctos agregan +3 segundos. Usa tu tiempo sabiamente!",
+        "step6_title": "Colecciona Estrellas",
+        "step6_text": "Termina rapido sin errores para ganar 3 estrellas! Las estrellas desbloquean nuevos capitulos.",
+        "next": "Siguiente",
+        "start": "Empezar!",
+        "skip": "Saltar"
+    },
+    "civilizations": {
+        "1": { "name": "Egipto", "title": "Antiguo Egipto", "period": "3100 a.C. - 30 a.C.", "text": "En la tierra de los faraones, las piramides se elevan hacia el cielo. Los jeroglificos guardan misterios sin resolver durante milenios.", "mystery": "Descifra las senales de flechas ocultas en las camaras secretas de las piramides!", "facts": ["Piramide de Keops 146m", "Escritura jeroglifica", "Arte de momificacion", "Cartografia estelar"] },
+        "2": { "name": "Grecia", "title": "Antigua Grecia", "period": "800 a.C. - 146 a.C.", "text": "Cuna de la filosofia, la democracia y los Juegos Olimpicos. Templos de marmol blanco dedicados a los dioses.", "mystery": "Sigue las flechas entre las columnas del Partenon y resuelve el acertijo de los dioses!", "facts": ["El Partenon", "Filosofia y democracia", "Juegos Olimpicos", "Matematicas y geometria"] },
+        "3": { "name": "Roma", "title": "Imperio Romano", "period": "753 a.C. - 476 d.C.", "text": "Aplausos en el Coliseo, maravillas de ingenieria en los acueductos, un imperio donde todos los caminos llevaban a Roma.", "mystery": "Resuelve el mapa de flechas perdido en los oscuros corredores del Coliseo!", "facts": ["Coliseo: 50.000 asientos", "80.000km de calzadas", "Luchas de gladiadores", "Ingenieria de acueductos"] },
+        "4": { "name": "Vikingos", "title": "Era Vikinga", "period": "793 d.C. - 1066 d.C.", "text": "Barcos dragon zarpando de fiordos helados, profecias talladas en piedras runicas.", "mystery": "Descifra los simbolos de flechas en las piedras runicas y desbloquea el mapa del tesoro vikingo!", "facts": ["Barcos dragon", "Descubrieron America", "Alfabeto runico", "Geografia de fiordos"] },
+        "5": { "name": "Otomano", "title": "Imperio Otomano", "period": "1299 d.C. - 1922 d.C.", "text": "Un magnifico imperio que goberno tres continentes. Las cupulas de las mezquitas brillan con luz dorada.", "mystery": "Abre los pasajes sellados del Palacio Topkapi y sigue el rastro del decreto perdido!", "facts": ["Goberno 3 continentes", "Arte de la era del tulipan", "Palacio Topkapi", "Imperio de 600 anos"] },
+        "6": { "name": "China", "title": "Antigua China", "period": "2070 a.C. - 1912 d.C.", "text": "La Gran Muralla se pierde en el horizonte, la Ruta de la Seda conecta civilizaciones.", "mystery": "Resuelve el mapa del dragon en la camara prohibida de la Ciudad Prohibida!", "facts": ["Invento la polvora", "Papel e imprenta", "Invento la brujula", "Gran Muralla: 21.000km"] },
+        "7": { "name": "Maya", "title": "Civilizacion Maya", "period": "2000 a.C. - 1500 d.C.", "text": "Piramides de piedra que se elevan al cielo en lo profundo de la selva, observatorios que rastrean las estrellas.", "mystery": "Resuelve los simbolos de flechas del calendario maya y descubre el secreto del eclipse solar!", "facts": ["Calendario maya", "Expertos en astronomia", "Maiz y cacao", "Piramides escalonadas"] },
+        "8": { "name": "India", "title": "Antigua India", "period": "3300 a.C. - 1800 d.C.", "text": "El marmol blanco del Taj Mahal brilla bajo la luz de la luna, el Ganges lleva sus aguas sagradas.", "mystery": "Resuelve los caminos de flechas entre los patrones de loto del jardin secreto del Taj Mahal!", "facts": ["Maravilla del Taj Mahal", "Yoga y meditacion", "Inventaron el cero", "Ruta del loto y especias"] },
+        "9": { "name": "Europa Medieval", "title": "Europa Medieval", "period": "500 d.C. - 1500 d.C.", "text": "En la edad oscura, los castillos se alzan en colinas brumosas, las espadas de los caballeros brillan a la luz de la luna.", "mystery": "Resuelve las flechas en el castillo laberintico del alquimista y descubre la formula de la piedra filosofal!", "facts": ["Catedrales goticas", "Las Cruzadas", "Alquimia y ciencia", "Era de los descubrimientos"] },
+        "10": { "name": "Final", "title": "Convergencia de Civilizaciones", "period": "Atemporal", "text": "La sabiduria de todas las civilizaciones antiguas converge en un solo punto. Cada cultura dejo su pieza.", "mystery": "Une las senales de flechas de todas las civilizaciones y resuelve el mayor misterio de la humanidad!", "facts": ["10 civilizaciones", "Desafio final", "Todos los sabios unidos", "Dificultad legendaria"] }
+    },
+    "appstore": {
+        "title": "Arrow Legacy - Viaje Antiguo",
+        "subtitle": "Juego de Puzzle de Flechas",
+        "description": "Explora 10 civilizaciones antiguas, resuelve 50 desafiantes puzzles! Una epica aventura de puzzles de flechas.",
+        "keywords": "flecha,puzzle,antiguo,civilizacion,egipto,roma,vikingo,otomano,estrategia,cerebro"
+    }
+}
