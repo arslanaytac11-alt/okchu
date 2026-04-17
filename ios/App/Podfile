@@ -16,9 +16,9 @@ def capacitor_pods
   pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
   pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
   pod 'CordovaPlugins', :path => '../capacitor-cordova-ios-plugins'
-  # Pin UMP SDK to 2.x — admob plugin v6.2.0 uses the old API (sharedInstance, UMPConsentStatus)
-  # which was renamed in UMP 3.0+.
-  pod 'GoogleUserMessagingPlatform', '~> 2.7'
+  # Pin UMP SDK to last 2.x — admob plugin v6.2.0 uses old API (sharedInstance, UMPConsentStatus)
+  # which was renamed in UMP 3.0+. Force a specific 2.x version to override transitive resolution.
+  pod 'GoogleUserMessagingPlatform', '2.7.0'
 end
 
 target 'App' do
