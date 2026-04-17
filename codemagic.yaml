@@ -1,0 +1,53 @@
+workflows:
+  ios-capacitor-workflow:
+    name: Okchu iOS Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      ios_signing:
+        # App Store Connect'te oluştur, CodeMagic > Teams > Integrations'a bağla
+        distribution_type: app_store
+        bundle_identifier: com.arslanaytac.okchu
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APP_STORE_APP_ID: 0000000000   # App Store Connect'teki Apple ID (sayı)
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci
+      - name: Build web assets & sync Capacitor
+        script: |
+          npm run cap:sync
+      - name: Install CocoaPods
+        script: |
+          cd ios/App && pod install
+      - name: Set build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $(($BUILD_NUMBER + 100))
+      - name: Build ipa for App Store
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      app_store_connect:
+        auth: integration
+        # TestFlight'a otomatik gönder. App Store submit'i manuel yap (ilk sürüm için)
+        submit_to_testflight: true
+        # İlk sürüm yayınlandıktan sonra submit_to_app_store: true yapabilirsin
+      email:
+        recipients:
+          - arslan.aytac11@gmail.com
+        notify:
+          success: true
+          failure: true

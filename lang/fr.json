@@ -7,7 +7,12 @@
     },
     "menu": {
         "play": "Jouer",
-        "language": "Langue"
+        "language": "Langue",
+        "daily": "D\u00e9fi Quotidien",
+        "achievements": "Succ\u00e8s",
+        "collection": "Collection",
+        "leaderboard": "Classement",
+        "settings": "Param\u00e8tres"
     },
     "chapters": {
         "title": "Chapitres",
@@ -51,7 +56,16 @@
         "time_up_title": "Temps Ecoule!",
         "time_up_text": "Le temps est ecoule",
         "retry": "Reessayer",
-        "back_chapters": "Chapitres"
+        "back_chapters": "Chapitres",
+        "daily_fail_time_title": "Temps Ecoule!",
+        "daily_fail_moves_title": "Plus de Coups!",
+        "daily_fail_message": "Vous n'avez pas reussi le defi quotidien. Revenez demain pour un nouveau niveau!",
+        "daily_fail_streak_note": "Votre serie est preservee."
+    },
+    "daily": {
+        "badge_time": "Defi Temps",
+        "badge_moves": "Defi Coups",
+        "already_done": "Vous avez deja termine le defi d'aujourd'hui! Revenez demain."
     },
     "story": {
         "play_button": "Aller aux Niveaux"
@@ -85,10 +99,39 @@
         "9": { "name": "Europe Medievale", "title": "Europe Medievale", "period": "500 ap. J.-C. - 1500 ap. J.-C.", "text": "A l'age sombre, les chateaux se dressent sur des collines brumeuses.", "mystery": "Resolvez les fleches dans le chateau-labyrinthe de l'alchimiste!", "facts": ["Cathedrales gothiques", "Les Croisades", "Alchimie et science", "Ere des decouvertes"] },
         "10": { "name": "Final", "title": "Convergence des Civilisations", "period": "Intemporel", "text": "La sagesse de toutes les civilisations antiques converge en un seul point.", "mystery": "Unissez les signes de fleches de toutes les civilisations et resolvez le plus grand mystere de l'humanite!", "facts": ["10 civilisations", "Defi ultime", "Tous les sages reunis", "Difficulte legendaire"] }
     },
+    "install": {
+        "title": "Ajouter \u00e0 l'\u00e9cran d'accueil",
+        "body": "Jouez en plein \u00e9cran, fonctionne hors ligne",
+        "step_share": "Partager",
+        "step_add": "Sur l'\u00e9cran d'accueil"
+    },
+    "rate": {
+        "title": "Vous aimez Okchu?",
+        "subtitle": "Vos retours nous guident",
+        "later": "Plus tard",
+        "email_body": "Bonjour! Mes retours sur Okchu:\n\n"
+    },
     "appstore": {
         "title": "Okchu: Arrow Puzzle - Voyage Antique",
         "subtitle": "Jeu de Puzzle de Fleches",
         "description": "Explorez 10 civilisations anciennes, resolvez 50 puzzles! Une aventure epique de puzzles de fleches.",
         "keywords": "fleche,puzzle,antique,civilisation,egypte,rome,viking,ottoman,strategie,cerveau"
+    },
+    "settings": {
+        "privacy": "Politique de Confidentialite",
+        "terms": "Conditions d'Utilisation"
+    },
+    "premium": {
+        "title": "Premium sans Publicite",
+        "subtitle": "Paiement unique. Toutes les publicites supprimees.",
+        "benefit_ads": "✓ Aucune banniere ni video",
+        "benefit_support": "✓ Soutenez le developpeur",
+        "benefit_forever": "✓ A vous pour toujours",
+        "buy": "Acheter",
+        "restore": "Restaurer les Achats",
+        "legal_note": "En achetant vous acceptez:",
+        "terms": "Conditions d'Utilisation",
+        "privacy": "Politique de Confidentialite",
+        "close": "Fermer"
     }
 }

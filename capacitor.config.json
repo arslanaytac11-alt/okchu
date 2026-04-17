@@ -1,0 +1,23 @@
+{
+  "appId": "com.arslanaytac.okchu",
+  "appName": "Okchu",
+  "webDir": "www",
+  "server": {
+    "iosScheme": "okchu",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": true,
+    "backgroundColor": "#f0e4c8"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "launchAutoHide": true,
+      "backgroundColor": "#f0e4c8",
+      "showSpinner": false,
+      "splashImmersive": true
+    }
+  }
+}

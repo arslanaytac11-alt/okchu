@@ -15,8 +15,8 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-192.png">
-    <link rel="icon" type="image/jpeg" href="assets/icons/icon-192.png">
-    <link rel="stylesheet" href="css/style.css?v=9">
+    <link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+    <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
     <!-- Splash Screen -->
@@ -33,12 +33,12 @@
             <h1 class="game-title">Okchu</h1>
             <p class="game-subtitle">Arrow Puzzle</p>
             <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Oyna</button>
-            <button id="btn-daily" class="btn btn-menu-secondary">Günlük Meydan Okuma</button>
+            <button id="btn-daily" class="btn btn-menu-secondary" data-i18n="menu.daily">Günlük Meydan Okuma</button>
             <div class="menu-bottom-buttons">
-                <button id="btn-achievements" class="btn-menu-icon">Başarımlar</button>
-                <button id="btn-collection" class="btn-menu-icon">Koleksiyon</button>
-                <button id="btn-leaderboard" class="btn-menu-icon">Lider Tablosu</button>
-                <button id="btn-settings" class="btn-menu-icon">Ayarlar</button>
+                <button id="btn-achievements" class="btn-menu-icon" data-i18n="menu.achievements">Başarımlar</button>
+                <button id="btn-collection" class="btn-menu-icon" data-i18n="menu.collection">Koleksiyon</button>
+                <button id="btn-leaderboard" class="btn-menu-icon" data-i18n="menu.leaderboard">Lider Tablosu</button>
+                <button id="btn-settings" class="btn-menu-icon" data-i18n="menu.settings">Ayarlar</button>
             </div>
             <div class="menu-top-buttons">
                 <button id="btn-dark-mode" class="btn-dark-toggle" aria-label="Gece modu"></button>
@@ -94,6 +94,7 @@
                 </div>
                 <span></span>
             </div>
+            <div id="daily-modifier-badge" class="daily-modifier-badge hidden"></div>
             <div class="game-stats">
                 <div id="lives-display" class="lives-display"></div>
                 <div class="stat-item"><span class="stat-label" data-i18n="game.score">Skor</span><span id="game-score" class="stat-value">0</span></div>
@@ -197,8 +198,36 @@
                         <button id="setting-reset" class="btn btn-secondary setting-danger">Sıfırla</button>
                     </div>
                 </div>
+                <div class="settings-legal">
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/privacy.html" target="_blank" rel="noopener" data-i18n="settings.privacy">Gizlilik Politikası</a>
+                    <span class="settings-legal-sep">·</span>
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/terms.html" target="_blank" rel="noopener" data-i18n="settings.terms">Kullanım Şartları</a>
+                </div>
                 <p class="settings-version">Okchu v1.0</p>
                 <button id="btn-settings-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Premium Paywall Overlay -->
+        <div id="overlay-premium" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 data-i18n="premium.title">Reklamsız Premium</h2>
+                <p class="premium-subtitle" data-i18n="premium.subtitle">Tek seferlik ödeme. Tüm reklamlar kaldırılır.</p>
+                <ul class="premium-benefits">
+                    <li data-i18n="premium.benefit_ads">✓ Banner ve video reklam yok</li>
+                    <li data-i18n="premium.benefit_support">✓ Geliştiriciyi destekle</li>
+                    <li data-i18n="premium.benefit_forever">✓ Sonsuza kadar senin</li>
+                </ul>
+                <div class="premium-price" id="premium-price">₺49,99</div>
+                <button id="btn-premium-buy" class="btn btn-primary" data-i18n="premium.buy">Satın Al</button>
+                <button id="btn-premium-restore" class="btn btn-secondary" data-i18n="premium.restore">Satın Alımları Geri Yükle</button>
+                <p class="premium-legal">
+                    <span data-i18n="premium.legal_note">Satın alarak aşağıdakileri kabul edersiniz:</span><br>
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/terms.html" target="_blank" rel="noopener" data-i18n="premium.terms">Kullanım Şartları</a>
+                    ·
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/privacy.html" target="_blank" rel="noopener" data-i18n="premium.privacy">Gizlilik Politikası</a>
+                </p>
+                <button id="btn-premium-close" class="btn-ghost" data-i18n="premium.close">Kapat</button>
             </div>
         </div>
 
@@ -225,6 +254,32 @@
             </div>
         </div>
 
+        <!-- iOS Install Banner -->
+        <div id="ios-install-banner" class="ios-install-banner hidden">
+            <img src="assets/icons/icon-192.png" class="ios-install-icon" alt="">
+            <div class="ios-install-text">
+                <strong data-i18n="install.title">Okchu'yu Ana Ekrana Ekle</strong>
+                <p data-i18n="install.body">Tam ekran oyna, offline çalışır!</p>
+                <p class="ios-install-steps">
+                    <span data-i18n="install.step_share">Paylaş</span>
+                    <span class="ios-share-icon" aria-hidden="true">&#x2191;&#xFE0E;</span>
+                    &nbsp;&rarr;&nbsp;
+                    <span data-i18n="install.step_add">Ana Ekrana Ekle</span>
+                </p>
+            </div>
+            <button id="btn-install-close" class="ios-install-close" aria-label="Kapat">&times;</button>
+        </div>
+
+        <!-- Rate Us Overlay -->
+        <div id="overlay-rate" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 data-i18n="rate.title">Okchu'yu beğeniyor musun?</h2>
+                <p class="rate-subtitle" data-i18n="rate.subtitle">Geri bildirimin bize yol gösterir</p>
+                <div id="rate-stars" class="rate-stars" role="group" aria-label="Rating"></div>
+                <button id="btn-rate-later" class="btn btn-secondary" data-i18n="rate.later">Sonra</button>
+            </div>
+        </div>
+
         <!-- Time Up Overlay -->
         <div id="overlay-time-up" class="overlay hidden">
             <div class="overlay-content">
@@ -235,8 +290,18 @@
                 <button id="btn-time-up-back" class="btn-ghost" data-i18n="overlay.back_chapters">Bölümler</button>
             </div>
         </div>
+
+        <!-- Daily Challenge Failure Overlay — streak preserved, no retry today -->
+        <div id="overlay-daily-fail" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 id="daily-fail-title" data-i18n="overlay.daily_fail_moves_title">Hamle Bitti!</h2>
+                <p id="daily-fail-message" class="time-up-message" data-i18n="overlay.daily_fail_message">Günlük meydan okumayı başaramadın. Yarın yeni bir level ile geri gel!</p>
+                <p class="daily-fail-streak-note" data-i18n="overlay.daily_fail_streak_note">Seri sayacın korundu.</p>
+                <button id="btn-daily-fail-back" class="btn btn-primary" data-i18n="overlay.back_chapters">Bölümler</button>
+            </div>
+        </div>
     </div>
 
-    <script type="module" src="js/main.js?v=21"></script>
+    <script type="module" src="js/main.js?v=23"></script>
 </body>
 </html>

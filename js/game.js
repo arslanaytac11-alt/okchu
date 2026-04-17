@@ -1,7 +1,7 @@
 // js/game.js
 
 import { Grid } from './grid.js';
-import { Renderer } from './renderer.js';
+import { Renderer } from './renderer.js?v=2';
 import { LivesManager } from './lives.js';
 import { HintManager } from './hints.js';
 import { storage } from './storage.js';
@@ -61,6 +61,14 @@ export class Game {
         this.timeRemaining = 0;
         this.onTimeUp = null;
 
+        // Move limit (daily 'moves' modifier). 0 = no limit.
+        this.moveLimit = 0;
+        this.onMovesUp = null;
+
+        // Daily modifier — passed via startLevel opts.
+        // Shape: { type: 'time', multiplier: 0.6 } | { type: 'moves', extraMoves: 2 }
+        this.dailyModifier = null;
+
         // Auto-hint: show a hint automatically after 2 consecutive wrong moves
         this._consecutiveWrongs = 0;
         // Undo history: last N successful moves, capped at UNDO_MAX
@@ -73,10 +81,11 @@ export class Game {
         this.setupInput();
     }
 
-    startLevel(levelData, chapterData) {
+    startLevel(levelData, chapterData, opts = {}) {
         this.currentLevel = levelData;
         this.currentChapter = chapterData;
         this.hintedPath = null;
+        this.dailyModifier = opts.dailyModifier || null;
         this.applyChapterTheme(chapterData);
 
         this.grid = new Grid(levelData.gridWidth, levelData.gridHeight);
@@ -110,18 +119,35 @@ export class Game {
         this._updateUndoButton();
         this._updatePowerupButtons();
 
-        // Countdown timer — mode-aware (classic/timed/zen)
+        // Countdown timer — mode-aware (classic/timed/zen) + daily modifier overrides.
         this.gameMode = storage.getGameMode() || 'classic';
         const chapterId = chapterData.id;
         const [baseSec, perPathSec] = TIME_CONFIG[chapterId] || [60, 3.0];
         let limit = baseSec + Math.round(this.totalPaths * perPathSec);
         if (this.gameMode === 'timed') limit = Math.round(limit * 0.65);
+
+        // Daily 'time' modifier tightens time further (independent of gameMode).
+        if (this.dailyModifier && this.dailyModifier.type === 'time') {
+            limit = Math.max(15, Math.round(limit * this.dailyModifier.multiplier));
+        }
+
         this.timeLimit = limit;
         this.timeRemaining = limit;
-        if (this.gameMode !== 'zen') {
+
+        // Daily 'moves' modifier: cap attempts (moves + wrongMoves). 0 = uncapped.
+        // When active, the countdown timer is paused — the player competes on
+        // efficiency alone. (Otherwise both constraints apply and feel punishing.)
+        if (this.dailyModifier && this.dailyModifier.type === 'moves') {
+            this.moveLimit = this.totalPaths + (this.dailyModifier.extraMoves ?? 2);
+        } else {
+            this.moveLimit = 0;
+        }
+
+        const suppressTimer = this.moveLimit > 0;
+        if (this.gameMode !== 'zen' && !suppressTimer) {
             this._startCountdown();
         } else {
-            // Zen: freeze timer display but don't count down
+            // Zen OR moves modifier: freeze timer display — no countdown pressure.
             this._updateTimerDisplay();
         }
         this._updateScoreDisplay();
@@ -180,10 +206,22 @@ export class Game {
         if (this.onTimeUp) this.onTimeUp();
     }
 
+    _isMovesExhausted() {
+        if (this.moveLimit <= 0) return false;
+        return (this.moves + this.wrongMoves) >= this.moveLimit;
+    }
+
+    _handleMovesUp() {
+        this._stopTimer();
+        this.stopRenderLoop();
+        if (this.onMovesUp) this.onMovesUp();
+    }
+
     _updateTimerDisplay() {
         const el = document.getElementById('game-timer');
         if (!el) return;
-        if (this.gameMode === 'zen') {
+        // Zen mode OR moves-mode daily: no countdown, show infinity.
+        if (this.gameMode === 'zen' || this.moveLimit > 0) {
             el.textContent = '\u221E';
             el.classList.remove('timer-warning', 'timer-critical');
             return;
@@ -208,7 +246,19 @@ export class Game {
             comboEl.classList.toggle('active', this.combo > 1);
         }
         const movesEl = document.getElementById('game-moves');
-        if (movesEl) movesEl.textContent = `${this.moves}/${this.totalPaths}`;
+        if (movesEl) {
+            if (this.moveLimit > 0) {
+                // Daily 'moves' mode: show remaining attempts (limit - used).
+                const used = this.moves + this.wrongMoves;
+                const remaining = Math.max(0, this.moveLimit - used);
+                movesEl.textContent = `${remaining}`;
+                movesEl.classList.toggle('moves-warning', remaining > 0 && remaining <= 2);
+                movesEl.classList.toggle('moves-critical', remaining === 0);
+            } else {
+                movesEl.textContent = `${this.moves}/${this.totalPaths}`;
+                movesEl.classList.remove('moves-warning', 'moves-critical');
+            }
+        }
 
         // Combo heat glow on game screen — tier bands at 3/5/8 for escalating intensity.
         const screen = document.getElementById('screen-game');
@@ -259,21 +309,52 @@ export class Game {
     }
 
     setupInput() {
-        // Tap/click to select arrow
-        const handleTap = (e) => {
-            e.preventDefault();
+        // Pinch-zoom and tap state shared across listeners.
+        let lastPinchDist = 0;
+        let lastPanX = 0;
+        let lastPanY = 0;
+        let isPinching = false;
+        let pendingTapStart = null;     // { x, y, t } — potential single-finger tap
+        let lastTapAt = 0;              // double-tap detection timestamp
+        let lastTapPos = { x: 0, y: 0 };
+        const TAP_MAX_MOVE = 14;        // px drift allowed before a tap is canceled
+        const TAP_MAX_MS = 350;
+        const DOUBLE_TAP_MS = 300;
+        const DOUBLE_TAP_RADIUS = 40;
+
+        // Fat-finger hit: if the tapped cell has no path, scan outward up to
+        // a small radius and pick the closest cell that DOES have a path.
+        // Distance is measured in cells (Chebyshev) so diagonal neighbors tie.
+        const findPathNear = (gridX, gridY, maxRadius = 1) => {
+            const direct = this.grid.getPathAt(gridX, gridY);
+            if (direct) return direct;
+            for (let r = 1; r <= maxRadius; r++) {
+                let best = null;
+                let bestDist = Infinity;
+                for (let dy = -r; dy <= r; dy++) {
+                    for (let dx = -r; dx <= r; dx++) {
+                        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+                        const p = this.grid.getPathAt(gridX + dx, gridY + dy);
+                        if (!p) continue;
+                        // Prefer removable (clear) paths so tolerance helps success,
+                        // not accidental wrong-moves.
+                        const clearBonus = this.grid.isPathClear(p) ? 0 : 0.5;
+                        const d = Math.hypot(dx, dy) + clearBonus;
+                        if (d < bestDist) { bestDist = d; best = p; }
+                    }
+                }
+                if (best) return best;
+            }
+            return null;
+        };
+
+        const resolveTap = (clientX, clientY) => {
             if (this.isAnimating || !this.grid) return;
-
-            const touch = e.touches ? e.touches[0] : e;
-            const { gridX, gridY } = this.renderer.getCellFromPoint(touch.clientX, touch.clientY);
-            const path = this.grid.getPathAt(gridX, gridY);
-
+            const { gridX, gridY } = this.renderer.getCellFromPoint(clientX, clientY);
+            const path = findPathNear(gridX, gridY, 1);
             if (!path) return;
-
-
             this.hintedPath = null;
             this.renderer.touchFeedback = { path, startTime: performance.now() };
-
             if (this.grid.isPathClear(path)) {
                 this.removePathWithAnimation(path);
             } else {
@@ -281,23 +362,30 @@ export class Game {
             }
         };
 
-        this.canvas.addEventListener('click', handleTap);
-        this.canvas.addEventListener('touchstart', handleTap, { passive: false });
-
-        // Pinch to zoom
-        let lastPinchDist = 0;
-        let lastPanX = 0;
-        let lastPanY = 0;
-        let isPinching = false;
+        // Mouse (desktop) uses click — touch path is handled via touchstart/touchend.
+        this.canvas.addEventListener('click', (e) => {
+            // Skip synthetic clicks that iOS fires after touchend when we didn't preventDefault.
+            if (e.detail === 0) return;
+            resolveTap(e.clientX, e.clientY);
+        });
 
         this.canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
+                // Pinch begins — cancel any pending single-finger tap so the
+                // gesture doesn't accidentally fire a wrong-move on start.
                 isPinching = true;
+                pendingTapStart = null;
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 lastPinchDist = Math.sqrt(dx * dx + dy * dy);
                 lastPanX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 lastPanY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                e.preventDefault();
+                return;
+            }
+            if (e.touches.length === 1) {
+                const t = e.touches[0];
+                pendingTapStart = { x: t.clientX, y: t.clientY, at: performance.now() };
                 e.preventDefault();
             }
         }, { passive: false });
@@ -311,34 +399,62 @@ export class Game {
                 const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
-                // Zoom
                 const scaleChange = dist / lastPinchDist;
                 this.renderer.setZoom(this.renderer.scale * scaleChange, centerX, centerY);
-
-                // Pan
                 this.renderer.setPan(centerX - lastPanX, centerY - lastPanY);
 
                 lastPinchDist = dist;
                 lastPanX = centerX;
                 lastPanY = centerY;
-
                 this.renderer.drawGrid(this.grid);
+                return;
+            }
+            // Single-finger drift > threshold cancels the pending tap so a scroll/drag
+            // never resolves as a tap on release.
+            if (pendingTapStart && e.touches.length === 1) {
+                const t = e.touches[0];
+                const dx = t.clientX - pendingTapStart.x;
+                const dy = t.clientY - pendingTapStart.y;
+                if (Math.hypot(dx, dy) > TAP_MAX_MOVE) pendingTapStart = null;
             }
         }, { passive: false });
 
-        this.canvas.addEventListener('touchend', () => {
-            isPinching = false;
+        this.canvas.addEventListener('touchend', (e) => {
+            if (isPinching) {
+                // Only reset when all fingers lift; a 2→1 transition shouldn't
+                // leave a dangling pending tap.
+                if (e.touches.length === 0) isPinching = false;
+                return;
+            }
+            if (!pendingTapStart) return;
+            const now = performance.now();
+            if (now - pendingTapStart.at > TAP_MAX_MS) { pendingTapStart = null; return; }
+
+            // Double-tap detection — fires before resolveTap so a quick repeat
+            // resets the view instead of acting on an arrow.
+            const isDoubleTap = (now - lastTapAt) < DOUBLE_TAP_MS
+                && Math.hypot(pendingTapStart.x - lastTapPos.x, pendingTapStart.y - lastTapPos.y) < DOUBLE_TAP_RADIUS;
+            lastTapAt = now;
+            lastTapPos = { x: pendingTapStart.x, y: pendingTapStart.y };
+
+            if (isDoubleTap) {
+                lastTapAt = 0; // consume — prevent triple-tap re-trigger
+                this.renderer.resetView(this.grid);
+                this.renderer.drawGrid(this.grid);
+                pendingTapStart = null;
+                return;
+            }
+
+            resolveTap(pendingTapStart.x, pendingTapStart.y);
+            pendingTapStart = null;
         });
 
-        // Mouse wheel zoom
+        // Mouse wheel zoom — passes client coords; renderer converts to canvas-local.
         this.canvas.addEventListener('wheel', (e) => {
             if (!this.grid) return;
             e.preventDefault();
-            const rect = this.canvas.getBoundingClientRect();
-            const centerX = e.clientX - rect.left;
-            const centerY = e.clientY - rect.top;
             const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-            this.renderer.setZoom(this.renderer.scale * zoomFactor, centerX, centerY);
+            this.renderer.setZoom(this.renderer.scale * zoomFactor, e.clientX, e.clientY);
             this.renderer.drawGrid(this.grid);
         }, { passive: false });
     }
@@ -472,6 +588,8 @@ export class Game {
                 this.renderer.drawGrid(this.grid);
                 if (this.grid.isCleared()) {
                     this.handleLevelComplete();
+                } else if (this._isMovesExhausted()) {
+                    this._handleMovesUp();
                 }
             }
         };
@@ -596,6 +714,8 @@ export class Game {
 
                 if (remaining <= 0) {
                     if (this.onNoLives) this.onNoLives();
+                } else if (this._isMovesExhausted()) {
+                    this._handleMovesUp();
                 }
             }
         };
@@ -610,12 +730,20 @@ export class Game {
         const elapsedTime = Math.round((this.timeLimit - this.timeRemaining) * 1000);
         storage.completeLevel(this.currentLevel.id, this.currentChapter.id);
 
-        // Time bonus: 2 points per second remaining
-        const timeBonus = Math.round(this.timeRemaining * 2);
+        // Time bonus: 2 points per second remaining — skipped in moves mode
+        // because the timer is frozen and would award a misleading full bonus.
+        const timeBonus = this.moveLimit > 0 ? 0 : Math.round(this.timeRemaining * 2);
         this.score += timeBonus;
 
         // Perfect bonus (no wrong moves)
         if (this.wrongMoves === 0) this.score += 200;
+
+        // Daily challenge bonus: +50% score for beating the daily modifier.
+        let dailyBonus = 0;
+        if (this.dailyModifier) {
+            dailyBonus = Math.round(this.score * 0.5);
+            this.score += dailyBonus;
+        }
 
         const stars = this.calculateStars();
         const prevScore = storage.getLevelScore(this.currentLevel.id);
@@ -666,6 +794,8 @@ export class Game {
                     maxCombo: this.maxCombo,
                     rewardedPowerup,
                     newArtifact,
+                    dailyBonus,
+                    dailyModifier: this.dailyModifier,
                 });
             }
         });

@@ -7,7 +7,12 @@
     },
     "menu": {
         "play": "Play",
-        "language": "Language"
+        "language": "Language",
+        "daily": "Daily Challenge",
+        "achievements": "Achievements",
+        "collection": "Collection",
+        "leaderboard": "Leaderboard",
+        "settings": "Settings"
     },
     "chapters": {
         "title": "Chapters",
@@ -51,7 +56,16 @@
         "time_up_title": "Time's Up!",
         "time_up_text": "You ran out of time",
         "retry": "Retry",
-        "back_chapters": "Chapters"
+        "back_chapters": "Chapters",
+        "daily_fail_time_title": "Time's Up!",
+        "daily_fail_moves_title": "Out of Moves!",
+        "daily_fail_message": "You didn't beat today's daily challenge. Come back tomorrow for a new level!",
+        "daily_fail_streak_note": "Your streak is preserved."
+    },
+    "daily": {
+        "badge_time": "Time Challenge",
+        "badge_moves": "Moves Challenge",
+        "already_done": "You've already completed today's challenge! Come back tomorrow."
     },
     "story": {
         "play_button": "Go to Levels"
@@ -155,10 +169,39 @@
             "facts": ["10 civilizations", "Ultimate challenge", "All sages united", "Legendary difficulty"]
         }
     },
+    "install": {
+        "title": "Add to Home Screen",
+        "body": "Play full-screen, works offline",
+        "step_share": "Share",
+        "step_add": "Add to Home Screen"
+    },
+    "rate": {
+        "title": "Enjoying Okchu?",
+        "subtitle": "Your feedback guides us",
+        "later": "Later",
+        "email_body": "Hi! My thoughts on Okchu:\n\n"
+    },
     "appstore": {
         "title": "Okchu: Arrow Puzzle - Ancient Journey",
         "subtitle": "Arrow Puzzle Game",
         "description": "Explore 10 ancient civilizations, solve 50 challenging puzzles! An epic arrow puzzle adventure spanning from pyramids to castles, pagodas to temples.",
         "keywords": "arrow,puzzle,ancient,civilization,egypt,rome,viking,ottoman,strategy,brain"
+    },
+    "settings": {
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service"
+    },
+    "premium": {
+        "title": "Premium (Ad-Free)",
+        "subtitle": "One-time purchase. All ads removed.",
+        "benefit_ads": "✓ No banner or video ads",
+        "benefit_support": "✓ Support the developer",
+        "benefit_forever": "✓ Yours forever",
+        "buy": "Buy",
+        "restore": "Restore Purchases",
+        "legal_note": "By purchasing you agree to:",
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "close": "Close"
     }
 }

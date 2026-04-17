@@ -7,7 +7,12 @@
     },
     "menu": {
         "play": "Oyna",
-        "language": "Dil"
+        "language": "Dil",
+        "daily": "Günlük Meydan Okuma",
+        "achievements": "Başarımlar",
+        "collection": "Koleksiyon",
+        "leaderboard": "Lider Tablosu",
+        "settings": "Ayarlar"
     },
     "chapters": {
         "title": "Bölümler",
@@ -51,7 +56,16 @@
         "time_up_title": "Süre Doldu!",
         "time_up_text": "Zamanı yetiştiremedin",
         "retry": "Tekrar Dene",
-        "back_chapters": "Bölümler"
+        "back_chapters": "Bölümler",
+        "daily_fail_time_title": "Süre Bitti!",
+        "daily_fail_moves_title": "Hamle Bitti!",
+        "daily_fail_message": "Günlük meydan okumayı başaramadın. Yarın yeni bir level ile geri gel!",
+        "daily_fail_streak_note": "Seri sayacın korundu."
+    },
+    "daily": {
+        "badge_time": "Süre Meydan Okuması",
+        "badge_moves": "Hamle Meydan Okuması",
+        "already_done": "Bugünün meydan okumasını zaten tamamladın! Yarın tekrar gel."
     },
     "story": {
         "play_button": "Seviyelere Git"
@@ -155,10 +169,39 @@
             "facts": ["10 medeniyet", "Son meydan okuma", "Tüm bilgeler burada", "Efsanevi zorluk"]
         }
     },
+    "install": {
+        "title": "Ana Ekrana Ekle",
+        "body": "Tam ekran oyna, offline çalışır",
+        "step_share": "Paylaş",
+        "step_add": "Ana Ekrana Ekle"
+    },
+    "rate": {
+        "title": "Okchu'yu beğeniyor musun?",
+        "subtitle": "Geri bildirimin bize yol gösterir",
+        "later": "Sonra",
+        "email_body": "Merhaba! Okchu hakkındaki görüşlerim:\n\n"
+    },
     "appstore": {
         "title": "Okchu: Arrow Puzzle - Antik Yolculuk",
         "subtitle": "Ok Bulmaca Oyunu",
         "description": "10 antik medeniyeti keşfet, 50 zorlu bulmacayı çöz! Piramitlerden kalelere, pagodalardan tapınaklara uzanan epik bir ok bulmaca macerası.",
         "keywords": "ok,bulmaca,puzzle,antik,medeniyet,mısır,roma,viking,osmanlı,strateji"
+    },
+    "settings": {
+        "privacy": "Gizlilik Politikası",
+        "terms": "Kullanım Şartları"
+    },
+    "premium": {
+        "title": "Reklamsız Premium",
+        "subtitle": "Tek seferlik ödeme. Tüm reklamlar kaldırılır.",
+        "benefit_ads": "✓ Banner ve video reklam yok",
+        "benefit_support": "✓ Geliştiriciyi destekle",
+        "benefit_forever": "✓ Sonsuza kadar senin",
+        "buy": "Satın Al",
+        "restore": "Satın Alımları Geri Yükle",
+        "legal_note": "Satın alarak aşağıdakileri kabul edersiniz:",
+        "terms": "Kullanım Şartları",
+        "privacy": "Gizlilik Politikası",
+        "close": "Kapat"
     }
 }

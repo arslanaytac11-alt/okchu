@@ -1698,6 +1698,66 @@ body.dark-mode .stat-powerup {
     font-size: 1.1em;
 }
 
+/* Move limit urgency (daily 'moves' modifier) — mirrors timer urgency. */
+.moves-warning {
+    color: #c04030 !important;
+    animation: timerPulse 500ms ease-in-out infinite;
+}
+
+.moves-critical {
+    color: #ff1a1a !important;
+    font-weight: bold;
+    animation: timerPulse 300ms ease-in-out infinite;
+    font-size: 1.1em;
+}
+
+/* Daily challenge modifier badge — shown above the game stats row. */
+.daily-modifier-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px auto 4px;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
+    max-width: fit-content;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.daily-modifier-badge em {
+    font-style: normal;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+}
+
+.daily-modifier-badge.hidden {
+    display: none;
+}
+
+body.dark-mode .daily-modifier-badge {
+    background: linear-gradient(135deg, #e55a2b, #d17a0a);
+    box-shadow: 0 2px 8px rgba(209, 122, 10, 0.45);
+}
+
+.daily-fail-streak-note {
+    color: #2a9d3f;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 4px 0 12px;
+}
+
+body.dark-mode .daily-fail-streak-note {
+    color: #4ade80;
+}
+
 @keyframes timerPulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
@@ -2153,3 +2213,202 @@ body.dark-mode .skeleton {
     80% { opacity: 1; }
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
+
+/* === First-launch language picker === */
+.overlay.first-launch {
+    background: rgba(30,20,10,0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.overlay.first-launch .overlay-content {
+    max-width: 340px;
+    padding: 28px 22px calc(22px + env(safe-area-inset-bottom));
+}
+.overlay.first-launch .lang-picker h2 {
+    font-size: 1.4rem;
+    margin-bottom: 18px;
+    text-align: center;
+}
+.overlay.first-launch .lang-option {
+    padding: 16px 20px;
+    font-size: 1.05rem;
+    min-height: 52px;
+}
+
+/* === iOS Install Banner === */
+.ios-install-banner {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, #f5ecd8 0%, #e8dcc0 100%);
+    border: 1px solid rgba(140,110,70,0.3);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    z-index: 200;
+    transform: translateY(calc(100% + 24px));
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ios-install-banner.show { transform: translateY(0); }
+.ios-install-banner.hidden { display: none; }
+.ios-install-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.ios-install-text { flex: 1; min-width: 0; }
+.ios-install-text strong {
+    font-size: 0.95rem;
+    color: var(--theme-ink);
+    display: block;
+    margin-bottom: 2px;
+}
+.ios-install-text p {
+    font-size: 0.78rem;
+    color: var(--theme-ink);
+    opacity: 0.75;
+    margin: 2px 0;
+}
+.ios-install-steps {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem !important;
+    opacity: 0.9 !important;
+}
+.ios-share-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 22px;
+    border: 1.5px solid var(--theme-accent);
+    border-radius: 4px;
+    border-top: none;
+    position: relative;
+    color: var(--theme-accent);
+    font-size: 0.9rem;
+    line-height: 1;
+    padding-top: 1px;
+}
+.ios-install-close {
+    background: rgba(0,0,0,0.08);
+    border: none;
+    color: var(--theme-ink);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+body.dark-mode .ios-install-banner {
+    background: linear-gradient(180deg, #2a2a3e 0%, #1f1f2e 100%);
+    border-color: rgba(255,255,255,0.1);
+}
+body.dark-mode .ios-install-close {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+/* === Rate Us Modal === */
+#overlay-rate .overlay-content {
+    text-align: center;
+    max-width: 320px;
+}
+.rate-subtitle {
+    font-size: 0.9rem;
+    color: var(--theme-ink);
+    opacity: 0.75;
+    margin: 4px 0 20px;
+}
+.rate-stars {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 8px 0 20px;
+}
+.rate-star {
+    background: none;
+    border: none;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: #cbb68a;
+    cursor: pointer;
+    padding: 6px;
+    transition: transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.rate-star.filled { color: #f4c542; }
+.rate-star:active { transform: scale(1.2); }
+
+/* === Settings Legal Links === */
+.settings-legal {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.85em;
+}
+.settings-legal a {
+    color: #6a4028;
+    text-decoration: underline;
+    padding: 4px 6px;
+    -webkit-tap-highlight-color: transparent;
+}
+body.dark-mode .settings-legal a { color: #d4a843; }
+.settings-legal-sep {
+    color: #999;
+    margin: 0 4px;
+}
+
+/* === Premium Paywall === */
+.premium-subtitle {
+    text-align: center;
+    color: #666;
+    margin: 8px 0 20px;
+    font-size: 0.95em;
+}
+body.dark-mode .premium-subtitle { color: #aaa; }
+.premium-benefits {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+}
+.premium-benefits li {
+    padding: 10px 14px;
+    margin: 6px 0;
+    background: rgba(212, 168, 67, 0.12);
+    border-radius: 8px;
+    font-size: 0.95em;
+}
+body.dark-mode .premium-benefits li { background: rgba(212, 168, 67, 0.2); }
+.premium-price {
+    text-align: center;
+    font-size: 2em;
+    font-weight: 700;
+    color: #6a4028;
+    margin: 16px 0;
+}
+body.dark-mode .premium-price { color: #d4a843; }
+.premium-legal {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 0.8em;
+    color: #666;
+    line-height: 1.5;
+}
+body.dark-mode .premium-legal { color: #999; }
+.premium-legal a {
+    color: #6a4028;
+    text-decoration: underline;
+    -webkit-tap-highlight-color: transparent;
+}
+body.dark-mode .premium-legal a { color: #d4a843; }

@@ -7,10 +7,7 @@ function loadData() {
     if (!raw) return getDefaultData();
     try {
         const parsed = JSON.parse(raw);
-        const merged = { ...getDefaultData(), ...parsed };
-        // TEMP: force all chapters unlocked for test mode (even for existing saves)
-        merged.unlockedChapters = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        return merged;
+        return { ...getDefaultData(), ...parsed };
     } catch {
         return getDefaultData();
     }
@@ -27,8 +24,7 @@ function saveData(data) {
 function getDefaultData() {
     return {
         completedLevels: [],
-        // TEMP: all chapters unlocked for test play-through — revert to [1] before release
-        unlockedChapters: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        unlockedChapters: [1],
         lives: 3,
         lastLifeLostTime: null,
         freeHintsUsed: [],
@@ -80,9 +76,6 @@ export const storage = {
     // Boss level = level 5 of each chapter. Locked until the first 4 levels in
     // the chapter sum to at least 8 stars (out of possible 12 = 2-star average).
     isBossLocked(chapterId, levelNumInChapter) {
-        // TEMP: boss gate disabled for test play-through — re-enable before release
-        return false;
-        // eslint-disable-next-line no-unreachable
         if (levelNumInChapter !== 5) return false;
         const prefix = this.getChapterPrefix(chapterId);
         const data = loadData();

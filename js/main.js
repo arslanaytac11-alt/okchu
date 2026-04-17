@@ -1,14 +1,16 @@
 // js/main.js
 
-import { Game } from './game.js';
+import { Game } from './game.js?v=2';
 import { ScreenManager } from './screens.js?v=3';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
-import { initLanguage, loadLanguage, t, getLang } from './i18n.js';
+import { initLanguage, loadLanguage, t, getLang, hasSavedLanguage } from './i18n.js';
 import { getDailyChallenge, isDailyCompleted, completeDaily, getDailyStreak } from './daily.js';
 import { checkAchievements, getAllAchievements, getAchievementStats } from './achievements.js';
 import { allLevels } from './levels.js';
+import { maybeShowIosInstall } from './pwa-install.js';
+import { shouldShowRatePrompt, showRatePrompt } from './rate-us.js';
 
 // Dark mode
 if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
@@ -46,14 +48,25 @@ document.getElementById('btn-language').addEventListener('click', () => {
     });
 });
 
+// One-shot callback fired after the user picks a language.
+// Used by the first-launch flow to chain into the tutorial.
+let postLangPickCallback = null;
+
 document.querySelectorAll('.lang-option').forEach(btn => {
     btn.addEventListener('click', async () => {
         await loadLanguage(btn.dataset.lang);
         applyTranslations();
-        document.getElementById('overlay-language').classList.add('hidden');
+        const overlay = document.getElementById('overlay-language');
+        overlay.classList.add('hidden');
+        overlay.classList.remove('first-launch');
         // Refresh chapters if visible
         if (document.getElementById('screen-chapters').classList.contains('active')) {
             screenManager.showChapters();
+        }
+        if (postLangPickCallback) {
+            const cb = postLangPickCallback;
+            postLangPickCallback = null;
+            cb();
         }
     });
 });
@@ -66,7 +79,28 @@ setTimeout(() => {
     app.classList.remove('app-hidden');
     app.classList.add('app-visible');
     setTimeout(() => splash.remove(), 600);
+
+    // First-launch onboarding flow: language picker → tutorial.
+    // hasSavedLanguage() returns false only until the user explicitly picks
+    // a language via the overlay (initLanguage no longer persists browser lang).
+    if (!hasSavedLanguage()) {
+        showFirstLaunchLanguagePicker();
+    }
 }, 2300);
+
+function showFirstLaunchLanguagePicker() {
+    const overlay = document.getElementById('overlay-language');
+    overlay.classList.remove('hidden');
+    overlay.classList.add('first-launch');
+    overlay.querySelectorAll('.lang-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === getLang());
+    });
+    postLangPickCallback = () => {
+        // After language chosen, immediately run the onboarding tutorial
+        // so the rules are taught in the picked language.
+        if (tutorial.shouldShow()) tutorial.show(() => {});
+    };
+}
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
@@ -109,6 +143,11 @@ screenManager.onStartLevel = (levelData, chapterData) => {
         return;
     }
 
+    // Non-daily entry — clear any stale daily badge/modifier from prior session.
+    game._isDailyChallenge = false;
+    game._dailyModifier = null;
+    renderDailyBadge(null);
+
     // Show tutorial before first game
     if (tutorial.shouldShow()) {
         tutorial.show(() => {
@@ -134,8 +173,21 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
         completeDaily(stats.score, stats.stars);
         storage.recordDailyScore(stats.score, stats.stars);
         game._isDailyChallenge = false;
+        game._dailyModifier = null;
+        renderDailyBadge(null);
     }
     setTimeout(() => checkAndShowAchievements(), 1500);
+
+    // iOS install banner + rate-us prompt — both gated behind progression
+    // so new users aren't spammed. Staggered after the completion overlay so
+    // the celebration lands first.
+    setTimeout(() => {
+        const progress = storage.getProgress();
+        maybeShowIosInstall((progress.completedLevels || []).length);
+    }, 2500);
+    setTimeout(() => {
+        if (shouldShowRatePrompt(getPlayerStats())) showRatePrompt();
+    }, 3500);
 
     // Animated stars
     const starsEl = document.getElementById('complete-stars');
@@ -176,6 +228,9 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
             const label = { hint: 'İpucu', freeze: 'Dondurma', extraUndo: 'Ekstra Geri Al' }[stats.rewardedPowerup];
             parts.push(`Ödül: ${emoji} +1 ${label}`);
         }
+        if (stats.dailyBonus > 0) {
+            parts.push(`🔥 Günlük Bonus: +${stats.dailyBonus}`);
+        }
         if (stats.newArtifact) {
             parts.push(`🏺 Yeni Eser!`);
         }
@@ -204,8 +259,12 @@ game.onNoLives = () => showNoLivesOverlay();
 // When lives change (wrong move)
 game.onLivesChanged = () => game.livesManager.renderLives(livesDisplay);
 
-// When time runs out - no life loss, just retry or watch ad
+// When time runs out — daily shows "try tomorrow"; normal levels offer retry.
 game.onTimeUp = () => {
+    if (game._isDailyChallenge) {
+        showDailyFailOverlay('time');
+        return;
+    }
     const overlay = document.getElementById('overlay-time-up');
     overlay.classList.remove('hidden');
 
@@ -241,6 +300,48 @@ game.onTimeUp = () => {
         screenManager.showChapters();
     }, { once: true });
 };
+
+// Moves exhausted — only fires when moveLimit > 0 (currently daily 'moves' modifier).
+game.onMovesUp = () => {
+    if (game._isDailyChallenge) {
+        showDailyFailOverlay('moves');
+    }
+};
+
+// Daily challenge failure overlay — streak is preserved because completeDaily
+// never fires on failure. User must wait until tomorrow for a new challenge.
+function showDailyFailOverlay(reason) {
+    const overlay = document.getElementById('overlay-daily-fail');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+
+    const titleEl = document.getElementById('daily-fail-title');
+    const msgEl = document.getElementById('daily-fail-message');
+    if (titleEl) {
+        titleEl.textContent = reason === 'time'
+            ? (t('overlay.daily_fail_time_title') || 'Süre Bitti!')
+            : (t('overlay.daily_fail_moves_title') || 'Hamle Bitti!');
+    }
+    if (msgEl) {
+        msgEl.textContent = t('overlay.daily_fail_message')
+            || 'Günlük meydan okumayı başaramadın. Yarın yeni bir level ile geri gel!';
+    }
+
+    const freshen = (id) => {
+        const old = document.getElementById(id);
+        const clone = old.cloneNode(true);
+        old.parentNode.replaceChild(clone, old);
+        return clone;
+    };
+    const backBtn = freshen('btn-daily-fail-back');
+    backBtn.addEventListener('click', () => {
+        overlay.classList.add('hidden');
+        game._isDailyChallenge = false;
+        game._dailyModifier = null;
+        renderDailyBadge(null);
+        screenManager.showChapters();
+    }, { once: true });
+}
 
 function showNoLivesOverlay() {
     const overlay = document.getElementById('overlay-no-lives');
@@ -306,7 +407,7 @@ if ('serviceWorker' in navigator) {
 // === DAILY CHALLENGE ===
 document.getElementById('btn-daily').addEventListener('click', () => {
     if (isDailyCompleted()) {
-        alert('Bugunun meydan okumasini zaten tamamladin! Yarin tekrar gel.');
+        alert(t('daily.already_done') || 'Bugunun meydan okumasini zaten tamamladin! Yarin tekrar gel.');
         return;
     }
     const daily = getDailyChallenge(allLevels);
@@ -314,8 +415,29 @@ document.getElementById('btn-daily').addEventListener('click', () => {
     screenManager.showScreen('game');
     game.livesManager.renderLives(livesDisplay);
     game._isDailyChallenge = true;
-    setTimeout(() => game.startLevel(daily.level, chapter), 50);
+    game._dailyModifier = daily.modifier;
+    renderDailyBadge(daily.modifier);
+    setTimeout(() => game.startLevel(daily.level, chapter, { dailyModifier: daily.modifier }), 50);
 });
+
+// Render the daily modifier badge on the game screen. Clears on non-daily.
+function renderDailyBadge(modifier) {
+    const badge = document.getElementById('daily-modifier-badge');
+    if (!badge) return;
+    if (!modifier) {
+        badge.classList.add('hidden');
+        badge.textContent = '';
+        return;
+    }
+    badge.classList.remove('hidden');
+    if (modifier.type === 'time') {
+        const pct = Math.round(modifier.multiplier * 100);
+        badge.innerHTML = `\u23F1\uFE0F <span>${t('daily.badge_time') || 'Süre Meydan Okuması'}</span> <em>${pct}%</em>`;
+    } else {
+        badge.innerHTML = `\u{1F3AF} <span>${t('daily.badge_moves') || 'Hamle Meydan Okuması'}</span>`;
+    }
+}
+
 
 // === ACHIEVEMENTS ===
 function getPlayerStats() {
@@ -359,6 +481,8 @@ function showAchievementToast(ach) {
     document.getElementById('ach-toast-name').textContent = ach.name;
     document.getElementById('ach-toast-desc').textContent = ach.desc;
     toast.classList.remove('hidden');
+    // Haptic on unlock — iOS falls back silently if unsupported.
+    if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
     requestAnimationFrame(() => toast.classList.add('show'));
     setTimeout(() => {
         toast.classList.remove('show');
@@ -490,8 +614,22 @@ document.getElementById('setting-lang').addEventListener('click', () => {
 });
 
 document.getElementById('setting-premium').addEventListener('click', () => {
-    // TODO: Integrate with App Store in-app purchase
-    alert('Premium satin alma yakinda aktif olacak!');
+    document.getElementById('overlay-settings').classList.add('hidden');
+    document.getElementById('overlay-premium').classList.remove('hidden');
+});
+
+document.getElementById('btn-premium-close').addEventListener('click', () => {
+    document.getElementById('overlay-premium').classList.add('hidden');
+});
+
+document.getElementById('btn-premium-buy').addEventListener('click', () => {
+    // TODO: Integrate with App Store in-app purchase (product: com.arslanaytac.okchu.premium)
+    alert('Premium satın alma App Store sürümünde aktif olacak.');
+});
+
+document.getElementById('btn-premium-restore').addEventListener('click', () => {
+    // TODO: Integrate with App Store restore purchases API
+    alert('Geri yükleme App Store sürümünde aktif olacak.');
 });
 
 document.getElementById('setting-reset').addEventListener('click', () => {

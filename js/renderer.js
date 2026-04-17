@@ -82,17 +82,48 @@ export class Renderer {
         this.panY = 0;
     }
 
-    setZoom(scale, centerX, centerY) {
+    // Convert a client (viewport) point to canvas-local (CSS pixel) coords.
+    // Use this for anchoring zoom so the point under the fingers stays put.
+    _clientToCanvas(clientX, clientY) {
+        const rect = this.canvas.getBoundingClientRect();
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    setZoom(scale, clientX, clientY) {
+        const { x: cx, y: cy } = this._clientToCanvas(clientX, clientY);
         const oldScale = this.scale;
         this.scale = Math.max(this.minScale, Math.min(this.maxScale, scale));
         const ratio = this.scale / oldScale;
-        this.panX = centerX - (centerX - this.panX) * ratio;
-        this.panY = centerY - (centerY - this.panY) * ratio;
+        this.panX = cx - (cx - this.panX) * ratio;
+        this.panY = cy - (cy - this.panY) * ratio;
+        this._clampPan();
     }
 
     setPan(dx, dy) {
         this.panX += dx;
         this.panY += dy;
+        this._clampPan();
+    }
+
+    // Keep the grid on-screen: at least half the canvas worth of grid must
+    // remain visible so users can never lose the board off the edge.
+    _clampPan() {
+        const rect = this.canvas.getBoundingClientRect();
+        const margin = Math.min(rect.width, rect.height) / 3;
+        const maxPan = rect.width - margin;
+        const maxPanY = rect.height - margin;
+        if (this.panX > maxPan) this.panX = maxPan;
+        if (this.panX < -maxPan) this.panX = -maxPan;
+        if (this.panY > maxPanY) this.panY = maxPanY;
+        if (this.panY < -maxPanY) this.panY = -maxPanY;
+    }
+
+    // Reset zoom + pan to the initial fit-to-screen view.
+    resetView(grid) {
+        this.scale = 1;
+        this.panX = 0;
+        this.panY = 0;
+        if (grid) this.resize(grid.width, grid.height);
     }
 
     clear() {

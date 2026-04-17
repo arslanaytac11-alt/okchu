@@ -1,3 +1,9 @@
 *.png
 .playwright-mcp/
 node_modules/
+www/
+ios/App/App/public/
+ios/App/Pods/
+ios/App/build/
+ios/DerivedData/
+.DS_Store

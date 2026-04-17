@@ -7,7 +7,12 @@
     },
     "menu": {
         "play": "Jugar",
-        "language": "Idioma"
+        "language": "Idioma",
+        "daily": "Desaf\u00edo Diario",
+        "achievements": "Logros",
+        "collection": "Colecci\u00f3n",
+        "leaderboard": "Clasificaci\u00f3n",
+        "settings": "Ajustes"
     },
     "chapters": {
         "title": "Capitulos",
@@ -51,7 +56,16 @@
         "time_up_title": "Tiempo Agotado!",
         "time_up_text": "Se acabo el tiempo",
         "retry": "Reintentar",
-        "back_chapters": "Capitulos"
+        "back_chapters": "Capitulos",
+        "daily_fail_time_title": "Tiempo Agotado!",
+        "daily_fail_moves_title": "Sin Movimientos!",
+        "daily_fail_message": "No superaste el desafio diario. Vuelve manana para un nuevo nivel!",
+        "daily_fail_streak_note": "Tu racha se mantiene."
+    },
+    "daily": {
+        "badge_time": "Desafio de Tiempo",
+        "badge_moves": "Desafio de Movimientos",
+        "already_done": "Ya completaste el desafio de hoy! Vuelve manana."
     },
     "story": {
         "play_button": "Ir a Niveles"
@@ -85,10 +99,39 @@
         "9": { "name": "Europa Medieval", "title": "Europa Medieval", "period": "500 d.C. - 1500 d.C.", "text": "En la edad oscura, los castillos se alzan en colinas brumosas, las espadas de los caballeros brillan a la luz de la luna.", "mystery": "Resuelve las flechas en el castillo laberintico del alquimista y descubre la formula de la piedra filosofal!", "facts": ["Catedrales goticas", "Las Cruzadas", "Alquimia y ciencia", "Era de los descubrimientos"] },
         "10": { "name": "Final", "title": "Convergencia de Civilizaciones", "period": "Atemporal", "text": "La sabiduria de todas las civilizaciones antiguas converge en un solo punto. Cada cultura dejo su pieza.", "mystery": "Une las senales de flechas de todas las civilizaciones y resuelve el mayor misterio de la humanidad!", "facts": ["10 civilizaciones", "Desafio final", "Todos los sabios unidos", "Dificultad legendaria"] }
     },
+    "install": {
+        "title": "A\u00f1adir a la pantalla de inicio",
+        "body": "Juega a pantalla completa, funciona sin conexi\u00f3n",
+        "step_share": "Compartir",
+        "step_add": "A\u00f1adir a pantalla de inicio"
+    },
+    "rate": {
+        "title": "\u00bfTe gusta Okchu?",
+        "subtitle": "Tus comentarios nos ayudan",
+        "later": "M\u00e1s tarde",
+        "email_body": "\u00a1Hola! Mis comentarios sobre Okchu:\n\n"
+    },
     "appstore": {
         "title": "Okchu: Arrow Puzzle - Viaje Antiguo",
         "subtitle": "Juego de Puzzle de Flechas",
         "description": "Explora 10 civilizaciones antiguas, resuelve 50 desafiantes puzzles! Una epica aventura de puzzles de flechas.",
         "keywords": "flecha,puzzle,antiguo,civilizacion,egipto,roma,vikingo,otomano,estrategia,cerebro"
+    },
+    "settings": {
+        "privacy": "Politica de Privacidad",
+        "terms": "Terminos de Uso"
+    },
+    "premium": {
+        "title": "Premium sin Anuncios",
+        "subtitle": "Pago unico. Se eliminan todos los anuncios.",
+        "benefit_ads": "✓ Sin anuncios banner ni video",
+        "benefit_support": "✓ Apoya al desarrollador",
+        "benefit_forever": "✓ Tuyo para siempre",
+        "buy": "Comprar",
+        "restore": "Restaurar Compras",
+        "legal_note": "Al comprar aceptas:",
+        "terms": "Terminos de Uso",
+        "privacy": "Politica de Privacidad",
+        "close": "Cerrar"
     }
 }

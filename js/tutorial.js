@@ -1,40 +1,19 @@
 // js/tutorial.js
 // First-time player tutorial
 
+import { t } from './i18n.js';
+
 const TUTORIAL_KEY = 'ok_bulmacasi_tutorial_done';
 
-const STEPS = [
-    {
-        icon: '\u{1F3AF}',
-        title: 'Okchu\'ya Hos Geldin!',
-        text: 'Amacin gridde bulunan tum oklari dogru sirayla kaldirmak.',
-    },
-    {
-        icon: '\u{1F4A1}',
-        title: 'Hangi Oku Tiklayacaksin?',
-        text: 'Bir ok, ucunun gosterdigi yonde yolu aciksa kaldirilabilir. Onunu baska bir ok engelliyorsa tiklanmaz!',
-    },
-    {
-        icon: '\u{2705}',
-        title: 'Dogru Hamle',
-        text: 'Yolu acik bir oku tiklarsan, ok yilan gibi kayarak ekrandan cikar. Puan kazanirsin!',
-    },
-    {
-        icon: '\u{274C}',
-        title: 'Yanlis Hamle',
-        text: 'Engelli bir oku tiklarsan can kaybedersin ve sureden 5 saniye duser. 3 canin var, dikkatli ol!',
-    },
-    {
-        icon: '\u{23F1}',
-        title: 'Zamana Karsi Yaris',
-        text: 'Her seviyede bir sure limitin var. Dogru hamleler +3 saniye kazandirir. Sureyi iyi kullan!',
-    },
-    {
-        icon: '\u{2B50}',
-        title: 'Yildiz Topla',
-        text: 'Hizli bitir ve hata yapma - 3 yildiz kazan! Yildizlar yeni bolumlerin kilidini acar.',
-    },
-];
+const STEP_ICONS = ['\u{1F3AF}', '\u{1F4A1}', '\u{2705}', '\u{274C}', '\u{23F1}', '\u{2B50}'];
+
+function buildSteps() {
+    return STEP_ICONS.map((icon, i) => ({
+        icon,
+        title: t(`tutorial.step${i + 1}_title`),
+        text: t(`tutorial.step${i + 1}_text`),
+    }));
+}
 
 export class Tutorial {
     constructor() {
@@ -63,21 +42,24 @@ export class Tutorial {
         }
         this._onComplete = onComplete;
         this.currentStep = 0;
+        // Rebuild from current language — user may have just picked it on first launch.
+        this.steps = buildSteps();
 
         // Build dots
         this.dotsEl.innerHTML = '';
-        for (let i = 0; i < STEPS.length; i++) {
+        for (let i = 0; i < this.steps.length; i++) {
             const dot = document.createElement('span');
             dot.className = 'tutorial-dot' + (i === 0 ? ' active' : '');
             this.dotsEl.appendChild(dot);
         }
 
+        this.skipBtn.textContent = t('tutorial.skip');
         this._renderStep();
         this.overlay.classList.remove('hidden');
     }
 
     _renderStep() {
-        const step = STEPS[this.currentStep];
+        const step = this.steps[this.currentStep];
         this.iconEl.textContent = step.icon;
         this.titleEl.textContent = step.title;
         this.textEl.textContent = step.text;
@@ -87,12 +69,14 @@ export class Tutorial {
         dots.forEach((d, i) => d.classList.toggle('active', i === this.currentStep));
 
         // Last step button text
-        this.nextBtn.textContent = this.currentStep === STEPS.length - 1 ? 'Basla!' : 'Devam';
+        this.nextBtn.textContent = this.currentStep === this.steps.length - 1
+            ? t('tutorial.start')
+            : t('tutorial.next');
     }
 
     next() {
         this.currentStep++;
-        if (this.currentStep >= STEPS.length) {
+        if (this.currentStep >= this.steps.length) {
             this.complete();
         } else {
             this._renderStep();

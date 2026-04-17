@@ -7,19 +7,23 @@ const AVAILABLE_LANGS = ['tr', 'en', 'es', 'fr', 'ja'];
 let currentLang = null;
 let strings = {};
 
-export async function loadLanguage(lang) {
+export async function loadLanguage(lang, { persist = true } = {}) {
     if (!AVAILABLE_LANGS.includes(lang)) lang = 'tr';
     try {
         const resp = await fetch(`lang/${lang}.json`);
         strings = await resp.json();
         currentLang = lang;
-        localStorage.setItem(LANG_KEY, lang);
+        if (persist) localStorage.setItem(LANG_KEY, lang);
         document.documentElement.lang = lang;
         return strings;
     } catch (e) {
         console.warn('Failed to load language:', lang, e);
         return strings;
     }
+}
+
+export function hasSavedLanguage() {
+    return !!localStorage.getItem(LANG_KEY);
 }
 
 export function t(key) {
@@ -44,10 +48,16 @@ export function getStrings() {
     return strings;
 }
 
-// Initialize with saved language or default
+// Initialize with saved language or default.
+// On first launch (no saved lang), load browser lang WITHOUT persisting —
+// the picker must save only the user's explicit choice so hasSavedLanguage()
+// stays false until they pick.
 export async function initLanguage() {
     const saved = localStorage.getItem(LANG_KEY);
+    if (saved && AVAILABLE_LANGS.includes(saved)) {
+        return loadLanguage(saved, { persist: true });
+    }
     const browserLang = navigator.language?.substring(0, 2);
-    const lang = saved || (AVAILABLE_LANGS.includes(browserLang) ? browserLang : 'tr');
-    return loadLanguage(lang);
+    const lang = AVAILABLE_LANGS.includes(browserLang) ? browserLang : 'tr';
+    return loadLanguage(lang, { persist: false });
 }

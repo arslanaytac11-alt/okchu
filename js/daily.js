@@ -43,12 +43,24 @@ export function getDailyStreak() {
     return getDailyData().streak;
 }
 
+// Returns a modifier for the given day. Deterministic from the date so
+// everyone sees the same modifier on the same day.
+// - Odd day-of-month: 'time' (tighter countdown)
+// - Even day-of-month: 'moves' (capped attempts)
+export function getDailyModifier(day = getDayKey()) {
+    const dayNum = parseInt(day.split('-')[2], 10);
+    if (dayNum % 2 === 1) {
+        return { type: 'time', multiplier: 0.6 };
+    }
+    return { type: 'moves', extraMoves: 2 };
+}
+
 export function getDailyChallenge(allLevels) {
     const day = getDayKey();
     const seed = day.split('-').reduce((a, b) => a * 31 + parseInt(b), 0);
     const rng = seededRandom(seed);
     const idx = Math.floor(rng() * allLevels.length);
-    return { level: allLevels[idx], day };
+    return { level: allLevels[idx], day, modifier: getDailyModifier(day) };
 }
 
 export function completeDaily(score, stars) {
