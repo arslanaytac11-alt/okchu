@@ -33,6 +33,7 @@ function getDefaultData() {
         collectedArtifacts: [],
         dailyScores: [],   // [{ date, score, stars }] - weekly leaderboard
         gameMode: 'classic', // 'classic' | 'timed' | 'moves' | 'zen'
+        premium: false,      // Non-consumable IAP: com.arslanaytac.okchu.premium
     };
 }
 
@@ -279,6 +280,17 @@ export const storage = {
     setGameMode(mode) {
         const data = loadData();
         data.gameMode = mode;
+        saveData(data);
+    },
+
+    // === Premium (IAP) ===
+    isPremium() {
+        return !!loadData().premium;
+    },
+
+    setPremium(value) {
+        const data = loadData();
+        data.premium = !!value;
         saveData(data);
     },
 };

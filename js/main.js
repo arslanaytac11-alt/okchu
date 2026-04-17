@@ -12,10 +12,21 @@ import { allLevels } from './levels.js';
 import { maybeShowIosInstall } from './pwa-install.js';
 import { shouldShowRatePrompt, showRatePrompt } from './rate-us.js';
 import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded } from './ads.js';
+import { initIAP, buyPremium, restorePurchases, onPremiumOwned } from './iap.js';
 
 // Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
 // Use production unit IDs on App Store / TestFlight builds; Google test IDs elsewhere.
 initAds({ testMode: location.hostname === 'localhost' || location.protocol === 'http:' });
+
+// IAP init — loads the Premium product from App Store and updates price label.
+// Also wires the entitlement callback: on successful purchase/restore we hide
+// the active banner immediately so the user sees the ad removal instantly.
+onPremiumOwned(() => {
+    hideBanner();
+    const overlay = document.getElementById('overlay-premium');
+    if (overlay) overlay.classList.add('hidden');
+});
+initIAP();
 
 // Dark mode
 if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
@@ -637,13 +648,11 @@ document.getElementById('btn-premium-close').addEventListener('click', () => {
 });
 
 document.getElementById('btn-premium-buy').addEventListener('click', () => {
-    // TODO: Integrate with App Store in-app purchase (product: com.arslanaytac.okchu.premium)
-    alert('Premium satın alma App Store sürümünde aktif olacak.');
+    buyPremium();
 });
 
 document.getElementById('btn-premium-restore').addEventListener('click', () => {
-    // TODO: Integrate with App Store restore purchases API
-    alert('Geri yükleme App Store sürümünde aktif olacak.');
+    restorePurchases();
 });
 
 document.getElementById('setting-reset').addEventListener('click', () => {
