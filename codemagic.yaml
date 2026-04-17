@@ -37,7 +37,7 @@ workflows:
             --create
       - name: Add certificates to keychain
         script: |
-          keychain add-certificates --certificate-key @file:/tmp/cert_key
+          keychain add-certificates
       - name: Set up code signing
         script: |
           xcode-project use-profiles
