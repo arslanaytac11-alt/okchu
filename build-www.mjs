@@ -14,6 +14,7 @@ const entries = [
     'sw.js',
     'privacy.html',
     'terms.html',
+    'support.html',
     'css',
     'js',
     'lang',
