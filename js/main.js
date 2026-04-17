@@ -11,6 +11,11 @@ import { checkAchievements, getAllAchievements, getAchievementStats } from './ac
 import { allLevels } from './levels.js';
 import { maybeShowIosInstall } from './pwa-install.js';
 import { shouldShowRatePrompt, showRatePrompt } from './rate-us.js';
+import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded } from './ads.js';
+
+// Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
+// Use production unit IDs on App Store / TestFlight builds; Google test IDs elsewhere.
+initAds({ testMode: location.hostname === 'localhost' || location.protocol === 'http:' });
 
 // Dark mode
 if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
@@ -242,8 +247,10 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
     const oldBtn = document.getElementById('btn-next-level');
     const nextBtn = oldBtn.cloneNode(true);
     oldBtn.parentNode.replaceChild(nextBtn, oldBtn);
-    nextBtn.addEventListener('click', () => {
+    noteLevelCompleted();
+    nextBtn.addEventListener('click', async () => {
         overlay.classList.add('hidden');
+        await maybeShowInterstitial();
         if (nextLevel && nextLevel.chapter === completedLevel.chapter) {
             const chapter = chapters.find(c => c.id === nextLevel.chapter);
             game.startLevel(nextLevel, chapter);
@@ -282,12 +289,16 @@ game.onTimeUp = () => {
 
     const close = () => overlay.classList.add('hidden');
 
-    adBtn.addEventListener('click', () => {
-        // TODO: Show rewarded ad, then continue with extra time
+    adBtn.addEventListener('click', async () => {
+        const earned = await showRewarded();
         close();
-        game.timeRemaining = 60;
-        game._startCountdown();
-        game.startRenderLoop();
+        if (earned) {
+            game.timeRemaining = 60;
+            game._startCountdown();
+            game.startRenderLoop();
+        } else {
+            screenManager.showChapters();
+        }
     }, { once: true });
 
     retryBtn.addEventListener('click', () => {
@@ -380,9 +391,12 @@ function showNoLivesOverlay() {
         }
     };
 
-    adBtn.addEventListener('click', () => {
-        game.livesManager.addLife();
-        game.livesManager.renderLives(livesDisplay);
+    adBtn.addEventListener('click', async () => {
+        const earned = await showRewarded();
+        if (earned) {
+            game.livesManager.addLife();
+            game.livesManager.renderLives(livesDisplay);
+        }
         closeOverlay();
     }, { once: true });
 

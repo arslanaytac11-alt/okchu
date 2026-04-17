@@ -3,6 +3,7 @@
 import { chapters } from './data/chapters.js';
 import { getLevelsByChapter } from './levels.js';
 import { storage } from './storage.js';
+import { showBanner, hideBanner } from './ads.js';
 
 export class ScreenManager {
     constructor() {
@@ -22,6 +23,9 @@ export class ScreenManager {
         for (const [key, el] of Object.entries(this.screens)) {
             if (el) el.classList.toggle('active', key === name);
         }
+        // Banner only on non-gameplay screens — keep the canvas unobstructed.
+        if (name === 'game') hideBanner();
+        else showBanner();
     }
 
     setupNavigation() {
