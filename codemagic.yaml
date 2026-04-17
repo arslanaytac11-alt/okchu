@@ -6,10 +6,6 @@ workflows:
     integrations:
       app_store_connect: Okchu App Store Connect
     environment:
-      ios_signing:
-        # App Store Connect'te oluştur, CodeMagic > Teams > Integrations'a bağla
-        distribution_type: app_store
-        bundle_identifier: com.arslanaytac.okchu
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
