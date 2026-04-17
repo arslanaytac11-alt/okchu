@@ -1,0 +1,23 @@
+{
+  "name": "okchu",
+  "version": "1.0.0",
+  "description": "Okchu: Arrow Puzzle — 10 ancient civilizations, 50 levels",
+  "private": true,
+  "scripts": {
+    "build": "node build-www.mjs",
+    "cap:sync": "node build-www.mjs && npx cap sync ios",
+    "cap:add-ios": "node build-www.mjs && npx cap add ios",
+    "cap:open": "npx cap open ios",
+    "cap:copy": "node build-www.mjs && npx cap copy ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.1"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/ios": "^6.2.1",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/status-bar": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.3"
+  }
+}

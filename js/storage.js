@@ -6,14 +6,19 @@ function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return getDefaultData();
     try {
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        return { ...getDefaultData(), ...parsed };
     } catch {
         return getDefaultData();
     }
 }
 
 function saveData(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+        // storage quota or privacy mode — fail silently, game keeps working in-memory
+    }
 }
 
 function getDefaultData() {
@@ -22,7 +27,12 @@ function getDefaultData() {
         unlockedChapters: [1],
         lives: 3,
         lastLifeLostTime: null,
-        freeHintsUsed: []
+        freeHintsUsed: [],
+        levelScores: {},   // { levelId: { score, stars, moves, time, bestCombo } }
+        powerups: { hint: 0, freeze: 0, extraUndo: 0 },
+        collectedArtifacts: [],
+        dailyScores: [],   // [{ date, score, stars }] - weekly leaderboard
+        gameMode: 'classic', // 'classic' | 'timed' | 'moves' | 'zen'
     };
 }
 
@@ -36,10 +46,11 @@ export const storage = {
         if (!data.completedLevels.includes(levelId)) {
             data.completedLevels.push(levelId);
         }
+        // Star-based unlock: need 10+ stars in current chapter to unlock next
         const nextChapter = chapterId + 1;
         if (nextChapter <= 10 && !data.unlockedChapters.includes(nextChapter)) {
-            const chapterLevels = data.completedLevels.filter(id => id.startsWith(this.getChapterPrefix(chapterId)));
-            if (chapterLevels.length >= 5) {
+            const chapterStars = this.getChapterStars(chapterId);
+            if (chapterStars >= 10) {
                 data.unlockedChapters.push(nextChapter);
             }
         }
@@ -62,17 +73,47 @@ export const storage = {
         return loadData().unlockedChapters.includes(chapterId);
     },
 
+    // Boss level = level 5 of each chapter. Locked until the first 4 levels in
+    // the chapter sum to at least 8 stars (out of possible 12 = 2-star average).
+    isBossLocked(chapterId, levelNumInChapter) {
+        if (levelNumInChapter !== 5) return false;
+        const prefix = this.getChapterPrefix(chapterId);
+        const data = loadData();
+        let stars = 0;
+        for (let i = 1; i <= 4; i++) {
+            const s = data.levelScores?.[`${prefix}_${i}`];
+            if (s?.stars) stars += s.stars;
+        }
+        return stars < 8;
+    },
+
+    getBossGateProgress(chapterId) {
+        const prefix = this.getChapterPrefix(chapterId);
+        const data = loadData();
+        let stars = 0;
+        for (let i = 1; i <= 4; i++) {
+            const s = data.levelScores?.[`${prefix}_${i}`];
+            if (s?.stars) stars += s.stars;
+        }
+        return { current: stars, required: 8 };
+    },
+
     getLives() {
         const data = loadData();
         if (data.lives < 3 && data.lastLifeLostTime) {
-            const elapsed = Date.now() - data.lastLifeLostTime;
             const regenInterval = 20 * 60 * 1000;
-            const livesRegened = Math.floor(elapsed / regenInterval);
-            if (livesRegened > 0) {
-                data.lives = Math.min(3, data.lives + livesRegened);
-                data.lastLifeLostTime = livesRegened >= (3 - data.lives)
-                    ? null
-                    : data.lastLifeLostTime + livesRegened * regenInterval;
+            const elapsed = Date.now() - data.lastLifeLostTime;
+            const cyclesPassed = Math.floor(elapsed / regenInterval);
+            if (cyclesPassed > 0) {
+                const needed = 3 - data.lives;
+                const actualRegen = Math.min(cyclesPassed, needed);
+                data.lives += actualRegen;
+                if (data.lives >= 3) {
+                    data.lastLifeLostTime = null;
+                } else {
+                    // Advance anchor by exactly actualRegen cycles — remainder elapsed time is preserved
+                    data.lastLifeLostTime += actualRegen * regenInterval;
+                }
                 saveData(data);
             }
         }
@@ -120,7 +161,124 @@ export const storage = {
         saveData(data);
     },
 
+    saveLevelScore(levelId, scoreData) {
+        const data = loadData();
+        if (!data.levelScores) data.levelScores = {};
+        const existing = data.levelScores[levelId];
+        // Keep best score
+        if (!existing || scoreData.score > existing.score) {
+            data.levelScores[levelId] = scoreData;
+        }
+        saveData(data);
+    },
+
+    getLevelScore(levelId) {
+        const data = loadData();
+        return data.levelScores?.[levelId] || null;
+    },
+
+    getChapterStars(chapterId) {
+        const data = loadData();
+        const prefix = this.getChapterPrefix(chapterId);
+        let total = 0;
+        for (const [id, score] of Object.entries(data.levelScores || {})) {
+            if (id.startsWith(prefix) && score.stars) {
+                total += score.stars;
+            }
+        }
+        return total;
+    },
+
+    getTotalStars() {
+        const data = loadData();
+        let total = 0;
+        for (const score of Object.values(data.levelScores || {})) {
+            if (score.stars) total += score.stars;
+        }
+        return total;
+    },
+
     resetAll() {
         localStorage.removeItem(STORAGE_KEY);
-    }
+    },
+
+    // === Power-ups ===
+    getPowerups() {
+        const data = loadData();
+        return { ...{ hint: 0, freeze: 0, extraUndo: 0 }, ...(data.powerups || {}) };
+    },
+
+    earnPowerup(type, amount = 1) {
+        const data = loadData();
+        if (!data.powerups) data.powerups = { hint: 0, freeze: 0, extraUndo: 0 };
+        data.powerups[type] = (data.powerups[type] || 0) + amount;
+        saveData(data);
+        return data.powerups[type];
+    },
+
+    usePowerup(type) {
+        const data = loadData();
+        if (!data.powerups) data.powerups = { hint: 0, freeze: 0, extraUndo: 0 };
+        if ((data.powerups[type] || 0) <= 0) return false;
+        data.powerups[type]--;
+        saveData(data);
+        return true;
+    },
+
+    // === Artifacts collection ===
+    collectArtifact(chapterId) {
+        const data = loadData();
+        if (!data.collectedArtifacts) data.collectedArtifacts = [];
+        if (!data.collectedArtifacts.includes(chapterId)) {
+            data.collectedArtifacts.push(chapterId);
+            saveData(data);
+            return true;
+        }
+        return false;
+    },
+
+    hasArtifact(chapterId) {
+        return (loadData().collectedArtifacts || []).includes(chapterId);
+    },
+
+    getCollectedArtifacts() {
+        return loadData().collectedArtifacts || [];
+    },
+
+    // === Weekly leaderboard (local, daily challenge scores) ===
+    recordDailyScore(score, stars) {
+        const data = loadData();
+        if (!data.dailyScores) data.dailyScores = [];
+        const today = new Date().toISOString().slice(0, 10);
+        const existing = data.dailyScores.find(d => d.date === today);
+        if (existing) {
+            if (score > existing.score) { existing.score = score; existing.stars = stars; }
+        } else {
+            data.dailyScores.push({ date: today, score, stars });
+        }
+        // Prune scores older than 30 days
+        const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        data.dailyScores = data.dailyScores.filter(d => new Date(d.date).getTime() >= cutoff);
+        saveData(data);
+    },
+
+    getWeeklyLeaderboard() {
+        const data = loadData();
+        const scores = (data.dailyScores || []).slice();
+        const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        return scores
+            .filter(d => new Date(d.date).getTime() >= cutoff)
+            .sort((a, b) => b.score - a.score);
+    },
+
+    // === Game mode ===
+    getGameMode() {
+        return loadData().gameMode || 'classic';
+    },
+
+    setGameMode(mode) {
+        const data = loadData();
+        data.gameMode = mode;
+        saveData(data);
+    },
 };

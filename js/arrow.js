@@ -25,12 +25,13 @@ export function getDirectionVector(direction) {
 }
 
 export class ArrowPath {
-    constructor(cells, direction) {
+    constructor(cells, direction, colorIndex) {
         // cells: array of [x, y] pairs forming the connected path
         this.cells = cells.map(c => ({ x: c[0], y: c[1] }));
         this.direction = direction;
         this.state = ArrowState.IDLE;
         this.animProgress = 0;
+        this.colorIndex = colorIndex || 0;
     }
 
     // The arrow head cell (last cell in array)

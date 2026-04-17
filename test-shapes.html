@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html><head><title>Shape Test</title>
+<style>
+body { background: #f0e4c8; display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; font-family: sans-serif; }
+.level { text-align: center; }
+canvas { border: 1px solid #ccc; background: #f5ecd8; }
+h3 { margin: 5px 0; color: #4a3820; }
+</style>
+</head><body>
+<script type="module">
+import { egyptLevels } from './js/data/levels/egypt.js';
+import { greekLevels } from './js/data/levels/greek.js';
+import { romeLevels } from './js/data/levels/rome.js';
+
+function drawLevel(level, title) {
+    const div = document.createElement('div');
+    div.className = 'level';
+    const h = document.createElement('h3');
+    h.textContent = title + ' - ' + level.name;
+    div.appendChild(h);
+
+    const cs = 14;
+    const canvas = document.createElement('canvas');
+    canvas.width = level.gridWidth * cs + 4;
+    canvas.height = level.gridHeight * cs + 4;
+    div.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    ctx.translate(2, 2);
+
+    const colors = ['#4a3820','#6b4c2a','#2b6e8a','#3a8a6e','#8a4a2a','#5a3a6a','#2a5a3a','#8a6a2a'];
+
+    for (let i = 0; i < level.paths.length; i++) {
+        const path = level.paths[i];
+        const color = colors[i % colors.length];
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Draw path line
+        ctx.beginPath();
+        for (let j = 0; j < path.cells.length; j++) {
+            const [x, y] = path.cells[j];
+            const px = x * cs + cs/2;
+            const py = y * cs + cs/2;
+            if (j === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // Draw arrowhead
+        const head = path.cells[path.cells.length - 1];
+        const hx = head[0] * cs + cs/2;
+        const hy = head[1] * cs + cs/2;
+        const sz = 3;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        switch(path.direction) {
+            case 'up': ctx.moveTo(hx,hy-sz); ctx.lineTo(hx-sz,hy+sz); ctx.lineTo(hx+sz,hy+sz); break;
+            case 'down': ctx.moveTo(hx,hy+sz); ctx.lineTo(hx-sz,hy-sz); ctx.lineTo(hx+sz,hy-sz); break;
+            case 'left': ctx.moveTo(hx-sz,hy); ctx.lineTo(hx+sz,hy-sz); ctx.lineTo(hx+sz,hy+sz); break;
+            case 'right': ctx.moveTo(hx+sz,hy); ctx.lineTo(hx-sz,hy-sz); ctx.lineTo(hx-sz,hy+sz); break;
+        }
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    document.body.appendChild(div);
+}
+
+// Draw first level of each civilization
+drawLevel(egyptLevels[0], 'MISIR');
+drawLevel(greekLevels[0], 'YUNAN');
+drawLevel(romeLevels[2], 'ROMA');
+
+// Draw more levels
+drawLevel(egyptLevels[2], 'MISIR');
+drawLevel(greekLevels[2], 'YUNAN');
+drawLevel(romeLevels[3], 'ROMA');
+</script>
+</body></html>

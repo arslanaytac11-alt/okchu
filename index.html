@@ -2,26 +2,77 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Ok Bulmacasi - Antik Yolculuk</title>
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Okchu">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+    <meta name="theme-color" content="#f0e4c8" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
+    <title>Okchu: Arrow Puzzle</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="assets/icons/icon-192.png">
+    <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body>
-    <div id="app">
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <img src="assets/icons/icon-192.png" class="splash-icon" alt="">
+        <h1 class="splash-title">Okchu</h1>
+        <p class="splash-subtitle">Arrow Puzzle</p>
+        <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+    </div>
+
+    <div id="app" class="app-hidden">
         <!-- Menu Screen -->
         <div id="screen-menu" class="screen active">
-            <h1 class="game-title">Ok Bulmacasi</h1>
-            <p class="game-subtitle">Antik Yolculuk</p>
-            <button id="btn-play" class="btn btn-primary">Oyna</button>
+            <h1 class="game-title">Okchu</h1>
+            <p class="game-subtitle">Arrow Puzzle</p>
+            <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Oyna</button>
+            <button id="btn-daily" class="btn btn-menu-secondary" data-i18n="menu.daily">Günlük Meydan Okuma</button>
+            <div class="menu-bottom-buttons">
+                <button id="btn-achievements" class="btn-menu-icon" data-i18n="menu.achievements">Başarımlar</button>
+                <button id="btn-collection" class="btn-menu-icon" data-i18n="menu.collection">Koleksiyon</button>
+                <button id="btn-leaderboard" class="btn-menu-icon" data-i18n="menu.leaderboard">Lider Tablosu</button>
+                <button id="btn-settings" class="btn-menu-icon" data-i18n="menu.settings">Ayarlar</button>
+            </div>
+            <div class="menu-top-buttons">
+                <button id="btn-dark-mode" class="btn-dark-toggle" aria-label="Gece modu"></button>
+                <button id="btn-language" class="btn-lang-toggle" aria-label="Dil">TR</button>
+            </div>
         </div>
 
         <!-- Chapter Select Screen -->
         <div id="screen-chapters" class="screen">
             <div class="screen-header">
                 <button class="btn-back" id="btn-chapters-back">&larr;</button>
-                <h2>Bolumler</h2>
+                <h2>Bölümler</h2>
             </div>
             <div id="chapter-list" class="chapter-list"></div>
+        </div>
+
+        <!-- Chapter Story Screen -->
+        <div id="screen-story" class="screen">
+            <div class="story-card">
+                <div class="story-image-container">
+                    <img id="story-image" class="story-image" src="" alt="">
+                    <div class="story-image-overlay"></div>
+                    <button class="btn-back story-back" id="btn-story-back">&larr;</button>
+                </div>
+                <div class="story-body">
+                    <div class="story-period" id="story-period"></div>
+                    <h2 class="story-title" id="story-title"></h2>
+                    <p class="story-text" id="story-text"></p>
+                    <div class="story-divider"></div>
+                    <p class="story-mystery" id="story-mystery"></p>
+                    <div class="story-facts" id="story-facts"></div>
+                    <button id="btn-story-play" class="btn btn-primary story-play-btn">Seviyelere Git</button>
+                </div>
+            </div>
         </div>
 
         <!-- Level Select Screen -->
@@ -41,32 +92,216 @@
                     <span id="level-name">Seviye 1</span>
                     <span id="level-difficulty" class="difficulty-badge">Kolay</span>
                 </div>
-                <button id="btn-hint" class="btn-hint" title="Ipucu">?</button>
+                <span></span>
             </div>
-            <div id="lives-display" class="lives-display"></div>
-            <canvas id="game-canvas"></canvas>
+            <div id="daily-modifier-badge" class="daily-modifier-badge hidden"></div>
+            <div class="game-stats">
+                <div id="lives-display" class="lives-display"></div>
+                <div class="stat-item"><span class="stat-label" data-i18n="game.score">Skor</span><span id="game-score" class="stat-value">0</span></div>
+                <div class="stat-item"><span id="game-combo" class="combo-badge"></span></div>
+                <div class="stat-item"><span class="stat-label" data-i18n="game.moves">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
+                <div class="stat-item"><span class="stat-label" data-i18n="game.time">Süre</span><span id="game-timer" class="stat-value">0:00</span></div>
+                <button id="btn-undo" class="stat-undo" aria-label="Geri Al" title="Geri Al (Undo)">↶<span id="undo-count" class="stat-undo-count">3</span></button>
+                <button id="btn-powerup-hint" class="stat-powerup" aria-label="İpucu" title="İpucu Kullan">💡<span id="powerup-hint-count" class="stat-undo-count">0</span></button>
+                <button id="btn-powerup-freeze" class="stat-powerup" aria-label="Zamanı Dondur" title="Zamanı Dondur (+15sn)">❄<span id="powerup-freeze-count" class="stat-undo-count">0</span></button>
+            </div>
+            <canvas id="game-canvas" role="img" aria-label="Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun." tabindex="0"></canvas>
+            <div id="zoom-hint" class="zoom-hint hidden">Yakınlaştırmak için iki parmakla aç</div>
+            <div id="banner-ad" class="banner-ad">
+                <span class="banner-ad-label">Reklam Alanı</span>
+            </div>
         </div>
 
         <!-- Level Complete Overlay -->
         <div id="overlay-complete" class="overlay hidden">
             <div class="overlay-content">
-                <h2>Tebrikler!</h2>
-                <p id="complete-message">Seviyeyi tamamladin!</p>
-                <button id="btn-next-level" class="btn btn-primary">Sonraki Seviye</button>
+                <h2 data-i18n="overlay.complete_title">Tebrikler!</h2>
+                <div id="complete-stars" class="stars-display"></div>
+                <p id="complete-score" class="complete-score"></p>
+                <p id="complete-stats" class="complete-stats"></p>
+                <button id="btn-next-level" class="btn btn-primary" data-i18n="overlay.next_level">Sonraki Seviye</button>
             </div>
         </div>
 
         <!-- Lives Empty Overlay -->
         <div id="overlay-no-lives" class="overlay hidden">
             <div class="overlay-content">
-                <h2>Canin Bitti!</h2>
-                <p id="lives-timer-text">Yeni can: --:--</p>
-                <button id="btn-watch-ad" class="btn btn-primary">Reklam Izle (+1 Can)</button>
-                <button id="btn-wait" class="btn btn-secondary">Bekle</button>
+                <h2 data-i18n="overlay.no_lives_title">Canın Bitti!</h2>
+                <p id="lives-timer-text">--:--</p>
+                <button id="btn-watch-ad" class="btn btn-primary" data-i18n="overlay.watch_ad">Reklam İzle (+1 Can)</button>
+                <button id="btn-wait" class="btn btn-secondary" data-i18n="overlay.wait">Bekle</button>
+            </div>
+        </div>
+
+        <!-- Tutorial Overlay -->
+        <div id="overlay-tutorial" class="overlay hidden">
+            <div class="tutorial-card">
+                <div class="tutorial-step" id="tutorial-step">
+                    <div class="tutorial-icon" id="tutorial-icon"></div>
+                    <h3 id="tutorial-title"></h3>
+                    <p id="tutorial-text"></p>
+                </div>
+                <div class="tutorial-dots" id="tutorial-dots"></div>
+                <button id="btn-tutorial-next" class="btn btn-primary">Devam</button>
+                <button id="btn-tutorial-skip" class="btn-ghost tutorial-skip">Atla</button>
+            </div>
+        </div>
+
+        <!-- Achievements Overlay -->
+        <div id="overlay-achievements" class="overlay hidden">
+            <div class="overlay-content overlay-large">
+                <h2>Başarımlar</h2>
+                <div id="achievements-list" class="achievements-list"></div>
+                <button id="btn-ach-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Collection Overlay -->
+        <div id="overlay-collection" class="overlay hidden">
+            <div class="overlay-content overlay-large">
+                <h2>Koleksiyon</h2>
+                <p class="collection-hint">Bölümde 13+ yıldız toplayınca eser açılır</p>
+                <div id="collection-list" class="collection-list"></div>
+                <button id="btn-collection-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Overlay -->
+        <div id="overlay-leaderboard" class="overlay hidden">
+            <div class="overlay-content overlay-large">
+                <h2>Haftalık Lider Tablosu</h2>
+                <p class="leaderboard-hint">Son 7 günün günlük meydan okuma skorları</p>
+                <div id="leaderboard-list" class="leaderboard-list"></div>
+                <button id="btn-leaderboard-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Settings Overlay -->
+        <div id="overlay-settings" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>Ayarlar</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <span>Gece Modu</span>
+                        <button id="setting-dark" class="setting-toggle"></button>
+                    </div>
+                    <div class="setting-row">
+                        <span>Dil</span>
+                        <button id="setting-lang" class="setting-value">TR</button>
+                    </div>
+                    <div class="setting-row">
+                        <span>Reklamsız Premium</span>
+                        <button id="setting-premium" class="btn btn-primary setting-buy">Satın Al</button>
+                    </div>
+                    <div class="setting-row danger">
+                        <span>İlerlemeyi Sıfırla</span>
+                        <button id="setting-reset" class="btn btn-secondary setting-danger">Sıfırla</button>
+                    </div>
+                </div>
+                <div class="settings-legal">
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/privacy.html" target="_blank" rel="noopener" data-i18n="settings.privacy">Gizlilik Politikası</a>
+                    <span class="settings-legal-sep">·</span>
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/terms.html" target="_blank" rel="noopener" data-i18n="settings.terms">Kullanım Şartları</a>
+                </div>
+                <p class="settings-version">Okchu v1.0</p>
+                <button id="btn-settings-close" class="btn btn-secondary">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Premium Paywall Overlay -->
+        <div id="overlay-premium" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 data-i18n="premium.title">Reklamsız Premium</h2>
+                <p class="premium-subtitle" data-i18n="premium.subtitle">Tek seferlik ödeme. Tüm reklamlar kaldırılır.</p>
+                <ul class="premium-benefits">
+                    <li data-i18n="premium.benefit_ads">✓ Banner ve video reklam yok</li>
+                    <li data-i18n="premium.benefit_support">✓ Geliştiriciyi destekle</li>
+                    <li data-i18n="premium.benefit_forever">✓ Sonsuza kadar senin</li>
+                </ul>
+                <div class="premium-price" id="premium-price">₺49,99</div>
+                <button id="btn-premium-buy" class="btn btn-primary" data-i18n="premium.buy">Satın Al</button>
+                <button id="btn-premium-restore" class="btn btn-secondary" data-i18n="premium.restore">Satın Alımları Geri Yükle</button>
+                <p class="premium-legal">
+                    <span data-i18n="premium.legal_note">Satın alarak aşağıdakileri kabul edersiniz:</span><br>
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/terms.html" target="_blank" rel="noopener" data-i18n="premium.terms">Kullanım Şartları</a>
+                    ·
+                    <a href="https://arslanaytac11-alt.github.io/okchu-legal/privacy.html" target="_blank" rel="noopener" data-i18n="premium.privacy">Gizlilik Politikası</a>
+                </p>
+                <button id="btn-premium-close" class="btn-ghost" data-i18n="premium.close">Kapat</button>
+            </div>
+        </div>
+
+        <!-- Achievement Toast -->
+        <div id="achievement-toast" class="ach-toast hidden">
+            <span id="ach-toast-icon" class="ach-toast-icon"></span>
+            <div class="ach-toast-text">
+                <strong id="ach-toast-name"></strong>
+                <span id="ach-toast-desc"></span>
+            </div>
+        </div>
+
+        <!-- Language Select Overlay -->
+        <div id="overlay-language" class="overlay hidden">
+            <div class="overlay-content lang-picker">
+                <h2 id="lang-picker-title">Dil / Language</h2>
+                <div class="lang-list">
+                    <button class="lang-option" data-lang="tr">Turkce</button>
+                    <button class="lang-option" data-lang="en">English</button>
+                    <button class="lang-option" data-lang="es">Espanol</button>
+                    <button class="lang-option" data-lang="fr">Francais</button>
+                    <button class="lang-option" data-lang="ja">日本語</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- iOS Install Banner -->
+        <div id="ios-install-banner" class="ios-install-banner hidden">
+            <img src="assets/icons/icon-192.png" class="ios-install-icon" alt="">
+            <div class="ios-install-text">
+                <strong data-i18n="install.title">Okchu'yu Ana Ekrana Ekle</strong>
+                <p data-i18n="install.body">Tam ekran oyna, offline çalışır!</p>
+                <p class="ios-install-steps">
+                    <span data-i18n="install.step_share">Paylaş</span>
+                    <span class="ios-share-icon" aria-hidden="true">&#x2191;&#xFE0E;</span>
+                    &nbsp;&rarr;&nbsp;
+                    <span data-i18n="install.step_add">Ana Ekrana Ekle</span>
+                </p>
+            </div>
+            <button id="btn-install-close" class="ios-install-close" aria-label="Kapat">&times;</button>
+        </div>
+
+        <!-- Rate Us Overlay -->
+        <div id="overlay-rate" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 data-i18n="rate.title">Okchu'yu beğeniyor musun?</h2>
+                <p class="rate-subtitle" data-i18n="rate.subtitle">Geri bildirimin bize yol gösterir</p>
+                <div id="rate-stars" class="rate-stars" role="group" aria-label="Rating"></div>
+                <button id="btn-rate-later" class="btn btn-secondary" data-i18n="rate.later">Sonra</button>
+            </div>
+        </div>
+
+        <!-- Time Up Overlay -->
+        <div id="overlay-time-up" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 data-i18n="overlay.time_up_title">Süre Doldu!</h2>
+                <p class="time-up-message" data-i18n="overlay.time_up_text">Zamanı yetiştiremedin</p>
+                <button id="btn-ad-continue" class="btn btn-primary">Reklam İzle + Devam Et</button>
+                <button id="btn-retry" class="btn btn-secondary" data-i18n="overlay.retry">Tekrar Dene</button>
+                <button id="btn-time-up-back" class="btn-ghost" data-i18n="overlay.back_chapters">Bölümler</button>
+            </div>
+        </div>
+
+        <!-- Daily Challenge Failure Overlay — streak preserved, no retry today -->
+        <div id="overlay-daily-fail" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 id="daily-fail-title" data-i18n="overlay.daily_fail_moves_title">Hamle Bitti!</h2>
+                <p id="daily-fail-message" class="time-up-message" data-i18n="overlay.daily_fail_message">Günlük meydan okumayı başaramadın. Yarın yeni bir level ile geri gel!</p>
+                <p class="daily-fail-streak-note" data-i18n="overlay.daily_fail_streak_note">Seri sayacın korundu.</p>
+                <button id="btn-daily-fail-back" class="btn btn-primary" data-i18n="overlay.back_chapters">Bölümler</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/main.js?v=23"></script>
 </body>
 </html>

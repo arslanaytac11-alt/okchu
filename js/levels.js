@@ -3,11 +3,25 @@
 import { egyptLevels } from './data/levels/egypt.js';
 import { greekLevels } from './data/levels/greek.js';
 import { romeLevels } from './data/levels/rome.js';
+import { vikingLevels } from './data/levels/viking.js';
+import { ottomanLevels } from './data/levels/ottoman.js';
+import { chinaLevels } from './data/levels/china.js';
+import { mayaLevels } from './data/levels/maya.js';
+import { indiaLevels } from './data/levels/india.js';
+import { medievalLevels } from './data/levels/medieval.js';
+import { finalLevels } from './data/levels/final.js';
 
-const allLevels = [
+export const allLevels = [
     ...egyptLevels,
     ...greekLevels,
-    ...romeLevels
+    ...romeLevels,
+    ...vikingLevels,
+    ...ottomanLevels,
+    ...chinaLevels,
+    ...mayaLevels,
+    ...indiaLevels,
+    ...medievalLevels,
+    ...finalLevels
 ];
 
 export function getLevelsByChapter(chapterId) {

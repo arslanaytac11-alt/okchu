@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>Level Validator</title></head>
+<body>
+<pre id="output">Validating...</pre>
+<script type="module">
+import { egyptLevels } from './js/data/levels/egypt.js';
+import { greekLevels } from './js/data/levels/greek.js';
+import { romeLevels } from './js/data/levels/rome.js';
+import { validateLevel } from './js/level-validator.js';
+
+const out = document.getElementById('output');
+let text = '';
+
+const allLevels = [...egyptLevels, ...greekLevels, ...romeLevels];
+
+for (const level of allLevels) {
+    if (level.paths.length > 25) {
+        text += `${level.id}: SKIPPED (${level.paths.length} paths - too many for BFS)\n`;
+        continue;
+    }
+    const result = validateLevel(level);
+    if (result.solvable) {
+        text += `${level.id}: SOLVABLE (${result.totalPaths} paths, solution: [${result.solution.join(',')}])\n`;
+    } else {
+        text += `${level.id}: *** UNSOLVABLE *** (${result.totalPaths} paths)\n`;
+    }
+}
+
+out.textContent = text;
+</script>
+</body>
+</html>
