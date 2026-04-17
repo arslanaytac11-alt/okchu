@@ -11,7 +11,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APP_STORE_APP_ID: 0000000000   # App Store Connect'teki Apple ID (sayı)
+        APP_STORE_APP_ID: 6762461650   # Apple ID from App Store Connect
       node: 20
       xcode: latest
       cocoapods: default
