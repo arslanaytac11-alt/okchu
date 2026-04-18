@@ -21,9 +21,15 @@ workflows:
       - name: Patch admob plugin for UMP 3.x API
         script: |
           FILE="node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift"
-          sed -i '' 's/UMPConsentInformation\.sharedInstance/UMPConsentInformation.shared/g' "$FILE"
+          # Rename type references (UMP 3.x dropped the UMP prefix on these)
+          sed -i '' 's/UMPConsentInformation/ConsentInformation/g' "$FILE"
           sed -i '' 's/UMPConsentStatus/ConsentStatus/g' "$FILE"
-          echo "Patched $FILE"
+          sed -i '' 's/UMPFormStatus/FormStatus/g' "$FILE"
+          # sharedInstance was renamed to shared on ConsentInformation
+          sed -i '' 's/ConsentInformation\.sharedInstance/ConsentInformation.shared/g' "$FILE"
+          # UMPConsentForm.load argument label changed from completionHandler: to with:
+          sed -i '' 's/UMPConsentForm\.load(completionHandler:/UMPConsentForm.load(with:/g' "$FILE"
+          echo "=== Patched $FILE ==="
           cat "$FILE"
       - name: Build web assets & sync Capacitor
         script: |
