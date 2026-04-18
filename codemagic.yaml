@@ -130,8 +130,25 @@ workflows:
           # Use the persistent CERT_PRIVATE_KEY env var so every build
           # matches the same Distribution certificate at Apple — no more
           # cert accumulation.
-          echo "$CERT_PRIVATE_KEY" > /tmp/cert_key
+          if [ -z "$CERT_PRIVATE_KEY" ]; then
+            echo "ERROR: CERT_PRIVATE_KEY env var is empty or not set."
+            echo "Add it to the 'okchu' environment group in Codemagic:"
+            echo "  App settings > Environment variables > Group 'okchu'"
+            echo "  Variable name: CERT_PRIVATE_KEY"
+            echo "  Value: full PEM content including -----BEGIN/END----- lines"
+            echo "  Secure: yes"
+            exit 1
+          fi
+          printf '%s\n' "$CERT_PRIVATE_KEY" > /tmp/cert_key
           chmod 600 /tmp/cert_key
+          # Sanity check: PEM files must start with -----BEGIN
+          if ! head -c 11 /tmp/cert_key | grep -q -- '-----BEGIN'; then
+            echo "ERROR: CERT_PRIVATE_KEY does not look like a PEM private key."
+            echo "First bytes of file:"
+            head -c 50 /tmp/cert_key | cat -v
+            exit 1
+          fi
+          echo "CERT_PRIVATE_KEY loaded OK ($(wc -c < /tmp/cert_key) bytes)."
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
