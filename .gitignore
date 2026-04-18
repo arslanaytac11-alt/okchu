@@ -1,4 +1,6 @@
 *.png
+# Keep iOS asset-catalog images (app icons + splash) — CI needs them
+!ios/App/App/Assets.xcassets/**/*.png
 .playwright-mcp/
 node_modules/
 www/
