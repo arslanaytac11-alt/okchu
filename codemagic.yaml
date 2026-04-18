@@ -119,6 +119,15 @@ workflows:
       - name: Build web assets & sync Capacitor
         script: |
           npm run cap:sync
+      - name: Ensure CFBundleIconName in Info.plist
+        script: |
+          # App Store validation rejects iOS 11+ apps missing CFBundleIconName.
+          # Inject it after cap sync so nothing downstream can strip it.
+          PLIST="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST"
+          echo "=== Info.plist CFBundleIconName ==="
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$PLIST"
       - name: Install CocoaPods
         script: |
           cd ios/App && pod install
