@@ -119,10 +119,52 @@ workflows:
       - name: Build web assets & sync Capacitor
         script: |
           npm run cap:sync
+      - name: Generate all iOS app icon sizes
+        script: |
+          # AppIcon.appiconset only has the 1024x1024 marketing icon.
+          # iOS app icons need iPhone-specific sizes (60pt/40pt/29pt/20pt)
+          # for asset catalog compilation + CFBundleIconName auto-injection
+          # to work. Generate all required sizes from the 1024 source.
+          ICONSET="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          SOURCE="$ICONSET/AppIcon-512@2x.png"
+          if [ ! -f "$SOURCE" ]; then
+            echo "ERROR: source icon missing at $SOURCE"; exit 1
+          fi
+          cd "$ICONSET"
+          # Strip alpha channel just in case (marketing icon must be RGB)
+          sips -s format png --deleteColorManagementProperties AppIcon-512@2x.png --out AppIcon-512@2x.png >/dev/null
+          # iPhone icon sizes
+          sips -z 120 120 AppIcon-512@2x.png --out Icon-60@2x.png >/dev/null
+          sips -z 180 180 AppIcon-512@2x.png --out Icon-60@3x.png >/dev/null
+          sips -z 80  80  AppIcon-512@2x.png --out Icon-40@2x.png >/dev/null
+          sips -z 120 120 AppIcon-512@2x.png --out Icon-40@3x.png >/dev/null
+          sips -z 58  58  AppIcon-512@2x.png --out Icon-29@2x.png >/dev/null
+          sips -z 87  87  AppIcon-512@2x.png --out Icon-29@3x.png >/dev/null
+          sips -z 40  40  AppIcon-512@2x.png --out Icon-20@2x.png >/dev/null
+          sips -z 60  60  AppIcon-512@2x.png --out Icon-20@3x.png >/dev/null
+          cat > Contents.json <<'JSON'
+          {
+            "images" : [
+              { "size" : "20x20", "idiom" : "iphone", "filename" : "Icon-20@2x.png", "scale" : "2x" },
+              { "size" : "20x20", "idiom" : "iphone", "filename" : "Icon-20@3x.png", "scale" : "3x" },
+              { "size" : "29x29", "idiom" : "iphone", "filename" : "Icon-29@2x.png", "scale" : "2x" },
+              { "size" : "29x29", "idiom" : "iphone", "filename" : "Icon-29@3x.png", "scale" : "3x" },
+              { "size" : "40x40", "idiom" : "iphone", "filename" : "Icon-40@2x.png", "scale" : "2x" },
+              { "size" : "40x40", "idiom" : "iphone", "filename" : "Icon-40@3x.png", "scale" : "3x" },
+              { "size" : "60x60", "idiom" : "iphone", "filename" : "Icon-60@2x.png", "scale" : "2x" },
+              { "size" : "60x60", "idiom" : "iphone", "filename" : "Icon-60@3x.png", "scale" : "3x" },
+              { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "AppIcon-512@2x.png", "scale" : "1x" }
+            ],
+            "info" : { "version" : 1, "author" : "xcode" }
+          }
+          JSON
+          echo "=== AppIcon.appiconset contents ==="
+          ls -la
+          cd - >/dev/null
       - name: Ensure CFBundleIconName in Info.plist
         script: |
-          # App Store validation rejects iOS 11+ apps missing CFBundleIconName.
-          # Inject it after cap sync so nothing downstream can strip it.
+          # Belt and suspenders: also force CFBundleIconName into source
+          # Info.plist so it's present even if Xcode auto-injection fails.
           PLIST="ios/App/App/Info.plist"
           /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST"
@@ -206,6 +248,24 @@ workflows:
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+      - name: Verify bundle Info.plist & assets
+        script: |
+          IPA=$(ls build/ios/ipa/*.ipa 2>/dev/null | head -1)
+          [ -z "$IPA" ] && { echo "No IPA produced"; exit 1; }
+          echo "IPA: $IPA"
+          rm -rf /tmp/verify_ipa
+          mkdir /tmp/verify_ipa
+          cd /tmp/verify_ipa
+          unzip -q "$CM_BUILD_DIR/$IPA"
+          APP_PLIST=$(ls Payload/*.app/Info.plist | head -1)
+          echo "=== Bundle Info.plist CFBundleIconName ==="
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$APP_PLIST" 2>&1 || echo "KEY MISSING"
+          echo "=== Bundle Info.plist CFBundleIcons ==="
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons" "$APP_PLIST" 2>&1 || echo "(no CFBundleIcons struct)"
+          echo "=== Assets.car in bundle? ==="
+          ls -la Payload/*.app/Assets.car 2>&1 | head -5 || echo "NO Assets.car"
+          echo "=== All PNGs in bundle root ==="
+          ls Payload/*.app/*.png 2>&1 | head -20 || true
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
