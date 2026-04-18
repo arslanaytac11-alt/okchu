@@ -134,6 +134,38 @@ workflows:
       - name: Initialize keychain
         script: |
           keychain initialize
+      - name: Revoke stale Distribution certs
+        script: |
+          # Apple enforces a hard limit of 2 Distribution certs per team.
+          # Every build generates a fresh RSA key, so existing certs never
+          # match and we hit 409 once 2 certs exist. Revoke them up front
+          # so fetch-signing-files --create always has room.
+          # Safe because we only ship through Codemagic (no local Xcode).
+          set +e
+          for TYPE in IOS_DISTRIBUTION DISTRIBUTION; do
+            echo "--- Listing certs of type $TYPE ---"
+            app-store-connect list-certificates --type "$TYPE" --json > /tmp/certs_$TYPE.json 2>/dev/null || echo '[]' > /tmp/certs_$TYPE.json
+            IDS=$(python3 -c "
+          import json
+          try:
+              with open('/tmp/certs_$TYPE.json') as f:
+                  data = json.load(f)
+              for c in (data if isinstance(data, list) else []):
+                  cid = c.get('id')
+                  if cid:
+                      print(cid)
+          except Exception as e:
+              pass
+          ")
+            for id in $IDS; do
+              echo "Revoking $TYPE cert $id"
+              yes | app-store-connect delete-certificate "$id" 2>/dev/null || \
+                printf 'y\n' | app-store-connect delete-certificate "$id" 2>/dev/null || \
+                app-store-connect delete-certificate "$id" --ignore-not-found 2>/dev/null || \
+                true
+            done
+          done
+          set -e
       - name: Fetch signing files
         script: |
           openssl genrsa -out /tmp/cert_key.pem 2048
