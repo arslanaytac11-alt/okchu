@@ -20,18 +20,101 @@ workflows:
       - name: Install npm dependencies
         script: |
           npm ci
-      - name: Patch admob plugin for UMP 3.x API
+      - name: Rewrite admob ConsentExecutor for UMP 3.x API
         script: |
           FILE="node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift"
-          # Rename type references (UMP 3.x dropped the UMP prefix on these)
-          sed -i '' 's/UMPConsentInformation/ConsentInformation/g' "$FILE"
-          sed -i '' 's/UMPConsentStatus/ConsentStatus/g' "$FILE"
-          sed -i '' 's/UMPFormStatus/FormStatus/g' "$FILE"
-          # sharedInstance was renamed to shared on ConsentInformation
-          sed -i '' 's/ConsentInformation\.sharedInstance/ConsentInformation.shared/g' "$FILE"
-          # UMPConsentForm.load argument label changed from completionHandler: to with:
-          sed -i '' 's/UMPConsentForm\.load(completionHandler:/UMPConsentForm.load(with:/g' "$FILE"
-          echo "=== Patched $FILE ==="
+          # UMP 3.x dropped the UMP prefix on all types and renamed several
+          # members. Rather than chase renames one-by-one via sed, replace the
+          # entire file with a UMP 3.x compatible implementation.
+          cat > "$FILE" <<'SWIFT_EOF'
+          import Foundation
+          import Capacitor
+          import GoogleMobileAds
+          import UserMessagingPlatform
+
+          class ConsentExecutor: NSObject {
+              weak var plugin: AdMobPlugin?
+
+              func requestConsentInfo(_ call: CAPPluginCall, _ debugGeography: Int, _ testDeviceIdentifiers: [String], _ tagForUnderAgeOfConsent: Bool) {
+                  let parameters = RequestParameters()
+                  let debugSettings = DebugSettings()
+
+                  debugSettings.geography = DebugGeography(rawValue: debugGeography) ?? DebugGeography.disabled
+                  debugSettings.testDeviceIdentifiers = testDeviceIdentifiers
+
+                  parameters.debugSettings = debugSettings
+                  parameters.isTaggedForUnderAgeOfConsent = tagForUnderAgeOfConsent
+
+                  ConsentInformation.shared.requestConsentInfoUpdate(
+                      with: parameters,
+                      completionHandler: { error in
+                          if error != nil {
+                              call.reject("Request consent info failed")
+                          } else {
+                              call.resolve([
+                                  "status": self.getConsentStatusString(ConsentInformation.shared.consentStatus),
+                                  "isConsentFormAvailable": ConsentInformation.shared.formStatus == FormStatus.available
+                              ])
+                          }
+                      })
+              }
+
+              func showConsentForm(_ call: CAPPluginCall) {
+                  if let rootViewController = plugin?.getRootVC() {
+                      let formStatus = ConsentInformation.shared.formStatus
+
+                      if formStatus == FormStatus.available {
+                          ConsentForm.load(with: {form, loadError in
+                              if loadError != nil {
+                                  call.reject(loadError?.localizedDescription ?? "Load consent form error")
+                                  return
+                              }
+
+                              if ConsentInformation.shared.consentStatus == ConsentStatus.required {
+                                  form?.present(from: rootViewController, completionHandler: { dismissError in
+                                      if dismissError != nil {
+                                          call.reject(dismissError?.localizedDescription ?? "Consent dismiss error")
+                                          return
+                                      }
+
+                                      call.resolve([
+                                          "status": self.getConsentStatusString(ConsentInformation.shared.consentStatus)
+                                      ])
+                                  })
+                              } else {
+                                  call.resolve([
+                                      "status": self.getConsentStatusString(ConsentInformation.shared.consentStatus)
+                                  ])
+                              }
+                          })
+                      } else {
+                          call.reject("Consent Form not available")
+                      }
+                  } else {
+                      call.reject("No ViewController")
+                  }
+              }
+
+              func resetConsentInfo(_ call: CAPPluginCall) {
+                  ConsentInformation.shared.reset()
+                  call.resolve()
+              }
+
+              func getConsentStatusString(_ consentStatus: ConsentStatus) -> String {
+                  switch consentStatus {
+                  case ConsentStatus.required:
+                      return "REQUIRED"
+                  case ConsentStatus.notRequired:
+                      return "NOT_REQUIRED"
+                  case ConsentStatus.obtained:
+                      return "OBTAINED"
+                  default:
+                      return "UNKNOWN"
+                  }
+              }
+          }
+          SWIFT_EOF
+          echo "=== Rewrote $FILE ==="
           cat "$FILE"
       - name: Build web assets & sync Capacitor
         script: |
