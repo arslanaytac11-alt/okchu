@@ -6,6 +6,8 @@ workflows:
     integrations:
       app_store_connect: Okchu App Store Connect
     environment:
+      groups:
+        - okchu
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
@@ -40,9 +42,13 @@ workflows:
       - name: Initialize keychain
         script: |
           keychain initialize
-      - name: Generate private key for certificate
+      - name: Write persistent private key to file
         script: |
-          ssh-keygen -t rsa -b 2048 -m PEM -f /tmp/cert_key -q -N ""
+          # Use the persistent CERT_PRIVATE_KEY env var so every build
+          # matches the same Distribution certificate at Apple — no more
+          # cert accumulation.
+          echo "$CERT_PRIVATE_KEY" > /tmp/cert_key
+          chmod 600 /tmp/cert_key
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
