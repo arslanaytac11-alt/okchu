@@ -142,29 +142,47 @@ workflows:
           # so fetch-signing-files --create always has room.
           # Safe because we only ship through Codemagic (no local Xcode).
           set +e
-          for TYPE in IOS_DISTRIBUTION DISTRIBUTION; do
-            echo "--- Listing certs of type $TYPE ---"
-            app-store-connect list-certificates --type "$TYPE" --json > /tmp/certs_$TYPE.json 2>/dev/null || echo '[]' > /tmp/certs_$TYPE.json
-            IDS=$(python3 -c "
-          import json
+          echo "=== app-store-connect cert-related commands ==="
+          app-store-connect --help 2>&1 | grep -iE "cert" | head -20 || true
+          echo ""
+          echo "=== list-certificates --type IOS_DISTRIBUTION (json) ==="
+          app-store-connect list-certificates --type IOS_DISTRIBUTION --json > /tmp/certs.json 2>&1
+          echo "Exit: $?"
+          cat /tmp/certs.json
+          echo ""
+          echo "=== Parsing IDs ==="
+          python3 <<'PYEOF' > /tmp/cert_ids.txt
+          import json, sys
+          ids = []
           try:
-              with open('/tmp/certs_$TYPE.json') as f:
-                  data = json.load(f)
-              for c in (data if isinstance(data, list) else []):
-                  cid = c.get('id')
-                  if cid:
-                      print(cid)
+              with open('/tmp/certs.json') as f:
+                  raw = f.read()
+              data = json.loads(raw)
+              if isinstance(data, list):
+                  for c in data:
+                      if isinstance(c, dict):
+                          cid = c.get('id') or c.get('certificateId') or (c.get('attributes') or {}).get('id')
+                          if cid:
+                              ids.append(cid)
+              elif isinstance(data, dict):
+                  for c in data.get('data', []):
+                      cid = c.get('id')
+                      if cid:
+                          ids.append(cid)
           except Exception as e:
-              pass
-          ")
-            for id in $IDS; do
-              echo "Revoking $TYPE cert $id"
-              yes | app-store-connect delete-certificate "$id" 2>/dev/null || \
-                printf 'y\n' | app-store-connect delete-certificate "$id" 2>/dev/null || \
-                app-store-connect delete-certificate "$id" --ignore-not-found 2>/dev/null || \
-                true
-            done
-          done
+              print(f"parse error: {e}", file=sys.stderr)
+          for i in ids:
+              print(i)
+          PYEOF
+          cat /tmp/cert_ids.txt
+          echo ""
+          echo "=== Revoking ==="
+          while IFS= read -r id; do
+            [ -z "$id" ] && continue
+            echo "--> Revoking $id"
+            yes | app-store-connect delete-certificate "$id" 2>&1 | head -10
+            echo "(exit $?)"
+          done < /tmp/cert_ids.txt
           set -e
       - name: Fetch signing files
         script: |
