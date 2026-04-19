@@ -12,7 +12,8 @@
     "achievements": "Logros",
     "collection": "Colección",
     "leaderboard": "Clasificación",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "remove_ads": "✨ Quitar anuncios"
   },
   "chapters": {
     "title": "Capitulos",
@@ -256,5 +257,15 @@
     "terms": "Terminos de Uso",
     "privacy": "Politica de Privacidad",
     "close": "Cerrar"
+  },
+  "modes": {
+    "title": "Modos de juego",
+    "close": "Cerrar",
+    "classic_title": "Clásico",
+    "classic_text": "Modo estándar: juega con tiempo y vidas. Gana estrellas y desbloquea capítulos.",
+    "timed_title": "Rápido",
+    "timed_text": "La mitad de tiempo — un modo exigente para reflejos rápidos.",
+    "zen_title": "Zen",
+    "zen_text": "Sin tiempo, sin vidas, sin presión. Solo resuelve el puzle a tu ritmo."
   }
 }

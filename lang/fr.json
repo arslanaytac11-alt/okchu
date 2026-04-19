@@ -12,7 +12,8 @@
     "achievements": "Succès",
     "collection": "Collection",
     "leaderboard": "Classement",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "remove_ads": "✨ Supprimer les pubs"
   },
   "chapters": {
     "title": "Chapitres",
@@ -256,5 +257,15 @@
     "terms": "Conditions d'Utilisation",
     "privacy": "Politique de Confidentialite",
     "close": "Fermer"
+  },
+  "modes": {
+    "title": "Modes de jeu",
+    "close": "Fermer",
+    "classic_title": "Classique",
+    "classic_text": "Mode standard : joue avec un chrono et des vies. Gagne des étoiles.",
+    "timed_title": "Rapide",
+    "timed_text": "Temps réduit de moitié — un mode exigeant pour les réflexes.",
+    "zen_title": "Zen",
+    "zen_text": "Pas de chrono, pas de vies, pas de pression. Résous simplement le puzzle."
   }
 }

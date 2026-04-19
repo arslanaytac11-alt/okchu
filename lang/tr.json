@@ -12,7 +12,8 @@
     "achievements": "Başarımlar",
     "collection": "Koleksiyon",
     "leaderboard": "Lider Tablosu",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "remove_ads": "✨ Reklamları Kaldır"
   },
   "chapters": {
     "title": "Bölümler",
@@ -256,5 +257,15 @@
     "terms": "Kullanım Şartları",
     "privacy": "Gizlilik Politikası",
     "close": "Kapat"
+  },
+  "modes": {
+    "title": "Oyun Modları",
+    "close": "Kapat",
+    "classic_title": "Klasik",
+    "classic_text": "Standart mod: süre ve can sistemiyle oyna. Yıldız kazan, zorluklar aç.",
+    "timed_title": "Hızlı",
+    "timed_text": "Süre yarıya düşer — refleks ve hız isteyen zorlu mod.",
+    "zen_title": "Zen",
+    "zen_text": "Süre yok, can yok, baskı yok. Sadece bulmacayı keşfet."
   }
 }

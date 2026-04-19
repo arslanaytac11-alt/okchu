@@ -1446,6 +1446,53 @@ body[data-theme='ottoman'] .level-card.current {
     border-color: var(--theme-accent);
 }
 .mode-btn .mode-icon { font-size: 1.1rem; }
+
+.mode-info-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: rgba(255,255,255,0.9);
+    color: var(--theme-accent, #a07030);
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    margin-left: 4px;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.mode-info-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+body.dark-mode .mode-info-btn {
+    background: rgba(60,55,45,0.9);
+    color: #e0c480;
+    border-color: rgba(255,255,255,0.12);
+}
+
+.modes-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 18px 0 22px;
+    text-align: left;
+}
+.mode-info-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.04);
+    border-radius: 12px;
+}
+.mode-info-icon { font-size: 1.6rem; line-height: 1.2; }
+.mode-info-title { font-weight: 700; font-size: 1rem; margin-bottom: 2px; }
+.mode-info-text { font-size: 0.88rem; line-height: 1.4; color: color-mix(in srgb, var(--theme-ink, #333) 80%, white); }
+body.dark-mode .mode-info-row { background: rgba(255,255,255,0.05); }
 body.dark-mode .mode-btn {
     background: rgba(60,55,45,0.85);
     color: #f0e4c8;
@@ -1815,6 +1862,20 @@ body.dark-mode .daily-fail-streak-note {
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 }
+
+/* Remove-Ads CTA on the main menu — golden, slightly smaller than the
+   primary Play button so it reads as a secondary-but-discoverable upsell.
+   Hidden via .hidden when the user already owns premium. */
+.btn-remove-ads {
+    background: linear-gradient(135deg, #d4a843 0%, #b07820 100%);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    box-shadow: 0 4px 14px rgba(176,120,32,0.35);
+}
+.btn-remove-ads:hover { filter: brightness(1.06); }
 
 .menu-bottom-buttons {
     display: flex;

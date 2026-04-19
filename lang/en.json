@@ -12,7 +12,8 @@
     "achievements": "Achievements",
     "collection": "Collection",
     "leaderboard": "Leaderboard",
-    "settings": "Settings"
+    "settings": "Settings",
+    "remove_ads": "✨ Remove Ads"
   },
   "chapters": {
     "title": "Chapters",
@@ -256,5 +257,15 @@
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
     "close": "Close"
+  },
+  "modes": {
+    "title": "Game Modes",
+    "close": "Close",
+    "classic_title": "Classic",
+    "classic_text": "Standard mode: play with a timer and lives. Earn stars and unlock new chapters.",
+    "timed_title": "Timed",
+    "timed_text": "Half the time — a challenging mode for quick reflexes.",
+    "zen_title": "Zen",
+    "zen_text": "No timer, no lives, no pressure. Just solve the puzzle at your pace."
   }
 }

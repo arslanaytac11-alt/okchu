@@ -34,6 +34,7 @@
             <p class="game-subtitle">Arrow Puzzle</p>
             <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Oyna</button>
             <button id="btn-daily" class="btn btn-menu-secondary" data-i18n="menu.daily">Günlük Meydan Okuma</button>
+            <button id="btn-remove-ads" class="btn btn-menu-secondary btn-remove-ads" data-i18n="menu.remove_ads">✨ Reklamları Kaldır</button>
             <div class="menu-bottom-buttons">
                 <button id="btn-achievements" class="btn-menu-icon" data-i18n="menu.achievements">Başarımlar</button>
                 <button id="btn-collection" class="btn-menu-icon" data-i18n="menu.collection">Koleksiyon</button>
@@ -148,6 +149,37 @@
         </div>
 
         <!-- Achievements Overlay -->
+        <!-- Game Modes Info Overlay -->
+        <div id="overlay-modes-info" class="overlay hidden">
+            <div class="overlay-content">
+                <h2 data-i18n="modes.title">Oyun Modları</h2>
+                <div class="modes-info-list">
+                    <div class="mode-info-row">
+                        <div class="mode-info-icon">🎮</div>
+                        <div class="mode-info-body">
+                            <div class="mode-info-title" data-i18n="modes.classic_title">Klasik</div>
+                            <div class="mode-info-text" data-i18n="modes.classic_text">Standart mod: süre ve can sistemiyle oyna. Yıldız kazan.</div>
+                        </div>
+                    </div>
+                    <div class="mode-info-row">
+                        <div class="mode-info-icon">⚡</div>
+                        <div class="mode-info-body">
+                            <div class="mode-info-title" data-i18n="modes.timed_title">Hızlı</div>
+                            <div class="mode-info-text" data-i18n="modes.timed_text">Süre yarı yarıya düşer. En hızlı çözeni ödüllendiren zorlu mod.</div>
+                        </div>
+                    </div>
+                    <div class="mode-info-row">
+                        <div class="mode-info-icon">🌿</div>
+                        <div class="mode-info-body">
+                            <div class="mode-info-title" data-i18n="modes.zen_title">Zen</div>
+                            <div class="mode-info-text" data-i18n="modes.zen_text">Süre yok, can yok, baskı yok. Sadece bulmacayı keşfet.</div>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-modes-info-close" class="btn btn-secondary" data-i18n="modes.close">Kapat</button>
+            </div>
+        </div>
+
         <div id="overlay-achievements" class="overlay hidden">
             <div class="overlay-content overlay-large">
                 <h2>Başarımlar</h2>
@@ -302,6 +334,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=23"></script>
+    <script type="module" src="js/main.js?v=24"></script>
 </body>
 </html>

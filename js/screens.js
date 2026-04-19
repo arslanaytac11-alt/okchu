@@ -70,8 +70,14 @@ export class ScreenManager {
             this.showChapters();
         });
 
+        // Default back target is the levels list, but callers (e.g. daily
+        // challenge launch in main.js) may override this to 'menu' so
+        // back from a daily puzzle returns to the main menu instead of
+        // landing on a stale/empty levels screen that was never populated
+        // for the daily's chapter.
+        this.getGameBackTarget = () => 'levels';
         document.getElementById('btn-game-back').addEventListener('click', () => {
-            this.showScreen('levels');
+            this.showScreen(this.getGameBackTarget());
         });
     }
 
@@ -290,6 +296,18 @@ export class ScreenManager {
             });
             modeBar.appendChild(btn);
         }
+        // "What do these modes mean?" info button — opens an overlay that
+        // explains Classic / Timed / Zen. First-time players kept asking
+        // which mode to pick so this sits right next to the selector.
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'mode-info-btn';
+        infoBtn.type = 'button';
+        infoBtn.setAttribute('aria-label', t('modes.title') || 'Oyun Modları');
+        infoBtn.textContent = '?';
+        infoBtn.addEventListener('click', () => {
+            document.getElementById('overlay-modes-info')?.classList.remove('hidden');
+        });
+        modeBar.appendChild(infoBtn);
         list.appendChild(modeBar);
 
         // Path map layout - zigzag pattern

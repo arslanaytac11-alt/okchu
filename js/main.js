@@ -12,7 +12,7 @@ import { allLevels } from './levels.js';
 import { maybeShowIosInstall } from './pwa-install.js';
 import { shouldShowRatePrompt, showRatePrompt } from './rate-us.js';
 import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded } from './ads.js';
-import { initIAP, buyPremium, restorePurchases, onPremiumOwned } from './iap.js';
+import { initIAP, buyPremium, restorePurchases, onPremiumOwned, isPremiumOwned } from './iap.js';
 
 // Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
 // Use production unit IDs on App Store / TestFlight builds; Google test IDs elsewhere.
@@ -25,6 +25,10 @@ onPremiumOwned(() => {
     hideBanner();
     const overlay = document.getElementById('overlay-premium');
     if (overlay) overlay.classList.add('hidden');
+    // The main-menu "Remove Ads" CTA has no purpose once the purchase
+    // succeeded; hide it so the menu doesn't keep advertising what's owned.
+    const cta = document.getElementById('btn-remove-ads');
+    if (cta) cta.classList.add('hidden');
 });
 initIAP();
 
@@ -121,6 +125,21 @@ function showFirstLaunchLanguagePicker() {
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
 const screenManager = new ScreenManager();
+
+// Back-from-game routing — daily challenges are launched straight from the
+// main menu, so hitting Back on a daily puzzle must return to the menu.
+// Normal levels still bounce back to the level select list.
+screenManager.getGameBackTarget = () => {
+    if (game._isDailyChallenge) {
+        game._isDailyChallenge = false;
+        game._dailyModifier = null;
+        game._stopTimer?.();
+        const badge = document.getElementById('daily-modifier-badge');
+        if (badge) { badge.classList.add('hidden'); badge.textContent = ''; }
+        return 'menu';
+    }
+    return 'levels';
+};
 
 // Undo button — uses a single listener; the button is only interactable when game is active.
 const undoBtn = document.getElementById('btn-undo');
@@ -653,6 +672,25 @@ document.getElementById('btn-premium-buy').addEventListener('click', () => {
 
 document.getElementById('btn-premium-restore').addEventListener('click', () => {
     restorePurchases();
+});
+
+// Main-menu "Remove Ads" CTA opens the premium paywall. If the user already
+// owns premium we hide the button at init time so they don't see an upsell
+// for something they've purchased.
+const removeAdsBtn = document.getElementById('btn-remove-ads');
+if (removeAdsBtn) {
+    if (isPremiumOwned()) {
+        removeAdsBtn.classList.add('hidden');
+    } else {
+        removeAdsBtn.addEventListener('click', () => {
+            document.getElementById('overlay-premium').classList.remove('hidden');
+        });
+    }
+}
+
+// Mode-info overlay close button (opened from the "?" pill on the levels screen).
+document.getElementById('btn-modes-info-close')?.addEventListener('click', () => {
+    document.getElementById('overlay-modes-info').classList.add('hidden');
 });
 
 document.getElementById('setting-reset').addEventListener('click', () => {
