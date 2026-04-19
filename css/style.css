@@ -799,13 +799,18 @@ html, body {
 .story-image-container {
     position: relative;
     width: 100%;
-    min-height: 240px;
-    max-height: 40vh;
+    min-height: 180px;
+    max-height: 30vh;
     overflow: hidden;
     background: linear-gradient(135deg, #1a1a2e 0%, #0e0e16 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+}
+/* Short iPhones (SE, mini) — shrink the hero image further so the
+   "Seviyelere Git" / "Go to Levels" CTA stays close to the viewport. */
+@media (max-height: 720px) {
+    .story-image-container { min-height: 140px; max-height: 24vh; }
 }
 
 .story-image {
@@ -896,10 +901,17 @@ html, body {
 }
 
 .story-body {
-    padding: 24px 24px 32px;
+    padding: 18px 22px 24px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
+}
+@media (max-height: 720px) {
+    .story-body { padding: 12px 18px 16px; gap: 8px; }
+    .story-title { font-size: 1.45rem; }
+    .story-text { font-size: 0.88rem; line-height: 1.45; }
+    .story-mystery { font-size: 0.92rem; padding: 8px 12px; }
+    .story-fact { padding: 4px 10px; font-size: 0.75rem; }
 }
 
 .story-divider {
@@ -934,12 +946,18 @@ html, body {
 
 .story-play-btn {
     align-self: center;
-    margin-top: 12px;
-    padding: 16px 48px;
-    font-size: 1.15rem;
+    margin-top: 8px;
+    padding: 14px 48px;
+    font-size: 1.1rem;
     border-radius: 50px;
     width: 100%;
     max-width: 280px;
+    /* Stick the CTA to the bottom of the scroll viewport so the user can
+       tap it without scrolling past the full story on short phones. */
+    position: sticky;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 2;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
 }
 
 .screen-header {
@@ -1256,7 +1274,7 @@ body[data-theme='ottoman'] .level-card.current {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    padding: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-right, 0px) + 16px) 12px calc(env(safe-area-inset-left, 0px) + 16px);
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) calc(env(safe-area-inset-right, 0px) + 16px) 6px calc(env(safe-area-inset-left, 0px) + 16px);
     justify-content: space-between;
     border-bottom: 1px solid var(--theme-border);
     background: linear-gradient(180deg, var(--theme-surface-strong) 0%, transparent 100%);
@@ -1269,15 +1287,17 @@ body[data-theme='ottoman'] .level-card.current {
 }
 
 #level-name {
-    font-size: 1.2rem;
+    font-size: 1.45rem;
     font-weight: bold;
     color: var(--theme-ink);
     letter-spacing: 0.5px;
+    line-height: 1.15;
 }
 
 .difficulty-badge {
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     color: var(--theme-accent);
+    letter-spacing: 0.5px;
 }
 
 .btn-hint {
@@ -1312,28 +1332,29 @@ body[data-theme='ottoman'] .level-card.current {
 }
 .game-stats::-webkit-scrollbar { display: none; }
 @media (max-width: 480px) {
-    .game-stats { gap: 6px; padding: 3px 6px 5px; }
-    .game-stats .stat-item { gap: 0; }
-    .game-stats .stat-label { font-size: 0.55rem; }
-    .stat-undo, .stat-powerup { width: 32px; height: 32px; font-size: 0.95rem; }
+    .game-stats { gap: 8px; padding: 4px 8px 6px; }
+    .game-stats .stat-item { gap: 2px; }
+    .game-stats .stat-label { font-size: 0.7rem; }
+    .game-stats .stat-value { font-size: 1.05rem; }
+    .stat-undo, .stat-powerup { width: 36px; height: 36px; font-size: 1.1rem; }
 }
 
 .stat-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
+    gap: 2px;
 }
 
 .stat-label {
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     color: color-mix(in srgb, var(--theme-ink) 45%, white);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
 .stat-value {
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     font-weight: bold;
     color: var(--theme-ink);
 }
@@ -1477,8 +1498,8 @@ body.dark-mode .stat-powerup {
 }
 
 .life-icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     transition: background 0.3s, box-shadow 0.3s;
 }
@@ -1662,9 +1683,13 @@ body.dark-mode .stat-powerup {
 
 /* Safe area for notched phones (iOS) */
 @supports (padding-top: env(safe-area-inset-top)) {
-    .screen-header,
-    .game-header {
+    .screen-header {
         padding-top: calc(16px + env(safe-area-inset-top));
+    }
+    /* Game header keeps a tighter top inset — every px eaten here is a px
+       the canvas can't use on small iPhones. */
+    .game-header {
+        padding-top: calc(6px + env(safe-area-inset-top));
     }
 
     .lives-display {
