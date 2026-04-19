@@ -1,137 +1,260 @@
 {
-    "lang": "fr",
-    "langName": "Francais",
-    "app": {
-        "title": "Okchu",
-        "subtitle": "Arrow Puzzle"
+  "lang": "fr",
+  "langName": "Francais",
+  "app": {
+    "title": "Okchu",
+    "subtitle": "Arrow Puzzle"
+  },
+  "menu": {
+    "play": "Jouer",
+    "language": "Langue",
+    "daily": "Défi Quotidien",
+    "achievements": "Succès",
+    "collection": "Collection",
+    "leaderboard": "Classement",
+    "settings": "Paramètres"
+  },
+  "chapters": {
+    "title": "Chapitres",
+    "locked": "Verrouille"
+  },
+  "levels": {
+    "title": "Niveaux",
+    "mode_classic": "Classique",
+    "mode_timed": "Rapide",
+    "mode_zen": "Zen"
+  },
+  "game": {
+    "score": "Score",
+    "moves": "Coups",
+    "time": "Temps",
+    "lives": "Vies"
+  },
+  "difficulty": {
+    "easy": "Facile",
+    "medium": "Moyen",
+    "hard": "Difficile",
+    "hard_plus": "Difficile+",
+    "very_hard": "Tres Difficile",
+    "very_hard_plus": "Tres Difficile+",
+    "legendary": "Legendaire",
+    "legendary_plus": "Legendaire+",
+    "nightmare": "Cauchemar",
+    "nightmare_plus": "Cauchemar+"
+  },
+  "overlay": {
+    "complete_title": "Felicitations!",
+    "complete_score": "Score",
+    "complete_time": "Temps",
+    "complete_remaining": "Restant",
+    "complete_moves": "Coups",
+    "complete_combo": "Max Combo",
+    "complete_wrong": "Erreurs",
+    "next_level": "Niveau Suivant",
+    "no_lives_title": "Plus de Vies!",
+    "new_life_ready": "Nouvelle vie prete!",
+    "new_life_in": "Nouvelle vie dans",
+    "watch_ad": "Voir Pub (+1 Vie)",
+    "wait": "Attendre",
+    "time_up_title": "Temps Ecoule!",
+    "time_up_text": "Le temps est ecoule",
+    "retry": "Reessayer",
+    "back_chapters": "Chapitres",
+    "daily_fail_time_title": "Temps Ecoule!",
+    "daily_fail_moves_title": "Plus de Coups!",
+    "daily_fail_message": "Vous n'avez pas reussi le defi quotidien. Revenez demain pour un nouveau niveau!",
+    "daily_fail_streak_note": "Votre serie est preservee."
+  },
+  "daily": {
+    "badge_time": "Defi Temps",
+    "badge_moves": "Defi Coups",
+    "already_done": "Vous avez deja termine le defi d'aujourd'hui! Revenez demain."
+  },
+  "story": {
+    "play_button": "Aller aux Niveaux"
+  },
+  "tutorial": {
+    "step1_title": "Bienvenue dans Okchu!",
+    "step1_text": "Votre objectif est de retirer toutes les fleches de la grille dans le bon ordre.",
+    "step2_title": "Quelle Fleche Toucher?",
+    "step2_text": "Une fleche peut etre retiree si le chemin dans la direction qu'elle pointe est libre. Si une autre fleche la bloque, vous ne pouvez pas la toucher!",
+    "step3_title": "Bon Mouvement",
+    "step3_text": "Touchez une fleche libre et elle glisse hors de l'ecran comme un serpent. Vous gagnez des points!",
+    "step4_title": "Mauvais Mouvement",
+    "step4_text": "Touchez une fleche bloquee et vous perdez une vie plus 5 secondes. Vous avez 3 vies, soyez prudent!",
+    "step5_title": "Course Contre le Temps",
+    "step5_text": "Chaque niveau a une limite de temps. Les bons mouvements ajoutent +3 secondes. Utilisez votre temps judicieusement!",
+    "step6_title": "Collectez les Etoiles",
+    "step6_text": "Finissez vite sans erreurs pour gagner 3 etoiles! Les etoiles debloquent de nouveaux chapitres.",
+    "next": "Suivant",
+    "start": "Commencer!",
+    "skip": "Passer"
+  },
+  "civilizations": {
+    "1": {
+      "name": "Egypte",
+      "title": "Egypte Ancienne",
+      "period": "3100 av. J.-C. - 30 av. J.-C.",
+      "text": "Au pays des pharaons, les pyramides s'elevent vers le ciel. Les hieroglyphes gardent des mysteres irresous depuis des millenaires.",
+      "mystery": "Dechiffrez les signes de fleches caches dans les chambres secretes des pyramides!",
+      "facts": [
+        "Pyramide de Kheops 146m",
+        "Ecriture hieroglyphique",
+        "Art de la momification",
+        "Cartographie stellaire"
+      ]
     },
-    "menu": {
-        "play": "Jouer",
-        "language": "Langue",
-        "daily": "D\u00e9fi Quotidien",
-        "achievements": "Succ\u00e8s",
-        "collection": "Collection",
-        "leaderboard": "Classement",
-        "settings": "Param\u00e8tres"
+    "2": {
+      "name": "Grece",
+      "title": "Grece Antique",
+      "period": "800 av. J.-C. - 146 av. J.-C.",
+      "text": "Berceau de la philosophie, de la democratie et des Jeux Olympiques.",
+      "mystery": "Suivez les fleches entre les colonnes du Parthenon et resolvez l'enigme des dieux!",
+      "facts": [
+        "Le Parthenon",
+        "Philosophie et democratie",
+        "Jeux Olympiques",
+        "Mathematiques et geometrie"
+      ]
     },
-    "chapters": {
-        "title": "Chapitres",
-        "locked": "Verrouille"
+    "3": {
+      "name": "Rome",
+      "title": "Empire Romain",
+      "period": "753 av. J.-C. - 476 ap. J.-C.",
+      "text": "Les acclamations au Colisee, les merveilles d'ingenierie des aqueducs, un empire ou tous les chemins menaient a Rome.",
+      "mystery": "Resolvez la carte de fleches perdue dans les sombres couloirs du Colisee!",
+      "facts": [
+        "Colisee: 50 000 places",
+        "80 000km de routes",
+        "Combats de gladiateurs",
+        "Ingenierie des aqueducs"
+      ]
     },
-    "levels": {
-        "title": "Niveaux"
+    "4": {
+      "name": "Vikings",
+      "title": "Age Viking",
+      "period": "793 ap. J.-C. - 1066 ap. J.-C.",
+      "text": "Des drakkars naviguant depuis les fjords glaces, des propheties gravees sur des pierres runiques.",
+      "mystery": "Dechiffrez les symboles de fleches sur les pierres runiques!",
+      "facts": [
+        "Drakkars",
+        "Ont decouvert l'Amerique",
+        "Alphabet runique",
+        "Geographie des fjords"
+      ]
     },
-    "game": {
-        "score": "Score",
-        "moves": "Coups",
-        "time": "Temps",
-        "lives": "Vies"
+    "5": {
+      "name": "Ottoman",
+      "title": "Empire Ottoman",
+      "period": "1299 ap. J.-C. - 1922 ap. J.-C.",
+      "text": "Un magnifique empire regnant sur trois continents. Les coupoles des mosquees brillent d'une lumiere doree.",
+      "mystery": "Ouvrez les passages scelles du palais de Topkapi!",
+      "facts": [
+        "A regne sur 3 continents",
+        "Art de l'ere des tulipes",
+        "Palais de Topkapi",
+        "Empire de 600 ans"
+      ]
     },
-    "difficulty": {
-        "easy": "Facile",
-        "medium": "Moyen",
-        "hard": "Difficile",
-        "hard_plus": "Difficile+",
-        "very_hard": "Tres Difficile",
-        "very_hard_plus": "Tres Difficile+",
-        "legendary": "Legendaire",
-        "legendary_plus": "Legendaire+",
-        "nightmare": "Cauchemar",
-        "nightmare_plus": "Cauchemar+"
+    "6": {
+      "name": "Chine",
+      "title": "Chine Ancienne",
+      "period": "2070 av. J.-C. - 1912 ap. J.-C.",
+      "text": "La Grande Muraille disparait a l'horizon, la Route de la Soie relie les civilisations.",
+      "mystery": "Resolvez la carte du dragon dans la chambre interdite de la Cite Interdite!",
+      "facts": [
+        "A invente la poudre",
+        "Papier et imprimerie",
+        "A invente la boussole",
+        "Grande Muraille: 21 000km"
+      ]
     },
-    "overlay": {
-        "complete_title": "Felicitations!",
-        "complete_score": "Score",
-        "complete_time": "Temps",
-        "complete_remaining": "Restant",
-        "complete_moves": "Coups",
-        "complete_combo": "Max Combo",
-        "complete_wrong": "Erreurs",
-        "next_level": "Niveau Suivant",
-        "no_lives_title": "Plus de Vies!",
-        "new_life_ready": "Nouvelle vie prete!",
-        "new_life_in": "Nouvelle vie dans",
-        "watch_ad": "Voir Pub (+1 Vie)",
-        "wait": "Attendre",
-        "time_up_title": "Temps Ecoule!",
-        "time_up_text": "Le temps est ecoule",
-        "retry": "Reessayer",
-        "back_chapters": "Chapitres",
-        "daily_fail_time_title": "Temps Ecoule!",
-        "daily_fail_moves_title": "Plus de Coups!",
-        "daily_fail_message": "Vous n'avez pas reussi le defi quotidien. Revenez demain pour un nouveau niveau!",
-        "daily_fail_streak_note": "Votre serie est preservee."
+    "7": {
+      "name": "Maya",
+      "title": "Civilisation Maya",
+      "period": "2000 av. J.-C. - 1500 ap. J.-C.",
+      "text": "Des pyramides de pierre s'elevant vers le ciel au coeur de la jungle, des observatoires suivant les etoiles.",
+      "mystery": "Resolvez les symboles de fleches du calendrier maya!",
+      "facts": [
+        "Calendrier maya",
+        "Experts en astronomie",
+        "Mais et cacao",
+        "Pyramides a degres"
+      ]
     },
-    "daily": {
-        "badge_time": "Defi Temps",
-        "badge_moves": "Defi Coups",
-        "already_done": "Vous avez deja termine le defi d'aujourd'hui! Revenez demain."
+    "8": {
+      "name": "Inde",
+      "title": "Inde Ancienne",
+      "period": "3300 av. J.-C. - 1800 ap. J.-C.",
+      "text": "Le marbre blanc du Taj Mahal brille au clair de lune, le Gange porte ses eaux sacrees.",
+      "mystery": "Resolvez les chemins de fleches parmi les motifs de lotus du Taj Mahal!",
+      "facts": [
+        "Merveille du Taj Mahal",
+        "Yoga et meditation",
+        "Ont invente le zero",
+        "Route du lotus et des epices"
+      ]
     },
-    "story": {
-        "play_button": "Aller aux Niveaux"
+    "9": {
+      "name": "Europe Medievale",
+      "title": "Europe Medievale",
+      "period": "500 ap. J.-C. - 1500 ap. J.-C.",
+      "text": "A l'age sombre, les chateaux se dressent sur des collines brumeuses.",
+      "mystery": "Resolvez les fleches dans le chateau-labyrinthe de l'alchimiste!",
+      "facts": [
+        "Cathedrales gothiques",
+        "Les Croisades",
+        "Alchimie et science",
+        "Ere des decouvertes"
+      ]
     },
-    "tutorial": {
-        "step1_title": "Bienvenue dans Okchu!",
-        "step1_text": "Votre objectif est de retirer toutes les fleches de la grille dans le bon ordre.",
-        "step2_title": "Quelle Fleche Toucher?",
-        "step2_text": "Une fleche peut etre retiree si le chemin dans la direction qu'elle pointe est libre. Si une autre fleche la bloque, vous ne pouvez pas la toucher!",
-        "step3_title": "Bon Mouvement",
-        "step3_text": "Touchez une fleche libre et elle glisse hors de l'ecran comme un serpent. Vous gagnez des points!",
-        "step4_title": "Mauvais Mouvement",
-        "step4_text": "Touchez une fleche bloquee et vous perdez une vie plus 5 secondes. Vous avez 3 vies, soyez prudent!",
-        "step5_title": "Course Contre le Temps",
-        "step5_text": "Chaque niveau a une limite de temps. Les bons mouvements ajoutent +3 secondes. Utilisez votre temps judicieusement!",
-        "step6_title": "Collectez les Etoiles",
-        "step6_text": "Finissez vite sans erreurs pour gagner 3 etoiles! Les etoiles debloquent de nouveaux chapitres.",
-        "next": "Suivant",
-        "start": "Commencer!",
-        "skip": "Passer"
-    },
-    "civilizations": {
-        "1": { "name": "Egypte", "title": "Egypte Ancienne", "period": "3100 av. J.-C. - 30 av. J.-C.", "text": "Au pays des pharaons, les pyramides s'elevent vers le ciel. Les hieroglyphes gardent des mysteres irresous depuis des millenaires.", "mystery": "Dechiffrez les signes de fleches caches dans les chambres secretes des pyramides!", "facts": ["Pyramide de Kheops 146m", "Ecriture hieroglyphique", "Art de la momification", "Cartographie stellaire"] },
-        "2": { "name": "Grece", "title": "Grece Antique", "period": "800 av. J.-C. - 146 av. J.-C.", "text": "Berceau de la philosophie, de la democratie et des Jeux Olympiques.", "mystery": "Suivez les fleches entre les colonnes du Parthenon et resolvez l'enigme des dieux!", "facts": ["Le Parthenon", "Philosophie et democratie", "Jeux Olympiques", "Mathematiques et geometrie"] },
-        "3": { "name": "Rome", "title": "Empire Romain", "period": "753 av. J.-C. - 476 ap. J.-C.", "text": "Les acclamations au Colisee, les merveilles d'ingenierie des aqueducs, un empire ou tous les chemins menaient a Rome.", "mystery": "Resolvez la carte de fleches perdue dans les sombres couloirs du Colisee!", "facts": ["Colisee: 50 000 places", "80 000km de routes", "Combats de gladiateurs", "Ingenierie des aqueducs"] },
-        "4": { "name": "Vikings", "title": "Age Viking", "period": "793 ap. J.-C. - 1066 ap. J.-C.", "text": "Des drakkars naviguant depuis les fjords glaces, des propheties gravees sur des pierres runiques.", "mystery": "Dechiffrez les symboles de fleches sur les pierres runiques!", "facts": ["Drakkars", "Ont decouvert l'Amerique", "Alphabet runique", "Geographie des fjords"] },
-        "5": { "name": "Ottoman", "title": "Empire Ottoman", "period": "1299 ap. J.-C. - 1922 ap. J.-C.", "text": "Un magnifique empire regnant sur trois continents. Les coupoles des mosquees brillent d'une lumiere doree.", "mystery": "Ouvrez les passages scelles du palais de Topkapi!", "facts": ["A regne sur 3 continents", "Art de l'ere des tulipes", "Palais de Topkapi", "Empire de 600 ans"] },
-        "6": { "name": "Chine", "title": "Chine Ancienne", "period": "2070 av. J.-C. - 1912 ap. J.-C.", "text": "La Grande Muraille disparait a l'horizon, la Route de la Soie relie les civilisations.", "mystery": "Resolvez la carte du dragon dans la chambre interdite de la Cite Interdite!", "facts": ["A invente la poudre", "Papier et imprimerie", "A invente la boussole", "Grande Muraille: 21 000km"] },
-        "7": { "name": "Maya", "title": "Civilisation Maya", "period": "2000 av. J.-C. - 1500 ap. J.-C.", "text": "Des pyramides de pierre s'elevant vers le ciel au coeur de la jungle, des observatoires suivant les etoiles.", "mystery": "Resolvez les symboles de fleches du calendrier maya!", "facts": ["Calendrier maya", "Experts en astronomie", "Mais et cacao", "Pyramides a degres"] },
-        "8": { "name": "Inde", "title": "Inde Ancienne", "period": "3300 av. J.-C. - 1800 ap. J.-C.", "text": "Le marbre blanc du Taj Mahal brille au clair de lune, le Gange porte ses eaux sacrees.", "mystery": "Resolvez les chemins de fleches parmi les motifs de lotus du Taj Mahal!", "facts": ["Merveille du Taj Mahal", "Yoga et meditation", "Ont invente le zero", "Route du lotus et des epices"] },
-        "9": { "name": "Europe Medievale", "title": "Europe Medievale", "period": "500 ap. J.-C. - 1500 ap. J.-C.", "text": "A l'age sombre, les chateaux se dressent sur des collines brumeuses.", "mystery": "Resolvez les fleches dans le chateau-labyrinthe de l'alchimiste!", "facts": ["Cathedrales gothiques", "Les Croisades", "Alchimie et science", "Ere des decouvertes"] },
-        "10": { "name": "Final", "title": "Convergence des Civilisations", "period": "Intemporel", "text": "La sagesse de toutes les civilisations antiques converge en un seul point.", "mystery": "Unissez les signes de fleches de toutes les civilisations et resolvez le plus grand mystere de l'humanite!", "facts": ["10 civilisations", "Defi ultime", "Tous les sages reunis", "Difficulte legendaire"] }
-    },
-    "install": {
-        "title": "Ajouter \u00e0 l'\u00e9cran d'accueil",
-        "body": "Jouez en plein \u00e9cran, fonctionne hors ligne",
-        "step_share": "Partager",
-        "step_add": "Sur l'\u00e9cran d'accueil"
-    },
-    "rate": {
-        "title": "Vous aimez Okchu?",
-        "subtitle": "Vos retours nous guident",
-        "later": "Plus tard",
-        "email_body": "Bonjour! Mes retours sur Okchu:\n\n"
-    },
-    "appstore": {
-        "title": "Okchu: Arrow Puzzle - Voyage Antique",
-        "subtitle": "Jeu de Puzzle de Fleches",
-        "description": "Explorez 10 civilisations anciennes, resolvez 50 puzzles! Une aventure epique de puzzles de fleches.",
-        "keywords": "fleche,puzzle,antique,civilisation,egypte,rome,viking,ottoman,strategie,cerveau"
-    },
-    "settings": {
-        "privacy": "Politique de Confidentialite",
-        "terms": "Conditions d'Utilisation"
-    },
-    "premium": {
-        "title": "Premium sans Publicite",
-        "subtitle": "Paiement unique. Toutes les publicites supprimees.",
-        "benefit_ads": "✓ Aucune banniere ni video",
-        "benefit_support": "✓ Soutenez le developpeur",
-        "benefit_forever": "✓ A vous pour toujours",
-        "buy": "Acheter",
-        "restore": "Restaurer les Achats",
-        "legal_note": "En achetant vous acceptez:",
-        "terms": "Conditions d'Utilisation",
-        "privacy": "Politique de Confidentialite",
-        "close": "Fermer"
+    "10": {
+      "name": "Final",
+      "title": "Convergence des Civilisations",
+      "period": "Intemporel",
+      "text": "La sagesse de toutes les civilisations antiques converge en un seul point.",
+      "mystery": "Unissez les signes de fleches de toutes les civilisations et resolvez le plus grand mystere de l'humanite!",
+      "facts": [
+        "10 civilisations",
+        "Defi ultime",
+        "Tous les sages reunis",
+        "Difficulte legendaire"
+      ]
     }
+  },
+  "install": {
+    "title": "Ajouter à l'écran d'accueil",
+    "body": "Jouez en plein écran, fonctionne hors ligne",
+    "step_share": "Partager",
+    "step_add": "Sur l'écran d'accueil"
+  },
+  "rate": {
+    "title": "Vous aimez Okchu?",
+    "subtitle": "Vos retours nous guident",
+    "later": "Plus tard",
+    "email_body": "Bonjour! Mes retours sur Okchu:\n\n"
+  },
+  "appstore": {
+    "title": "Okchu: Arrow Puzzle - Voyage Antique",
+    "subtitle": "Jeu de Puzzle de Fleches",
+    "description": "Explorez 10 civilisations anciennes, resolvez 50 puzzles! Une aventure epique de puzzles de fleches.",
+    "keywords": "fleche,puzzle,antique,civilisation,egypte,rome,viking,ottoman,strategie,cerveau"
+  },
+  "settings": {
+    "privacy": "Politique de Confidentialite",
+    "terms": "Conditions d'Utilisation"
+  },
+  "premium": {
+    "title": "Premium sans Publicite",
+    "subtitle": "Paiement unique. Toutes les publicites supprimees.",
+    "benefit_ads": "✓ Aucune banniere ni video",
+    "benefit_support": "✓ Soutenez le developpeur",
+    "benefit_forever": "✓ A vous pour toujours",
+    "buy": "Acheter",
+    "restore": "Restaurer les Achats",
+    "legal_note": "En achetant vous acceptez:",
+    "terms": "Conditions d'Utilisation",
+    "privacy": "Politique de Confidentialite",
+    "close": "Fermer"
+  }
 }

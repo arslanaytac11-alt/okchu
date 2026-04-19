@@ -315,6 +315,9 @@ export class Game {
         let lastPanY = 0;
         let isPinching = false;
         let pendingTapStart = null;     // { x, y, t } — potential single-finger tap
+        let isSinglePanning = false;    // single-finger drag panning the grid
+        let lastSinglePanX = 0;
+        let lastSinglePanY = 0;
         let lastTapAt = 0;              // double-tap detection timestamp
         let lastTapPos = { x: 0, y: 0 };
         const TAP_MAX_MOVE = 22;        // px drift allowed before a tap is canceled (iPhone fingers drift ~15-20px)
@@ -388,6 +391,9 @@ export class Game {
             if (e.touches.length === 1) {
                 const t = e.touches[0];
                 pendingTapStart = { x: t.clientX, y: t.clientY, at: performance.now() };
+                isSinglePanning = false;
+                lastSinglePanX = t.clientX;
+                lastSinglePanY = t.clientY;
                 e.preventDefault();
             }
         }, { passive: false });
@@ -411,13 +417,30 @@ export class Game {
                 this.renderer.drawGrid(this.grid);
                 return;
             }
-            // Single-finger drift > threshold cancels the pending tap so a scroll/drag
-            // never resolves as a tap on release.
-            if (pendingTapStart && e.touches.length === 1) {
+            // Single-finger drift > threshold cancels the pending tap and
+            // promotes the gesture to a single-finger pan (drag-to-scroll the
+            // grid). Once panning begins we keep translating the view until
+            // the finger lifts — matches the user's mental model of "drag
+            // empty space to look around" on iOS.
+            if (e.touches.length === 1) {
                 const t = e.touches[0];
-                const dx = t.clientX - pendingTapStart.x;
-                const dy = t.clientY - pendingTapStart.y;
-                if (Math.hypot(dx, dy) > TAP_MAX_MOVE) pendingTapStart = null;
+                if (pendingTapStart && !isSinglePanning) {
+                    const dx = t.clientX - pendingTapStart.x;
+                    const dy = t.clientY - pendingTapStart.y;
+                    if (Math.hypot(dx, dy) > TAP_MAX_MOVE) {
+                        pendingTapStart = null;
+                        isSinglePanning = true;
+                        lastSinglePanX = t.clientX;
+                        lastSinglePanY = t.clientY;
+                    }
+                }
+                if (isSinglePanning) {
+                    e.preventDefault();
+                    this.renderer.setPan(t.clientX - lastSinglePanX, t.clientY - lastSinglePanY);
+                    lastSinglePanX = t.clientX;
+                    lastSinglePanY = t.clientY;
+                    this.renderer.drawGrid(this.grid);
+                }
             }
         }, { passive: false });
 
@@ -426,6 +449,10 @@ export class Game {
                 // Only reset when all fingers lift; a 2→1 transition shouldn't
                 // leave a dangling pending tap.
                 if (e.touches.length === 0) isPinching = false;
+                return;
+            }
+            if (isSinglePanning) {
+                if (e.touches.length === 0) isSinglePanning = false;
                 return;
             }
             if (!pendingTapStart) return;

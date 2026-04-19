@@ -1,137 +1,260 @@
 {
-    "lang": "ja",
-    "langName": "\u65e5\u672c\u8a9e",
-    "app": {
-        "title": "Okchu",
-        "subtitle": "Arrow Puzzle"
+  "lang": "ja",
+  "langName": "日本語",
+  "app": {
+    "title": "Okchu",
+    "subtitle": "Arrow Puzzle"
+  },
+  "menu": {
+    "play": "プレイ",
+    "language": "言語",
+    "daily": "デイリーチャレンジ",
+    "achievements": "アチーブメント",
+    "collection": "コレクション",
+    "leaderboard": "リーダーボード",
+    "settings": "設定"
+  },
+  "chapters": {
+    "title": "チャプター",
+    "locked": "ロック"
+  },
+  "levels": {
+    "title": "レベル",
+    "mode_classic": "クラシック",
+    "mode_timed": "タイム",
+    "mode_zen": "禅"
+  },
+  "game": {
+    "score": "スコア",
+    "moves": "手数",
+    "time": "時間",
+    "lives": "ライフ"
+  },
+  "difficulty": {
+    "easy": "かんたん",
+    "medium": "ふつう",
+    "hard": "難しい",
+    "hard_plus": "難しい+",
+    "very_hard": "とても難しい",
+    "very_hard_plus": "とても難しい+",
+    "legendary": "伝説",
+    "legendary_plus": "伝説+",
+    "nightmare": "悪夢",
+    "nightmare_plus": "悪夢+"
+  },
+  "overlay": {
+    "complete_title": "おめでとう！",
+    "complete_score": "スコア",
+    "complete_time": "時間",
+    "complete_remaining": "残り",
+    "complete_moves": "手数",
+    "complete_combo": "最大コンボ",
+    "complete_wrong": "ミス",
+    "next_level": "次のレベル",
+    "no_lives_title": "ライフがない！",
+    "new_life_ready": "新しいライフ準備完了！",
+    "new_life_in": "新しいライフまで",
+    "watch_ad": "広告を見る (+1ライフ)",
+    "wait": "待つ",
+    "time_up_title": "時間切れ！",
+    "time_up_text": "時間が足りませんでした",
+    "retry": "リトライ",
+    "back_chapters": "チャプター",
+    "daily_fail_time_title": "時間切れ！",
+    "daily_fail_moves_title": "手数切れ！",
+    "daily_fail_message": "今日のデイリーチャレンジに挑戦できませんでした。明日、新しいレベルで戻ってきてください！",
+    "daily_fail_streak_note": "連続記録は保持されました。"
+  },
+  "daily": {
+    "badge_time": "時間チャレンジ",
+    "badge_moves": "手数チャレンジ",
+    "already_done": "今日のチャレンジは完了しました！明日また来てください。"
+  },
+  "story": {
+    "play_button": "レベルへ"
+  },
+  "tutorial": {
+    "step1_title": "Okchuへようこそ！",
+    "step1_text": "グリッド上のすべての矢印を正しい順序で取り除くのが目標です。",
+    "step2_title": "どの矢印をタップ？",
+    "step2_text": "矢印は、先端が指す方向の道が空いている場合に取り除けます。他の矢印がブロックしているとタップできません！",
+    "step3_title": "正しい手",
+    "step3_text": "空いている矢印をタップすると、蛇のように画面から滑り出ます。ポイント獲得！",
+    "step4_title": "間違いの手",
+    "step4_text": "ブロックされた矢印をタップするとライフを5秒失います。ライフは3つ、注意して！",
+    "step5_title": "時間との勝負",
+    "step5_text": "各レベルには時間制限があります。正しい手で+3秒。時間を賢く使いましょう！",
+    "step6_title": "星を集めよう",
+    "step6_text": "素早くミスなしでクリアして3つ星を獲得！星で新しいチャプターが解放されます。",
+    "next": "次へ",
+    "start": "スタート！",
+    "skip": "スキップ"
+  },
+  "civilizations": {
+    "1": {
+      "name": "エジプト",
+      "title": "古代エジプト",
+      "period": "紀元前3100年 - 紀元前30年",
+      "text": "ファラオの地でピラミッドが空にそびえる。ヒエログリフは千年の謎を秘める。",
+      "mystery": "ピラミッドの秘密の部屋に隠された矢印を解読せよ！",
+      "facts": [
+        "クフ王のピラミッド146m",
+        "ヒエログリフ",
+        "ミイラの技術",
+        "星図作成"
+      ]
     },
-    "menu": {
-        "play": "\u30d7\u30ec\u30a4",
-        "language": "\u8a00\u8a9e",
-        "daily": "\u30c7\u30a4\u30ea\u30fc\u30c1\u30e3\u30ec\u30f3\u30b8",
-        "achievements": "\u30a2\u30c1\u30fc\u30d6\u30e1\u30f3\u30c8",
-        "collection": "\u30b3\u30ec\u30af\u30b7\u30e7\u30f3",
-        "leaderboard": "\u30ea\u30fc\u30c0\u30fc\u30dc\u30fc\u30c9",
-        "settings": "\u8a2d\u5b9a"
+    "2": {
+      "name": "ギリシャ",
+      "title": "古代ギリシャ",
+      "period": "紀元前800年 - 紀元前146年",
+      "text": "哲学、民主主義、オリンピックの発祥の地。",
+      "mystery": "パルテノンの大理石の柱の間の矢印をたどれ！",
+      "facts": [
+        "パルテノン神殿",
+        "哲学と民主主義",
+        "オリンピック",
+        "数学と幾何学"
+      ]
     },
-    "chapters": {
-        "title": "\u30c1\u30e3\u30d7\u30bf\u30fc",
-        "locked": "\u30ed\u30c3\u30af"
+    "3": {
+      "name": "ローマ",
+      "title": "ローマ帝国",
+      "period": "紀元前753年 - 476年",
+      "text": "コロッセオの歓声、水道橋の工学の驚異。",
+      "mystery": "コロッセオの暗い廊下で失われた矢印の地図を解け！",
+      "facts": [
+        "コロッセオ5万人",
+        "ローマ街道8万km",
+        "剣闘士の戦い",
+        "水道橋工学"
+      ]
     },
-    "levels": {
-        "title": "\u30ec\u30d9\u30eb"
+    "4": {
+      "name": "ヴァイキング",
+      "title": "ヴァイキング時代",
+      "period": "793年 - 1066年",
+      "text": "氷のフィヨルドから出航する竜の船。",
+      "mystery": "ルーン石の矢印記号を解読せよ！",
+      "facts": [
+        "ドラゴンシップ",
+        "アメリカを発見",
+        "ルーン文字",
+        "フィヨルド地形"
+      ]
     },
-    "game": {
-        "score": "\u30b9\u30b3\u30a2",
-        "moves": "\u624b\u6570",
-        "time": "\u6642\u9593",
-        "lives": "\u30e9\u30a4\u30d5"
+    "5": {
+      "name": "オスマン",
+      "title": "オスマン帝国",
+      "period": "1299年 - 1922年",
+      "text": "三大陸を支配した壮大な帝国。",
+      "mystery": "トプカプ宮殿の封印された通路を開け！",
+      "facts": [
+        "3大陸を支配",
+        "チューリップ時代",
+        "トプカプ宮殿",
+        "600年の帝国"
+      ]
     },
-    "difficulty": {
-        "easy": "\u304b\u3093\u305f\u3093",
-        "medium": "\u3075\u3064\u3046",
-        "hard": "\u96e3\u3057\u3044",
-        "hard_plus": "\u96e3\u3057\u3044+",
-        "very_hard": "\u3068\u3066\u3082\u96e3\u3057\u3044",
-        "very_hard_plus": "\u3068\u3066\u3082\u96e3\u3057\u3044+",
-        "legendary": "\u4f1d\u8aac",
-        "legendary_plus": "\u4f1d\u8aac+",
-        "nightmare": "\u60aa\u5922",
-        "nightmare_plus": "\u60aa\u5922+"
+    "6": {
+      "name": "中国",
+      "title": "古代中国",
+      "period": "紀元前2070年 - 1912年",
+      "text": "万里の長城が地平線に消える。シルクロードが文明を結ぶ。",
+      "mystery": "紫禁城の秘密の部屋で龍の地図を解け！",
+      "facts": [
+        "火薬の発明",
+        "紙と印刷",
+        "羅針盤の発明",
+        "万里の長城21,000km"
+      ]
     },
-    "overlay": {
-        "complete_title": "\u304a\u3081\u3067\u3068\u3046\uff01",
-        "complete_score": "\u30b9\u30b3\u30a2",
-        "complete_time": "\u6642\u9593",
-        "complete_remaining": "\u6b8b\u308a",
-        "complete_moves": "\u624b\u6570",
-        "complete_combo": "\u6700\u5927\u30b3\u30f3\u30dc",
-        "complete_wrong": "\u30df\u30b9",
-        "next_level": "\u6b21\u306e\u30ec\u30d9\u30eb",
-        "no_lives_title": "\u30e9\u30a4\u30d5\u304c\u306a\u3044\uff01",
-        "new_life_ready": "\u65b0\u3057\u3044\u30e9\u30a4\u30d5\u6e96\u5099\u5b8c\u4e86\uff01",
-        "new_life_in": "\u65b0\u3057\u3044\u30e9\u30a4\u30d5\u307e\u3067",
-        "watch_ad": "\u5e83\u544a\u3092\u898b\u308b (+1\u30e9\u30a4\u30d5)",
-        "wait": "\u5f85\u3064",
-        "time_up_title": "\u6642\u9593\u5207\u308c\uff01",
-        "time_up_text": "\u6642\u9593\u304c\u8db3\u308a\u307e\u305b\u3093\u3067\u3057\u305f",
-        "retry": "\u30ea\u30c8\u30e9\u30a4",
-        "back_chapters": "\u30c1\u30e3\u30d7\u30bf\u30fc",
-        "daily_fail_time_title": "\u6642\u9593\u5207\u308c\uff01",
-        "daily_fail_moves_title": "\u624b\u6570\u5207\u308c\uff01",
-        "daily_fail_message": "\u4eca\u65e5\u306e\u30c7\u30a4\u30ea\u30fc\u30c1\u30e3\u30ec\u30f3\u30b8\u306b\u6311\u6226\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u660e\u65e5\u3001\u65b0\u3057\u3044\u30ec\u30d9\u30eb\u3067\u623b\u3063\u3066\u304d\u3066\u304f\u3060\u3055\u3044\uff01",
-        "daily_fail_streak_note": "\u9023\u7d9a\u8a18\u9332\u306f\u4fdd\u6301\u3055\u308c\u307e\u3057\u305f\u3002"
+    "7": {
+      "name": "マヤ",
+      "title": "マヤ文明",
+      "period": "紀元前2000年 - 1500年",
+      "text": "ジャングルの奥深くにそびえる石のピラミッド。",
+      "mystery": "マヤ暦の矢印記号を解け！",
+      "facts": [
+        "マヤ暦",
+        "天文学の専門家",
+        "トウモロコシとカカオ",
+        "階段ピラミッド"
+      ]
     },
-    "daily": {
-        "badge_time": "\u6642\u9593\u30c1\u30e3\u30ec\u30f3\u30b8",
-        "badge_moves": "\u624b\u6570\u30c1\u30e3\u30ec\u30f3\u30b8",
-        "already_done": "\u4eca\u65e5\u306e\u30c1\u30e3\u30ec\u30f3\u30b8\u306f\u5b8c\u4e86\u3057\u307e\u3057\u305f\uff01\u660e\u65e5\u307e\u305f\u6765\u3066\u304f\u3060\u3055\u3044\u3002"
+    "8": {
+      "name": "インド",
+      "title": "古代インド",
+      "period": "紀元前3300年 - 1800年",
+      "text": "タージ・マハルの白い大理石が月光に輝く。",
+      "mystery": "タージ・マハルの蓮の模様の中の矢印の道を解け！",
+      "facts": [
+        "タージ・マハル",
+        "ヨガと瞑想",
+        "ゼロを発明",
+        "蓮とスパイスロード"
+      ]
     },
-    "story": {
-        "play_button": "\u30ec\u30d9\u30eb\u3078"
+    "9": {
+      "name": "中世ヨーロッパ",
+      "title": "中世ヨーロッパ",
+      "period": "500年 - 1500年",
+      "text": "暗黒時代、城が霧の丘にそびえる。",
+      "mystery": "錬金術師の迷宮の城で矢印を解け！",
+      "facts": [
+        "ゴシック大聖堂",
+        "十字軍",
+        "錬金術と科学",
+        "大航海時代"
+      ]
     },
-    "tutorial": {
-        "step1_title": "Okchu\u3078\u3088\u3046\u3053\u305d\uff01",
-        "step1_text": "\u30b0\u30ea\u30c3\u30c9\u4e0a\u306e\u3059\u3079\u3066\u306e\u77e2\u5370\u3092\u6b63\u3057\u3044\u9806\u5e8f\u3067\u53d6\u308a\u9664\u304f\u306e\u304c\u76ee\u6a19\u3067\u3059\u3002",
-        "step2_title": "\u3069\u306e\u77e2\u5370\u3092\u30bf\u30c3\u30d7\uff1f",
-        "step2_text": "\u77e2\u5370\u306f\u3001\u5148\u7aef\u304c\u6307\u3059\u65b9\u5411\u306e\u9053\u304c\u7a7a\u3044\u3066\u3044\u308b\u5834\u5408\u306b\u53d6\u308a\u9664\u3051\u307e\u3059\u3002\u4ed6\u306e\u77e2\u5370\u304c\u30d6\u30ed\u30c3\u30af\u3057\u3066\u3044\u308b\u3068\u30bf\u30c3\u30d7\u3067\u304d\u307e\u305b\u3093\uff01",
-        "step3_title": "\u6b63\u3057\u3044\u624b",
-        "step3_text": "\u7a7a\u3044\u3066\u3044\u308b\u77e2\u5370\u3092\u30bf\u30c3\u30d7\u3059\u308b\u3068\u3001\u86c7\u306e\u3088\u3046\u306b\u753b\u9762\u304b\u3089\u6ed1\u308a\u51fa\u307e\u3059\u3002\u30dd\u30a4\u30f3\u30c8\u7372\u5f97\uff01",
-        "step4_title": "\u9593\u9055\u3044\u306e\u624b",
-        "step4_text": "\u30d6\u30ed\u30c3\u30af\u3055\u308c\u305f\u77e2\u5370\u3092\u30bf\u30c3\u30d7\u3059\u308b\u3068\u30e9\u30a4\u30d5\u30925\u79d2\u5931\u3044\u307e\u3059\u3002\u30e9\u30a4\u30d5\u306f3\u3064\u3001\u6ce8\u610f\u3057\u3066\uff01",
-        "step5_title": "\u6642\u9593\u3068\u306e\u52dd\u8ca0",
-        "step5_text": "\u5404\u30ec\u30d9\u30eb\u306b\u306f\u6642\u9593\u5236\u9650\u304c\u3042\u308a\u307e\u3059\u3002\u6b63\u3057\u3044\u624b\u3067+3\u79d2\u3002\u6642\u9593\u3092\u8ce2\u304f\u4f7f\u3044\u307e\u3057\u3087\u3046\uff01",
-        "step6_title": "\u661f\u3092\u96c6\u3081\u3088\u3046",
-        "step6_text": "\u7d20\u65e9\u304f\u30df\u30b9\u306a\u3057\u3067\u30af\u30ea\u30a2\u3057\u30663\u3064\u661f\u3092\u7372\u5f97\uff01\u661f\u3067\u65b0\u3057\u3044\u30c1\u30e3\u30d7\u30bf\u30fc\u304c\u89e3\u653e\u3055\u308c\u307e\u3059\u3002",
-        "next": "\u6b21\u3078",
-        "start": "\u30b9\u30bf\u30fc\u30c8\uff01",
-        "skip": "\u30b9\u30ad\u30c3\u30d7"
-    },
-    "civilizations": {
-        "1": { "name": "\u30a8\u30b8\u30d7\u30c8", "title": "\u53e4\u4ee3\u30a8\u30b8\u30d7\u30c8", "period": "\u7d00\u5143\u524d3100\u5e74 - \u7d00\u5143\u524d30\u5e74", "text": "\u30d5\u30a1\u30e9\u30aa\u306e\u5730\u3067\u30d4\u30e9\u30df\u30c3\u30c9\u304c\u7a7a\u306b\u305d\u3073\u3048\u308b\u3002\u30d2\u30a8\u30ed\u30b0\u30ea\u30d5\u306f\u5343\u5e74\u306e\u8b0e\u3092\u79d8\u3081\u308b\u3002", "mystery": "\u30d4\u30e9\u30df\u30c3\u30c9\u306e\u79d8\u5bc6\u306e\u90e8\u5c4b\u306b\u96a0\u3055\u308c\u305f\u77e2\u5370\u3092\u89e3\u8aad\u305b\u3088\uff01", "facts": ["\u30af\u30d5\u738b\u306e\u30d4\u30e9\u30df\u30c3\u30c9146m", "\u30d2\u30a8\u30ed\u30b0\u30ea\u30d5", "\u30df\u30a4\u30e9\u306e\u6280\u8853", "\u661f\u56f3\u4f5c\u6210"] },
-        "2": { "name": "\u30ae\u30ea\u30b7\u30e3", "title": "\u53e4\u4ee3\u30ae\u30ea\u30b7\u30e3", "period": "\u7d00\u5143\u524d800\u5e74 - \u7d00\u5143\u524d146\u5e74", "text": "\u54f2\u5b66\u3001\u6c11\u4e3b\u4e3b\u7fa9\u3001\u30aa\u30ea\u30f3\u30d4\u30c3\u30af\u306e\u767a\u7965\u306e\u5730\u3002", "mystery": "\u30d1\u30eb\u30c6\u30ce\u30f3\u306e\u5927\u7406\u77f3\u306e\u67f1\u306e\u9593\u306e\u77e2\u5370\u3092\u305f\u3069\u308c\uff01", "facts": ["\u30d1\u30eb\u30c6\u30ce\u30f3\u795e\u6bbf", "\u54f2\u5b66\u3068\u6c11\u4e3b\u4e3b\u7fa9", "\u30aa\u30ea\u30f3\u30d4\u30c3\u30af", "\u6570\u5b66\u3068\u5e7e\u4f55\u5b66"] },
-        "3": { "name": "\u30ed\u30fc\u30de", "title": "\u30ed\u30fc\u30de\u5e1d\u56fd", "period": "\u7d00\u5143\u524d753\u5e74 - 476\u5e74", "text": "\u30b3\u30ed\u30c3\u30bb\u30aa\u306e\u6b53\u58f0\u3001\u6c34\u9053\u6a4b\u306e\u5de5\u5b66\u306e\u9a5a\u7570\u3002", "mystery": "\u30b3\u30ed\u30c3\u30bb\u30aa\u306e\u6697\u3044\u5eca\u4e0b\u3067\u5931\u308f\u308c\u305f\u77e2\u5370\u306e\u5730\u56f3\u3092\u89e3\u3051\uff01", "facts": ["\u30b3\u30ed\u30c3\u30bb\u30aa5\u4e07\u4eba", "\u30ed\u30fc\u30de\u8857\u90538\u4e07km", "\u5263\u95d8\u58eb\u306e\u6226\u3044", "\u6c34\u9053\u6a4b\u5de5\u5b66"] },
-        "4": { "name": "\u30f4\u30a1\u30a4\u30ad\u30f3\u30b0", "title": "\u30f4\u30a1\u30a4\u30ad\u30f3\u30b0\u6642\u4ee3", "period": "793\u5e74 - 1066\u5e74", "text": "\u6c37\u306e\u30d5\u30a3\u30e8\u30eb\u30c9\u304b\u3089\u51fa\u822a\u3059\u308b\u7adc\u306e\u8239\u3002", "mystery": "\u30eb\u30fc\u30f3\u77f3\u306e\u77e2\u5370\u8a18\u53f7\u3092\u89e3\u8aad\u305b\u3088\uff01", "facts": ["\u30c9\u30e9\u30b4\u30f3\u30b7\u30c3\u30d7", "\u30a2\u30e1\u30ea\u30ab\u3092\u767a\u898b", "\u30eb\u30fc\u30f3\u6587\u5b57", "\u30d5\u30a3\u30e8\u30eb\u30c9\u5730\u5f62"] },
-        "5": { "name": "\u30aa\u30b9\u30de\u30f3", "title": "\u30aa\u30b9\u30de\u30f3\u5e1d\u56fd", "period": "1299\u5e74 - 1922\u5e74", "text": "\u4e09\u5927\u9678\u3092\u652f\u914d\u3057\u305f\u58ee\u5927\u306a\u5e1d\u56fd\u3002", "mystery": "\u30c8\u30d7\u30ab\u30d7\u5bae\u6bbf\u306e\u5c01\u5370\u3055\u308c\u305f\u901a\u8def\u3092\u958b\u3051\uff01", "facts": ["3\u5927\u9678\u3092\u652f\u914d", "\u30c1\u30e5\u30fc\u30ea\u30c3\u30d7\u6642\u4ee3", "\u30c8\u30d7\u30ab\u30d7\u5bae\u6bbf", "600\u5e74\u306e\u5e1d\u56fd"] },
-        "6": { "name": "\u4e2d\u56fd", "title": "\u53e4\u4ee3\u4e2d\u56fd", "period": "\u7d00\u5143\u524d2070\u5e74 - 1912\u5e74", "text": "\u4e07\u91cc\u306e\u9577\u57ce\u304c\u5730\u5e73\u7dda\u306b\u6d88\u3048\u308b\u3002\u30b7\u30eb\u30af\u30ed\u30fc\u30c9\u304c\u6587\u660e\u3092\u7d50\u3076\u3002", "mystery": "\u7d2b\u7981\u57ce\u306e\u79d8\u5bc6\u306e\u90e8\u5c4b\u3067\u9f8d\u306e\u5730\u56f3\u3092\u89e3\u3051\uff01", "facts": ["\u706b\u85ac\u306e\u767a\u660e", "\u7d19\u3068\u5370\u5237", "\u7f85\u91dd\u76e4\u306e\u767a\u660e", "\u4e07\u91cc\u306e\u9577\u57ce21,000km"] },
-        "7": { "name": "\u30de\u30e4", "title": "\u30de\u30e4\u6587\u660e", "period": "\u7d00\u5143\u524d2000\u5e74 - 1500\u5e74", "text": "\u30b8\u30e3\u30f3\u30b0\u30eb\u306e\u5965\u6df1\u304f\u306b\u305d\u3073\u3048\u308b\u77f3\u306e\u30d4\u30e9\u30df\u30c3\u30c9\u3002", "mystery": "\u30de\u30e4\u66a6\u306e\u77e2\u5370\u8a18\u53f7\u3092\u89e3\u3051\uff01", "facts": ["\u30de\u30e4\u66a6", "\u5929\u6587\u5b66\u306e\u5c02\u9580\u5bb6", "\u30c8\u30a6\u30e2\u30ed\u30b3\u30b7\u3068\u30ab\u30ab\u30aa", "\u968e\u6bb5\u30d4\u30e9\u30df\u30c3\u30c9"] },
-        "8": { "name": "\u30a4\u30f3\u30c9", "title": "\u53e4\u4ee3\u30a4\u30f3\u30c9", "period": "\u7d00\u5143\u524d3300\u5e74 - 1800\u5e74", "text": "\u30bf\u30fc\u30b8\u30fb\u30de\u30cf\u30eb\u306e\u767d\u3044\u5927\u7406\u77f3\u304c\u6708\u5149\u306b\u8f1d\u304f\u3002", "mystery": "\u30bf\u30fc\u30b8\u30fb\u30de\u30cf\u30eb\u306e\u84ee\u306e\u6a21\u69d8\u306e\u4e2d\u306e\u77e2\u5370\u306e\u9053\u3092\u89e3\u3051\uff01", "facts": ["\u30bf\u30fc\u30b8\u30fb\u30de\u30cf\u30eb", "\u30e8\u30ac\u3068\u7791\u60f3", "\u30bc\u30ed\u3092\u767a\u660e", "\u84ee\u3068\u30b9\u30d1\u30a4\u30b9\u30ed\u30fc\u30c9"] },
-        "9": { "name": "\u4e2d\u4e16\u30e8\u30fc\u30ed\u30c3\u30d1", "title": "\u4e2d\u4e16\u30e8\u30fc\u30ed\u30c3\u30d1", "period": "500\u5e74 - 1500\u5e74", "text": "\u6697\u9ed2\u6642\u4ee3\u3001\u57ce\u304c\u9727\u306e\u4e18\u306b\u305d\u3073\u3048\u308b\u3002", "mystery": "\u932c\u91d1\u8853\u5e2b\u306e\u8ff7\u5bae\u306e\u57ce\u3067\u77e2\u5370\u3092\u89e3\u3051\uff01", "facts": ["\u30b4\u30b7\u30c3\u30af\u5927\u8056\u5802", "\u5341\u5b57\u8ecd", "\u932c\u91d1\u8853\u3068\u79d1\u5b66", "\u5927\u822a\u6d77\u6642\u4ee3"] },
-        "10": { "name": "\u30d5\u30a3\u30ca\u30fc\u30ec", "title": "\u6587\u660e\u306e\u53ce\u675f", "period": "\u6642\u3092\u8d85\u3048\u3066", "text": "\u3059\u3079\u3066\u306e\u53e4\u4ee3\u6587\u660e\u306e\u77e5\u6075\u304c\u4e00\u3064\u306b\u96c6\u307e\u308b\u3002", "mystery": "\u3059\u3079\u3066\u306e\u6587\u660e\u306e\u77e2\u5370\u3092\u7d71\u5408\u3057\u3001\u4eba\u985e\u6700\u5927\u306e\u8b0e\u3092\u89e3\u3051\uff01", "facts": ["10\u306e\u6587\u660e", "\u7a76\u6975\u306e\u6311\u6226", "\u5168\u3066\u306e\u8ce2\u8005", "\u4f1d\u8aac\u306e\u96e3\u6613\u5ea6"] }
-    },
-    "install": {
-        "title": "\u30db\u30fc\u30e0\u753b\u9762\u306b\u8ffd\u52a0",
-        "body": "\u5168\u753b\u9762\u3067\u30d7\u30ec\u30a4\u3001\u30aa\u30d5\u30e9\u30a4\u30f3\u5bfe\u5fdc",
-        "step_share": "\u5171\u6709",
-        "step_add": "\u30db\u30fc\u30e0\u753b\u9762\u306b\u8ffd\u52a0"
-    },
-    "rate": {
-        "title": "Okchu\u306f\u3044\u304b\u304c\u3067\u3059\u304b\uff1f",
-        "subtitle": "\u30d5\u30a3\u30fc\u30c9\u30d0\u30c3\u30af\u304c\u6211\u3005\u3092\u5c0e\u304d\u307e\u3059",
-        "later": "\u5f8c\u3067",
-        "email_body": "\u3053\u3093\u306b\u3061\u306f\uff01Okchu \u306b\u3064\u3044\u3066\u306e\u30d5\u30a3\u30fc\u30c9\u30d0\u30c3\u30af\uff1a\n\n"
-    },
-    "appstore": {
-        "title": "Okchu: Arrow Puzzle",
-        "subtitle": "\u77e2\u5370\u30d1\u30ba\u30eb\u30b2\u30fc\u30e0",
-        "description": "10\u306e\u53e4\u4ee3\u6587\u660e\u3092\u63a2\u691c\u3057\u300150\u306e\u30c1\u30e3\u30ec\u30f3\u30b8\u30f3\u30b0\u306a\u30d1\u30ba\u30eb\u3092\u89e3\u3053\u3046\uff01\u30d4\u30e9\u30df\u30c3\u30c9\u304b\u3089\u57ce\u3001\u5854\u304b\u3089\u795e\u6bbf\u307e\u3067\u306e\u58ee\u5927\u306a\u77e2\u5370\u30d1\u30ba\u30eb\u30a2\u30c9\u30d9\u30f3\u30c1\u30e3\u30fc\u3002",
-        "keywords": "\u77e2\u5370,\u30d1\u30ba\u30eb,\u53e4\u4ee3,\u6587\u660e,\u30a8\u30b8\u30d7\u30c8,\u30ed\u30fc\u30de,\u30f4\u30a1\u30a4\u30ad\u30f3\u30b0,\u6226\u7565,\u8133\u30c8\u30ec"
-    },
-    "settings": {
-        "privacy": "プライバシーポリシー",
-        "terms": "利用規約"
-    },
-    "premium": {
-        "title": "広告なしプレミアム",
-        "subtitle": "一度きりの支払い。すべての広告が削除されます。",
-        "benefit_ads": "✓ バナーと動画広告なし",
-        "benefit_support": "✓ 開発者をサポート",
-        "benefit_forever": "✓ ずっとあなたのもの",
-        "buy": "購入",
-        "restore": "購入を復元",
-        "legal_note": "購入により以下に同意:",
-        "terms": "利用規約",
-        "privacy": "プライバシーポリシー",
-        "close": "閉じる"
+    "10": {
+      "name": "フィナーレ",
+      "title": "文明の収束",
+      "period": "時を超えて",
+      "text": "すべての古代文明の知恵が一つに集まる。",
+      "mystery": "すべての文明の矢印を統合し、人類最大の謎を解け！",
+      "facts": [
+        "10の文明",
+        "究極の挑戦",
+        "全ての賢者",
+        "伝説の難易度"
+      ]
     }
+  },
+  "install": {
+    "title": "ホーム画面に追加",
+    "body": "全画面でプレイ、オフライン対応",
+    "step_share": "共有",
+    "step_add": "ホーム画面に追加"
+  },
+  "rate": {
+    "title": "Okchuはいかがですか？",
+    "subtitle": "フィードバックが我々を導きます",
+    "later": "後で",
+    "email_body": "こんにちは！Okchu についてのフィードバック：\n\n"
+  },
+  "appstore": {
+    "title": "Okchu: Arrow Puzzle",
+    "subtitle": "矢印パズルゲーム",
+    "description": "10の古代文明を探検し、50のチャレンジングなパズルを解こう！ピラミッドから城、塔から神殿までの壮大な矢印パズルアドベンチャー。",
+    "keywords": "矢印,パズル,古代,文明,エジプト,ローマ,ヴァイキング,戦略,脳トレ"
+  },
+  "settings": {
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約"
+  },
+  "premium": {
+    "title": "広告なしプレミアム",
+    "subtitle": "一度きりの支払い。すべての広告が削除されます。",
+    "benefit_ads": "✓ バナーと動画広告なし",
+    "benefit_support": "✓ 開発者をサポート",
+    "benefit_forever": "✓ ずっとあなたのもの",
+    "buy": "購入",
+    "restore": "購入を復元",
+    "legal_note": "購入により以下に同意:",
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー",
+    "close": "閉じる"
+  }
 }

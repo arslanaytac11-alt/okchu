@@ -4,6 +4,27 @@ import { chapters } from './data/chapters.js';
 import { getLevelsByChapter } from './levels.js';
 import { storage } from './storage.js';
 import { showBanner, hideBanner } from './ads.js';
+import { t } from './i18n.js';
+
+// Translation key helpers. `chapters.js` stores Turkish names/difficulty/story
+// text inline because the data file was authored before i18n — rather than
+// duplicating every string into chapters.js per language, we look them up by
+// chapter id from the language JSON files. Falls back to chapter.name when
+// the key is missing so nothing blanks out.
+const DIFFICULTY_KEYS = {
+    1: 'easy', 2: 'medium', 3: 'hard', 4: 'hard_plus', 5: 'very_hard',
+    6: 'very_hard_plus', 7: 'legendary', 8: 'legendary_plus', 9: 'nightmare', 10: 'nightmare_plus',
+};
+const tChapter = (chapter, field) => {
+    const key = `civilizations.${chapter.id}.${field}`;
+    const val = t(key);
+    return val === key ? (chapter[field] ?? chapter.name) : val;
+};
+const tDifficulty = (chapter) => {
+    const key = `difficulty.${DIFFICULTY_KEYS[chapter.id] || 'easy'}`;
+    const val = t(key);
+    return val === key ? chapter.difficulty : val;
+};
 
 export class ScreenManager {
     constructor() {
@@ -61,7 +82,7 @@ export class ScreenManager {
         // Total stars in header
         const header = document.querySelector('#screen-chapters .screen-header h2');
         if (header) {
-            header.textContent = `Bölümler \u2605 ${storage.getTotalStars()}/150`;
+            header.textContent = `${t('chapters.title')} \u2605 ${storage.getTotalStars()}/150`;
         }
 
         for (const chapter of chapters) {
@@ -79,11 +100,11 @@ export class ScreenManager {
 
             const nameSpan = document.createElement('div');
             nameSpan.className = 'chapter-name';
-            nameSpan.textContent = chapter.name;
+            nameSpan.textContent = tChapter(chapter, 'name');
 
             const diffSpan = document.createElement('div');
             diffSpan.className = 'chapter-difficulty';
-            diffSpan.textContent = chapter.difficulty;
+            diffSpan.textContent = tDifficulty(chapter);
 
             const starsSpan = document.createElement('div');
             starsSpan.className = 'chapter-stars';
@@ -140,24 +161,39 @@ export class ScreenManager {
         const img = document.getElementById('story-image');
         img.src = `assets/backgrounds/bg-${bgNames[chapter.id] || 'final'}.jpg`;
 
-        // Set text content
-        document.getElementById('story-title').textContent = story.title || chapter.name;
-        document.getElementById('story-period').textContent = story.period || '';
-        document.getElementById('story-text').textContent = story.text || '';
-        document.getElementById('story-mystery').textContent = story.mystery || '';
+        // Set text content — pulled from lang JSON so English/Spanish/French/
+        // Japanese players don't see the Turkish originals in chapters.js.
+        document.getElementById('story-title').textContent = tChapter(chapter, 'title');
+        document.getElementById('story-period').textContent = tChapter(chapter, 'period');
+        document.getElementById('story-text').textContent = tChapter(chapter, 'text');
+        document.getElementById('story-mystery').textContent = tChapter(chapter, 'mystery');
 
-        // Fun facts per civilization
-        const facts = this._getChapterFacts(chapter.id);
+        // Fun facts per civilization — icons stay local, labels come from
+        // the active language. If translation is missing we fall back to the
+        // hardcoded Turkish list so nothing renders blank.
+        const icons = this._getChapterFactIcons(chapter.id);
+        const factKey = `civilizations.${chapter.id}.facts`;
+        const translated = t(factKey);
+        const labels = Array.isArray(translated)
+            ? translated
+            : this._getChapterFacts(chapter.id).map(f => f.text);
         const factsEl = document.getElementById('story-facts');
         factsEl.innerHTML = '';
-        for (const fact of facts) {
+        for (let i = 0; i < labels.length; i++) {
             const tag = document.createElement('span');
             tag.className = 'story-fact';
-            tag.innerHTML = `<span class="story-fact-icon">${fact.icon}</span>${fact.text}`;
+            tag.innerHTML = `<span class="story-fact-icon">${icons[i] || ''}</span>${labels[i]}`;
             factsEl.appendChild(tag);
         }
 
         this.showScreen('story');
+    }
+
+    // Icons parallel the translated labels (civilizations.X.facts array).
+    // Kept separate from the text so non-Turkish languages don't need to
+    // repeat the emoji in every JSON file.
+    _getChapterFactIcons(chapterId) {
+        return (this._getChapterFacts(chapterId) || []).map(f => f.icon);
     }
 
     _getChapterFacts(chapterId) {
@@ -228,7 +264,7 @@ export class ScreenManager {
 
     showLevels(chapter) {
         this.applyChapterTheme(chapter);
-        document.getElementById('level-screen-title').textContent = chapter.name;
+        document.getElementById('level-screen-title').textContent = tChapter(chapter, 'name');
 
         const list = document.getElementById('level-list');
         list.innerHTML = '';
@@ -239,9 +275,9 @@ export class ScreenManager {
         const modeBar = document.createElement('div');
         modeBar.className = 'mode-selector';
         const modes = [
-            { id: 'classic', label: 'Klasik', icon: '\u{1F3AE}' },
-            { id: 'timed', label: 'Hızlı', icon: '\u26A1' },
-            { id: 'zen', label: 'Zen', icon: '\u{1F33F}' },
+            { id: 'classic', label: t('levels.mode_classic'), icon: '\u{1F3AE}' },
+            { id: 'timed',   label: t('levels.mode_timed'),   icon: '\u26A1' },
+            { id: 'zen',     label: t('levels.mode_zen'),     icon: '\u{1F33F}' },
         ];
         const activeMode = storage.getGameMode();
         for (const m of modes) {
