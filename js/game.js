@@ -320,7 +320,7 @@ export class Game {
         let lastSinglePanY = 0;
         let lastTapAt = 0;              // double-tap detection timestamp
         let lastTapPos = { x: 0, y: 0 };
-        const TAP_MAX_MOVE = 22;        // px drift allowed before a tap is canceled (iPhone fingers drift ~15-20px)
+        const TAP_MAX_MOVE = 14;        // px drift allowed before promoting tap→pan (iPhone fingers drift ~10-15px; lower = easier pan)
         const TAP_MAX_MS = 350;
         const DOUBLE_TAP_MS = 300;
         const DOUBLE_TAP_RADIUS = 40;
@@ -356,7 +356,14 @@ export class Game {
         const resolveTap = (clientX, clientY) => {
             if (this.isAnimating || !this.grid) return;
             const { gridX, gridY } = this.renderer.getCellFromPoint(clientX, clientY);
-            const path = findPathNear(gridX, gridY, 1);
+            // When zoomed OUT, each grid cell shrinks below finger-pad size, so
+            // the tap center can easily fall into an empty neighbour. Scale the
+            // fuzzy-match radius inversely with zoom so a 0.5x view gets up to
+            // radius 3 (covers ~40-50 CSS px at typical cell sizes). Capped so
+            // the zoomed-in case stays tight (radius 1 = no false hits).
+            const scale = this.renderer.scale || 1;
+            const radius = scale >= 1 ? 1 : Math.min(4, Math.max(2, Math.round(1.2 / scale)));
+            const path = findPathNear(gridX, gridY, radius);
             if (!path) return;
             this.hintedPath = null;
             this.renderer.touchFeedback = { path, startTime: performance.now() };

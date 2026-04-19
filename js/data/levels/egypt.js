@@ -18,7 +18,7 @@ export const egyptLevels = [
             { cells: [[7,6],[7,7]], direction: 'up' },
             { cells: [[12,7]], direction: 'right' },
             { cells: [[3,9],[4,9],[5,9]], direction: 'right' },
-            { cells: [[10,9]], direction: 'left' },
+            { cells: [[10,9]], direction: 'up' },
             { cells: [[13,9]], direction: 'up' },
             { cells: [[2,12]], direction: 'down' },
             { cells: [[6,12],[7,12]], direction: 'up' },
