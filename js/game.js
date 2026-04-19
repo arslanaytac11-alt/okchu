@@ -317,7 +317,7 @@ export class Game {
         let pendingTapStart = null;     // { x, y, t } — potential single-finger tap
         let lastTapAt = 0;              // double-tap detection timestamp
         let lastTapPos = { x: 0, y: 0 };
-        const TAP_MAX_MOVE = 14;        // px drift allowed before a tap is canceled
+        const TAP_MAX_MOVE = 22;        // px drift allowed before a tap is canceled (iPhone fingers drift ~15-20px)
         const TAP_MAX_MS = 350;
         const DOUBLE_TAP_MS = 300;
         const DOUBLE_TAP_RADIUS = 40;
@@ -337,8 +337,10 @@ export class Game {
                         const p = this.grid.getPathAt(gridX + dx, gridY + dy);
                         if (!p) continue;
                         // Prefer removable (clear) paths so tolerance helps success,
-                        // not accidental wrong-moves.
-                        const clearBonus = this.grid.isPathClear(p) ? 0 : 0.5;
+                        // not accidental wrong-moves. Heavy penalty for non-clear
+                        // neighbors so fat-finger fuzzy matching never picks a
+                        // blocked arrow when the user meant an empty cell nearby.
+                        const clearBonus = this.grid.isPathClear(p) ? 0 : 2.0;
                         const d = Math.hypot(dx, dy) + clearBonus;
                         if (d < bestDist) { bestDist = d; best = p; }
                     }
