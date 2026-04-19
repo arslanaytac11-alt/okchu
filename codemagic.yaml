@@ -284,7 +284,12 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Upload to App Store Connect (build becomes available to internal
+        # testers, including the developer's own Apple ID, once Apple finishes
+        # processing). External beta review submission is OFF — that would
+        # require Beta App Information (feedback email, reviewer contact) to
+        # be filled in App Store Connect, and we only test internally for now.
+        submit_to_testflight: false
       email:
         recipients:
           - arslan.aytac11@gmail.com
