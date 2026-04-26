@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-192.png">
     <link rel="icon" type="image/png" href="assets/icons/icon-192.png">
-    <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/style.css?v=11">
 </head>
 <body>
     <!-- Splash Screen -->
@@ -38,7 +38,7 @@
             <div class="menu-bottom-buttons">
                 <button id="btn-achievements" class="btn-menu-icon" data-i18n="menu.achievements">Başarımlar</button>
                 <button id="btn-collection" class="btn-menu-icon" data-i18n="menu.collection">Koleksiyon</button>
-                <button id="btn-leaderboard" class="btn-menu-icon" data-i18n="menu.leaderboard">Lider Tablosu</button>
+                <button id="btn-leaderboard" class="btn-menu-icon" data-i18n="menu.leaderboard">Haftalık Skorlarım</button>
                 <button id="btn-settings" class="btn-menu-icon" data-i18n="menu.settings">Ayarlar</button>
             </div>
             <div class="menu-top-buttons">
@@ -198,10 +198,10 @@
             </div>
         </div>
 
-        <!-- Leaderboard Overlay -->
+        <!-- Weekly scores overlay (local-only personal daily-challenge scores) -->
         <div id="overlay-leaderboard" class="overlay hidden">
             <div class="overlay-content overlay-large">
-                <h2>Haftalık Lider Tablosu</h2>
+                <h2>Haftalık Skorlarım</h2>
                 <p class="leaderboard-hint">Son 7 günün günlük meydan okuma skorları</p>
                 <div id="leaderboard-list" class="leaderboard-list"></div>
                 <button id="btn-leaderboard-close" class="btn btn-secondary">Kapat</button>
@@ -334,6 +334,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=25"></script>
+    <script type="module" src="js/main.js?v=28"></script>
 </body>
 </html>

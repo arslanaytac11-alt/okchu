@@ -324,46 +324,62 @@ export class Game {
         const TAP_MAX_MS = 350;
         const DOUBLE_TAP_MS = 300;
         const DOUBLE_TAP_RADIUS = 40;
+        // Finger-tip bias correction (iOS UX standard, same magnitude Apple's
+        // software keyboard uses internally). When the user taps a small
+        // target, they aim with the VISUAL tip of the finger, but the OS
+        // reports the centroid of the skin-contact patch — which sits ~5–6
+        // CSS px BELOW the nail. Without this correction, taps systematically
+        // land on the cell below the intended one. Shifting the Y up by 6
+        // CSS px matches the visual aim point and eliminates "I tapped here
+        // but it registered lower" complaints. Touch-only; mouse clicks are
+        // precise and skip this correction.
+        const TOUCH_Y_CORRECTION = 6;
 
-        // Fat-finger hit: if the tapped cell has no path, scan outward up to
-        // a small radius and pick the closest cell that DOES have a path.
-        // Distance is measured in cells (Chebyshev) so diagonal neighbors tie.
-        const findPathNear = (gridX, gridY, maxRadius = 1) => {
-            const direct = this.grid.getPathAt(gridX, gridY);
-            if (direct) return direct;
-            for (let r = 1; r <= maxRadius; r++) {
-                let best = null;
-                let bestDist = Infinity;
-                for (let dy = -r; dy <= r; dy++) {
-                    for (let dx = -r; dx <= r; dx++) {
-                        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-                        const p = this.grid.getPathAt(gridX + dx, gridY + dy);
-                        if (!p) continue;
-                        // Prefer removable (clear) paths so tolerance helps success,
-                        // not accidental wrong-moves. Heavy penalty for non-clear
-                        // neighbors so fat-finger fuzzy matching never picks a
-                        // blocked arrow when the user meant an empty cell nearby.
-                        const clearBonus = this.grid.isPathClear(p) ? 0 : 2.0;
-                        const d = Math.hypot(dx, dy) + clearBonus;
-                        if (d < bestDist) { bestDist = d; best = p; }
+        // Tap resolution using fractional grid coords. We scan the 3x3 block
+        // around the tap and for each candidate path compute the TRUE Euclidean
+        // distance (in cell units) from the tap to the path's nearest cell
+        // centre. The closest wins. This fixes "tap lands on arrow A but the
+        // Math.floor quantization buckets it into neighbour B's cell" — the
+        // finger's actual position decides, not the cell index it rounded to.
+        //
+        // A blocked (non-clear) arrow gets a heavy score penalty so fat-finger
+        // tolerance never upgrades a near-miss into a wrong-move on a blocked
+        // neighbour when there is a clear arrow at comparable distance.
+        const findPathAt = (fx, fy) => {
+            const cx = Math.floor(fx);
+            const cy = Math.floor(fy);
+            const seen = new Set();
+            let best = null;
+            let bestScore = Infinity;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const p = this.grid.getPathAt(cx + dx, cy + dy);
+                    if (!p || seen.has(p)) continue;
+                    seen.add(p);
+                    let minD = Infinity;
+                    for (const c of p.cells) {
+                        const ddx = (c.x + 0.5) - fx;
+                        const ddy = (c.y + 0.5) - fy;
+                        const d = Math.hypot(ddx, ddy);
+                        if (d < minD) minD = d;
                     }
+                    const penalty = this.grid.isPathClear(p) ? 0 : 1.2;
+                    const score = minD + penalty;
+                    if (score < bestScore) { bestScore = score; best = p; }
                 }
-                if (best) return best;
             }
+            // Accept taps up to ~2 cells from the nearest arrow (score is in
+            // grid-cell units — larger threshold = more forgiving fat-finger
+            // tolerance at small cell sizes). Random empty-board taps still
+            // resolve to null because no path is within range.
+            if (best && bestScore <= 2.0) return best;
             return null;
         };
 
         const resolveTap = (clientX, clientY) => {
             if (this.isAnimating || !this.grid) return;
-            const { gridX, gridY } = this.renderer.getCellFromPoint(clientX, clientY);
-            // When zoomed OUT, each grid cell shrinks below finger-pad size, so
-            // the tap center can easily fall into an empty neighbour. Scale the
-            // fuzzy-match radius inversely with zoom so a 0.5x view gets up to
-            // radius 3 (covers ~40-50 CSS px at typical cell sizes). Capped so
-            // the zoomed-in case stays tight (radius 1 = no false hits).
-            const scale = this.renderer.scale || 1;
-            const radius = scale >= 1 ? 1 : Math.min(4, Math.max(2, Math.round(1.2 / scale)));
-            const path = findPathNear(gridX, gridY, radius);
+            const { fx, fy } = this.renderer.getFractionalCellFromPoint(clientX, clientY);
+            const path = findPathAt(fx, fy);
             if (!path) return;
             this.hintedPath = null;
             this.renderer.touchFeedback = { path, startTime: performance.now() };
@@ -452,6 +468,12 @@ export class Game {
         }, { passive: false });
 
         this.canvas.addEventListener('touchend', (e) => {
+            // Suppress the iOS synthetic click that fires ~300ms after touchend.
+            // We resolve the tap ourselves below — letting the click also fire
+            // would double-trigger resolveTap on some iOS versions where
+            // event.detail !== 0 on the synthetic click and the click handler's
+            // guard fails. cancelable is false on stale events, so guard.
+            if (e.cancelable) e.preventDefault();
             if (isPinching) {
                 // Only reset when all fingers lift; a 2→1 transition shouldn't
                 // leave a dangling pending tap.
@@ -481,9 +503,9 @@ export class Game {
                 return;
             }
 
-            resolveTap(pendingTapStart.x, pendingTapStart.y);
+            resolveTap(pendingTapStart.x, pendingTapStart.y - TOUCH_Y_CORRECTION);
             pendingTapStart = null;
-        });
+        }, { passive: false });
 
         // Mouse wheel zoom — passes client coords; renderer converts to canvas-local.
         this.canvas.addEventListener('wheel', (e) => {

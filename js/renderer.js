@@ -560,6 +560,21 @@ export class Renderer {
         };
     }
 
+    // Fractional grid coords for tap resolution. Integer Math.floor buckets
+    // the tap by cell boundary, which loses sub-cell offset — the caller uses
+    // (fx, fy) to measure true Euclidean distance to candidate path cells and
+    // pick the closest, so a tap near the edge of cell N goes to the arrow
+    // in cell N+1 instead of whichever arrow happens to own cell N.
+    getFractionalCellFromPoint(clientX, clientY) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = (clientX - rect.left - this.panX) / this.scale;
+        const y = (clientY - rect.top - this.panY) / this.scale;
+        return {
+            fx: (x - this.gridOffsetX) / this.cellSize,
+            fy: (y - this.gridOffsetY) / this.cellSize
+        };
+    }
+
     setTheme(theme, chapterId) {
         Object.assign(this.theme, theme);
         this.chapterId = chapterId || 1;

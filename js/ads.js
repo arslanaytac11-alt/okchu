@@ -19,11 +19,23 @@ const TEST_UNITS = {
     rewarded:     'ca-app-pub-3940256099942544/1712485313',
 };
 
-const INTERSTITIAL_EVERY_N_LEVELS = 4;
+// Interstitial pacing: every N completed levels, but never closer than
+// MIN_INTERSTITIAL_GAP_MS apart so rapid replays don't get back-to-back ads.
+// Tuned for ~2-5 min sessions per level — 6 levels ≈ 15-25 min between ads.
+const INTERSTITIAL_EVERY_N_LEVELS = 6;
+const MIN_INTERSTITIAL_GAP_MS = 90_000; // 90s floor
+const LAST_INTERSTITIAL_KEY = 'okchu.ads.lastInterstitialAt';
 
 let initialized = false;
 let bannerVisible = false;
 let levelsSinceInterstitial = 0;
+// Persisted across app launches so the 90s gate can't be reset by killing and
+// reopening the app — matches AdMob policy spirit ("don't surprise the user
+// with back-to-back ads"). localStorage survives WKWebView restarts.
+let lastInterstitialAt = (() => {
+    try { return parseInt(localStorage.getItem(LAST_INTERSTITIAL_KEY) || '0', 10) || 0; }
+    catch { return 0; }
+})();
 let useTestAds = false;
 
 function isNative() {
@@ -103,12 +115,17 @@ export function noteLevelCompleted() {
 export async function maybeShowInterstitial() {
     if (isPremium()) return false;
     if (levelsSinceInterstitial < INTERSTITIAL_EVERY_N_LEVELS) return false;
+    // Time-gate: even if level count hit, don't show if last ad was too recent.
+    const now = Date.now();
+    if (lastInterstitialAt && (now - lastInterstitialAt) < MIN_INTERSTITIAL_GAP_MS) return false;
     const A = getPlugin();
     if (!A || !initialized) return false;
     try {
         await A.prepareInterstitial({ adId: unitId('interstitial'), isTesting: useTestAds });
         await A.showInterstitial();
         levelsSinceInterstitial = 0;
+        lastInterstitialAt = now;
+        try { localStorage.setItem(LAST_INTERSTITIAL_KEY, String(now)); } catch {}
         return true;
     } catch (e) {
         console.warn('[ads] interstitial failed', e);

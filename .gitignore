@@ -9,3 +9,5 @@ ios/App/Pods/
 ios/App/build/
 ios/DerivedData/
 .DS_Store
+# Local-only App Store screenshot upload folder (not part of the build)
+magaza görseli/

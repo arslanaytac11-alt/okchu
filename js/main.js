@@ -162,7 +162,15 @@ if (freezePowerBtn) {
         game.useFreezePowerup();
     });
 }
-if (typeof window !== 'undefined') { window.__DEBUG__ = { game, screenManager, chapters, storage }; }
+// Dev-only console shortcut. Skip on the iOS Capacitor shell (capacitor:// scheme)
+// and on the live PWA — both are "production". Only expose on localhost / file://
+// where it actually helps debugging.
+if (typeof window !== 'undefined') {
+    const host = location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1' || host === '') {
+        window.__DEBUG__ = { game, screenManager, chapters, storage };
+    }
+}
 const livesDisplay = document.getElementById('lives-display');
 const tutorial = new Tutorial();
 

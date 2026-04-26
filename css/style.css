@@ -403,6 +403,17 @@ html, body {
     height: 100%;
     flex-direction: column;
     align-items: center;
+    box-sizing: border-box;
+}
+
+/* Reserve space for the AdMob adaptive banner pinned to BOTTOM_CENTER on
+   every non-gameplay screen (menu, chapters, story, levels). Without this
+   the banner floats over the bottom buttons — "Remove Ads" on the menu,
+   the last level card, the "Play" CTA on the story page. Excluded on the
+   game screen because the banner is hidden during gameplay. 72px covers
+   the banner (~50–60dp) plus the iOS home-indicator safe area. */
+.screen:not(#screen-game) {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }
 
 .screen.active {
