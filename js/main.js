@@ -15,8 +15,20 @@ import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstit
 import { initIAP, buyPremium, restorePurchases, onPremiumOwned, isPremiumOwned } from './iap.js';
 
 // Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
-// Use production unit IDs on App Store / TestFlight builds; Google test IDs elsewhere.
-initAds({ testMode: location.hostname === 'localhost' || location.protocol === 'http:' });
+// CRITICAL: location.hostname is "localhost" inside the Capacitor iOS shell
+// (because the WKWebView serves files from okchu://localhost/...) — so the
+// previous `hostname === 'localhost'` heuristic was treating PRODUCTION iOS
+// as test mode and serving Google test ads instead of real ones (zero
+// revenue + AdMob risk). Detect the native platform first; only fall back
+// to test mode in real browser dev (localhost / file:// / http://).
+const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const isWebDev = !isNativeApp && (
+    location.hostname === 'localhost' ||
+    location.hostname === '127.0.0.1' ||
+    location.protocol === 'file:' ||
+    location.protocol === 'http:'
+);
+initAds({ testMode: isWebDev });
 
 // IAP init — loads the Premium product from App Store and updates price label.
 // Also wires the entitlement callback: on successful purchase/restore we hide
