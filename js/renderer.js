@@ -550,6 +550,43 @@ export class Renderer {
         ctx.restore();
     }
 
+    // Onboarding pointer: pulsing finger emoji centred on the head cell of
+    // the path the new player should tap next. Stronger visual than the
+    // dashed hint circle (which is meant for "stuck on a level" rescue),
+    // because we want the player to immediately understand "tap this
+    // arrow". Drawn on top of all other elements; positioned in grid
+    // coords so pinch-zoom + pan keep it locked to the right arrow.
+    drawOnboardingPointer(path) {
+        if (!path || !path.cells || path.cells.length === 0) return;
+        const ctx = this.ctx;
+        const head = path.cells[path.cells.length - 1];
+        ctx.save();
+        ctx.translate(this.panX, this.panY);
+        ctx.scale(this.scale, this.scale);
+        const cx = this.gridOffsetX + head.x * this.cellSize + this.cellSize / 2;
+        const cy = this.gridOffsetY + head.y * this.cellSize + this.cellSize / 2;
+        // Pulse: 600 ms cycle, 0.85x..1.15x scale.
+        const phase = (performance.now() % 600) / 600;
+        const pulse = 0.85 + 0.30 * (0.5 - 0.5 * Math.cos(phase * Math.PI * 2));
+        const ring = this.cellSize * 0.55 * pulse;
+        // Glowing halo behind the emoji so it pops on busy backgrounds.
+        ctx.shadowColor = 'rgba(255,210,80,0.95)';
+        ctx.shadowBlur = 18 * pulse;
+        ctx.fillStyle = 'rgba(255,210,80,0.20)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, ring, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // Pointing finger emoji centred above the cell. Slightly larger
+        // than the cell so it's visible even at small cell sizes.
+        const fontPx = Math.max(28, this.cellSize * 1.1);
+        ctx.font = `${fontPx}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('👆', cx, cy + this.cellSize * 0.15 * pulse);
+        ctx.restore();
+    }
+
     getCellFromPoint(clientX, clientY) {
         const rect = this.canvas.getBoundingClientRect();
         const x = (clientX - rect.left - this.panX) / this.scale;

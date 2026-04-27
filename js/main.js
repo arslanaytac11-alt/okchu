@@ -258,6 +258,23 @@ document.addEventListener('visibilitychange', () => {
     } catch {}
 });
 
+// Activate the in-game onboarding pointer for the player's very first
+// session. We light up the next removable arrow with a pulsing 👆 emoji
+// for the first 3 correct taps on Egypt level 1, then it auto-dismisses
+// permanently (flag persisted to localStorage). The tutorial overlay
+// teaches the concept; the in-game pointer locks it in by guiding the
+// hand through actual taps. Style cribbed from Royal Match / Arrows
+// Puzzle, which use the same "show me where to tap" technique to lower
+// onboarding drop-off.
+function maybeActivateOnboarding(levelData, chapterData) {
+    try {
+        if (localStorage.getItem('okchu_onboarding_done') === '1') return;
+        if (chapterData?.id !== 1 || levelData?.id !== 1) return;
+        game.onboardingActive = true;
+        game.onboardingTapsLeft = 3;
+    } catch {}
+}
+
 // When a level is selected from the menu
 screenManager.onStartLevel = (levelData, chapterData) => {
     if (!game.livesManager.hasLives()) {
@@ -275,12 +292,14 @@ screenManager.onStartLevel = (levelData, chapterData) => {
         tutorial.show(() => {
             screenManager.showScreen('game');
             game.livesManager.renderLives(livesDisplay);
+            maybeActivateOnboarding(levelData, chapterData);
             setTimeout(() => game.startLevel(levelData, chapterData), 50);
         });
         return;
     }
     screenManager.showScreen('game');
     game.livesManager.renderLives(livesDisplay);
+    maybeActivateOnboarding(levelData, chapterData);
     setTimeout(() => game.startLevel(levelData, chapterData), 50);
 };
 
@@ -795,6 +814,10 @@ document.getElementById('setting-reset').addEventListener('click', () => {
         localStorage.removeItem('ok_bulmacasi_tutorial_done');
         localStorage.removeItem('okchu_achievements');
         localStorage.removeItem('okchu_daily');
+        localStorage.removeItem('okchu_onboarding_done');
+        localStorage.removeItem('okchu_ios_install_dismissed_at');
+        localStorage.removeItem('okchu_rate_state');
+        localStorage.removeItem('okchu.ads.lastInterstitialAt');
         location.reload();
     }
 });

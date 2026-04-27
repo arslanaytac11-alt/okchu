@@ -43,6 +43,12 @@ export class Game {
         this.currentChapter = null;
         this.isAnimating = false;
         this.hintedPath = null;
+        // Onboarding pointer state — set by main.js before startLevel() when
+        // we want to guide the brand-new player through their first taps.
+        // Cleared (null) once they've removed enough arrows that they
+        // clearly understand the mechanic, or once they leave Egypt-1.
+        this.onboardingActive = false;
+        this.onboardingTapsLeft = 0;
         this.onLevelComplete = null;
         this.onNoLives = null;
         this.onLivesChanged = null;
@@ -444,6 +450,21 @@ export class Game {
                 lastSinglePanX = t.clientX;
                 lastSinglePanY = t.clientY;
                 e.preventDefault();
+                // Predictive preview: the moment a finger touches, light up the
+                // arrow that WOULD be selected if the player lifted right now.
+                // Same UX trick the iOS keyboard uses — instant feedback that
+                // the touch is registered and about to act on a specific
+                // target. The user can drag to a different arrow before
+                // lifting; touchmove updates the preview live below. Safe to
+                // skip when an animation is in flight.
+                if (!this.isAnimating && this.grid) {
+                    const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY - TOUCH_Y_CORRECTION);
+                    const previewPath = findPathAt(fx, fy);
+                    if (previewPath) {
+                        this.renderer.touchFeedback = { path: previewPath, startTime: performance.now() };
+                        this.renderer.drawGrid(this.grid);
+                    }
+                }
             }
         }, { passive: false });
 
@@ -481,6 +502,21 @@ export class Game {
                         isSinglePanning = true;
                         lastSinglePanX = t.clientX;
                         lastSinglePanY = t.clientY;
+                        // Tap promoted to pan — clear the touchstart preview
+                        // so the dragged-over arrows don't keep flashing.
+                        this.renderer.touchFeedback = null;
+                    } else if (!this.isAnimating && this.grid) {
+                        // Drag-and-look: re-resolve the would-be-selected arrow
+                        // as the finger slides within the tap-tolerance radius.
+                        // Lets the player visually scrub between adjacent
+                        // arrows before committing on touchend.
+                        const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY - TOUCH_Y_CORRECTION);
+                        const dragPath = findPathAt(fx, fy);
+                        const current = this.renderer.touchFeedback?.path;
+                        if (dragPath !== current) {
+                            this.renderer.touchFeedback = dragPath ? { path: dragPath, startTime: performance.now() } : null;
+                            this.renderer.drawGrid(this.grid);
+                        }
                     }
                 }
                 if (isSinglePanning) {
@@ -576,6 +612,16 @@ export class Game {
         this._consecutiveWrongs = 0;
         // Successful play dismisses the auto-hint — player doesn't need it anymore.
         this.hintedPath = null;
+        // Onboarding pointer steps once per correct tap. After ~3 taps the
+        // player has clearly internalized the mechanic, so we let them
+        // play unguided. localStorage flag persists so it never re-shows.
+        if (this.onboardingActive && this.onboardingTapsLeft > 0) {
+            this.onboardingTapsLeft--;
+            if (this.onboardingTapsLeft <= 0) {
+                this.onboardingActive = false;
+                try { localStorage.setItem('okchu_onboarding_done', '1'); } catch {}
+            }
+        }
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
         // Haptic feedback — scales with combo for reward feel. Uses native
         // Capacitor Haptics on iOS (Taptic Engine) since navigator.vibrate
@@ -1184,6 +1230,14 @@ export class Game {
             this.renderer.tick(time);
             if (!this.isAnimating && this.grid) {
                 this.renderer.drawGrid(this.grid);
+                // Onboarding pointer: pulse on the next removable arrow until
+                // the new player has tapped a few times. Drawn after drawGrid
+                // so it sits on top. Picks the first removable path each
+                // frame so it auto-advances as arrows get cleared.
+                if (this.onboardingActive && this.onboardingTapsLeft > 0) {
+                    const target = this.grid.paths.find(p => !p.isRemoved() && this.grid.isPathClear(p));
+                    if (target) this.renderer.drawOnboardingPointer(target);
+                }
             }
             this._renderLoopId = requestAnimationFrame(loop);
         };
