@@ -1,6 +1,6 @@
 // Bump APP_VERSION on every deploy — the cache name derives from it so clients
 // pick up new assets and old caches are cleaned up on activate.
-const APP_VERSION = '13';
+const APP_VERSION = '14';
 const CACHE_NAME = `okchu-v${APP_VERSION}`;
 
 const ASSETS = [
@@ -26,6 +26,7 @@ const ASSETS = [
     '/js/easing.js',
     '/js/menu-bg.js',
     '/js/sound.js',
+    '/js/haptics.js',
     '/js/level-validator.js',
     '/js/data/chapters.js',
     '/js/data/levels/egypt.js',

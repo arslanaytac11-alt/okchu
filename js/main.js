@@ -13,6 +13,7 @@ import { maybeShowIosInstall } from './pwa-install.js';
 import { shouldShowRatePrompt, showRatePrompt } from './rate-us.js';
 import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded } from './ads.js';
 import { initIAP, buyPremium, restorePurchases, onPremiumOwned, isPremiumOwned } from './iap.js';
+import { notifySuccess, tapLight } from './haptics.js';
 
 // Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
 // CRITICAL: location.hostname is "localhost" inside the Capacitor iOS shell
@@ -552,8 +553,9 @@ function showAchievementToast(ach) {
     document.getElementById('ach-toast-name').textContent = ach.name;
     document.getElementById('ach-toast-desc').textContent = ach.desc;
     toast.classList.remove('hidden');
-    // Haptic on unlock — iOS falls back silently if unsupported.
-    if (navigator.vibrate) navigator.vibrate([30, 60, 30]);
+    // Achievement unlock — success haptic via Capacitor on iOS so the
+    // Taptic Engine actually fires (navigator.vibrate is a no-op on iOS).
+    notifySuccess();
     requestAnimationFrame(() => toast.classList.add('show'));
     setTimeout(() => {
         toast.classList.remove('show');

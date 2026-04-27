@@ -7,6 +7,7 @@ import { HintManager } from './hints.js';
 import { storage } from './storage.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
+import { tapLight, tapMedium, tapHeavy, notifyError } from './haptics.js';
 
 const TIME_CONFIG = {
     // [baseSec, perPathSec] indexed by chapter
@@ -381,8 +382,28 @@ export class Game {
             return null;
         };
 
+        // Single-slot tap queue: when an animation is in flight, hold the
+        // most recent tap and process it the instant the animation ends.
+        // This is what makes "fire 5 arrows fast" feel snappy instead of
+        // dropping inputs while the previous arrow snake-slides off-screen.
+        // Stale taps (>400 ms old by the time we get to them) are discarded
+        // so a forgotten queued tap doesn't surprise-fire much later.
+        let queuedTap = null;
+        this._processQueuedTap = () => {
+            if (!queuedTap) return;
+            const t = queuedTap;
+            queuedTap = null;
+            if (performance.now() - t.at < 400) {
+                resolveTap(t.x, t.y);
+            }
+        };
+
         const resolveTap = (clientX, clientY) => {
-            if (this.isAnimating || !this.grid) return;
+            if (!this.grid) return;
+            if (this.isAnimating) {
+                queuedTap = { x: clientX, y: clientY, at: performance.now() };
+                return;
+            }
             const { fx, fy } = this.renderer.getFractionalCellFromPoint(clientX, clientY);
             const path = findPathAt(fx, fy);
             if (!path) return;
@@ -556,8 +577,10 @@ export class Game {
         // Successful play dismisses the auto-hint — player doesn't need it anymore.
         this.hintedPath = null;
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-        // Light haptic on iOS PWA / Android — scales with combo for reward feel.
-        if (navigator.vibrate) navigator.vibrate(this.combo >= 5 ? 25 : 12);
+        // Haptic feedback — scales with combo for reward feel. Uses native
+        // Capacitor Haptics on iOS (Taptic Engine) since navigator.vibrate
+        // is silently no-op'd on iOS Safari/WKWebView.
+        if (this.combo >= 5) tapMedium(); else tapLight();
         const points = this._calculatePoints(path);
         this.score += points;
         this._updateScoreDisplay();
@@ -658,6 +681,9 @@ export class Game {
                 this._updateUndoButton();
                 this._updatePowerupButtons();
                 this.renderer.drawGrid(this.grid);
+                // Process any tap that landed mid-animation so the player's
+                // chained inputs don't get dropped — keeps the game snappy.
+                if (this._processQueuedTap) this._processQueuedTap();
                 if (this.grid.isCleared()) {
                     this.handleLevelComplete();
                 } else if (this._isMovesExhausted()) {
@@ -675,7 +701,7 @@ export class Game {
         }
 
         const remaining = this.livesManager.loseLife();
-        if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
+        notifyError(); // hard thump for wrong-move + life lost
         if (this.onLivesChanged) this.onLivesChanged(remaining);
 
         // Scoring: wrong move breaks combo + time penalty
@@ -783,6 +809,7 @@ export class Game {
                 this.grid.updateRemovableStates();
                 this.renderer.drawGrid(this.grid);
                 this.isAnimating = false;
+                if (this._processQueuedTap) this._processQueuedTap();
 
                 if (remaining <= 0) {
                     if (this.onNoLives) this.onNoLives();
@@ -797,8 +824,10 @@ export class Game {
 
     handleLevelComplete() {
         this._stopTimer();
-        // Celebratory haptic — 3-pulse fanfare for iOS PWA / Android.
-        if (navigator.vibrate) navigator.vibrate([40, 40, 40, 40, 80]);
+        // Celebratory triple-thump — feels like a "victory" cue on iOS Taptic Engine.
+        tapHeavy();
+        setTimeout(() => tapHeavy(), 80);
+        setTimeout(() => tapMedium(), 180);
         const elapsedTime = Math.round((this.timeLimit - this.timeRemaining) * 1000);
         storage.completeLevel(this.currentLevel.id, this.currentChapter.id);
 

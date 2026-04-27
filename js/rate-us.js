@@ -3,6 +3,7 @@
 // 1-3 stars → feedback email, keeping low ratings away from the store.
 
 import { t } from './i18n.js';
+import { tapLight, tapMedium } from './haptics.js';
 
 // `?action=write-review` sends the user straight to the rating composer in the
 // App Store app on iOS, instead of just opening the listing page — higher
@@ -59,8 +60,8 @@ export function showRatePrompt() {
     }
     paintStars(starsEl, 0);
 
-    // Haptic on iOS if available
-    if (navigator.vibrate) navigator.vibrate(10);
+    // Light taptic when the rate prompt appears.
+    tapLight();
 
     overlay.classList.remove('hidden');
 
@@ -86,7 +87,7 @@ function paintStars(container, count) {
 }
 
 function handleRating(rating, overlay) {
-    if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+    tapMedium();
 
     setState({
         prompts: (getState().prompts || 0) + 1,
