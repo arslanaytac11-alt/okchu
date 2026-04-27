@@ -31,6 +31,13 @@ function dismissedRecently() {
 }
 
 export function shouldShowIosInstall(completedLevelsCount) {
+    // CRITICAL: Capacitor's WKWebView shell ALSO matches isIosSafari() because
+    // its UA contains both "iPhone" and "Safari", and navigator.standalone is
+    // undefined inside the shell so the standalone check falls through. Without
+    // this guard the App Store user would see an "Add to Home Screen" prompt
+    // inside the already-installed native app — confusing UX + Apple review
+    // reject risk. Native iOS app: never show this banner.
+    if (window.Capacitor?.isNativePlatform?.()) return false;
     if (!isIosSafari()) return false;
     if (isStandalone()) return false;
     if (dismissedRecently()) return false;

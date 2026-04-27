@@ -3,6 +3,7 @@
 // Web/PWA: no-op so browser dev keeps working; the paywall shows a friendly alert.
 
 import { storage } from './storage.js';
+import { t } from './i18n.js';
 
 const PRODUCT_ID = 'com.arslanaytac.okchu.premium';
 
@@ -73,21 +74,28 @@ export async function initIAP() {
     }
 }
 
+// Translated alert with fallback so users in any of the 5 supported locales
+// see their own language instead of hardcoded English.
+function localizedAlert(key, fallback) {
+    const text = t(key);
+    alert(text === key ? fallback : text);
+}
+
 export async function buyPremium() {
     const store = getStore();
     if (!store) {
-        alert('Purchases are only available on the App Store build.');
+        localizedAlert('iap.web_only_buy', 'Purchases are only available on the App Store build.');
         return;
     }
     try {
         const product = store.get(PRODUCT_ID, window.CdvPurchase.Platform.APPLE_APPSTORE);
         if (!product) {
-            alert('Product unavailable. Please try again later.');
+            localizedAlert('iap.product_unavailable', 'Product unavailable. Please try again later.');
             return;
         }
         const offer = product.getOffer();
         if (!offer) {
-            alert('Offer unavailable. Please try again later.');
+            localizedAlert('iap.offer_unavailable', 'Offer unavailable. Please try again later.');
             return;
         }
         await store.order(offer);
@@ -99,7 +107,7 @@ export async function buyPremium() {
 export async function restorePurchases() {
     const store = getStore();
     if (!store) {
-        alert('Restore is only available on the App Store build.');
+        localizedAlert('iap.web_only_restore', 'Restore is only available on the App Store build.');
         return;
     }
     try {

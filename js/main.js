@@ -260,10 +260,14 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
         }
     }
 
+    // Translation lookup with TR fallback so any missing key still shows the
+    // existing Turkish text (no blank UI). All 5 lang files have these keys.
+    const tx = (key, fallback) => { const v = t(key); return v === key ? fallback : v; };
+
     // Show score
     const scoreEl = document.getElementById('complete-score');
     if (scoreEl && stats) {
-        scoreEl.textContent = `Skor: ${stats.score}`;
+        scoreEl.textContent = `${tx('overlay.complete_score', 'Skor')}: ${stats.score}`;
     }
 
     // Show stats with remaining time
@@ -273,21 +277,23 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
         const mins = Math.floor(timeSecs / 60);
         const secs = timeSecs % 60;
         const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-        const parts = [`Süre: ${timeStr}`];
-        if (stats.timeRemaining > 0) parts.push(`Kalan: ${stats.timeRemaining}s`);
-        parts.push(`Hamle: ${stats.moves}`);
-        if (stats.maxCombo > 1) parts.push(`Max Combo: x${stats.maxCombo}`);
-        if (stats.wrongMoves > 0) parts.push(`Yanlis: ${stats.wrongMoves}`);
+        const parts = [`${tx('overlay.complete_time', 'Süre')}: ${timeStr}`];
+        if (stats.timeRemaining > 0) parts.push(`${tx('overlay.complete_remaining', 'Kalan')}: ${stats.timeRemaining}s`);
+        parts.push(`${tx('overlay.complete_moves', 'Hamle')}: ${stats.moves}`);
+        if (stats.maxCombo > 1) parts.push(`${tx('overlay.complete_combo', 'Max Combo')}: x${stats.maxCombo}`);
+        if (stats.wrongMoves > 0) parts.push(`${tx('overlay.complete_wrong', 'Yanlış')}: ${stats.wrongMoves}`);
         if (stats.rewardedPowerup) {
             const emoji = { hint: '💡', freeze: '❄', extraUndo: '↶' }[stats.rewardedPowerup] || '🎁';
-            const label = { hint: 'İpucu', freeze: 'Dondurma', extraUndo: 'Ekstra Geri Al' }[stats.rewardedPowerup];
-            parts.push(`Ödül: ${emoji} +1 ${label}`);
+            const labelKey = { hint: 'powerup.hint', freeze: 'powerup.freeze', extraUndo: 'powerup.extra_undo' }[stats.rewardedPowerup];
+            const fallbackLabel = { hint: 'İpucu', freeze: 'Dondurma', extraUndo: 'Ekstra Geri Al' }[stats.rewardedPowerup];
+            const label = labelKey ? tx(labelKey, fallbackLabel) : fallbackLabel;
+            parts.push(`${tx('complete.reward', 'Ödül')}: ${emoji} +1 ${label}`);
         }
         if (stats.dailyBonus > 0) {
-            parts.push(`🔥 Günlük Bonus: +${stats.dailyBonus}`);
+            parts.push(`🔥 ${tx('daily.bonus', 'Günlük Bonus')}: +${stats.dailyBonus}`);
         }
         if (stats.newArtifact) {
-            parts.push(`🏺 Yeni Eser!`);
+            parts.push(`🏺 ${tx('complete.new_artifact', 'Yeni Eser!')}`);
         }
         statsEl.textContent = parts.join(' | ');
     }
@@ -422,12 +428,13 @@ function showNoLivesOverlay() {
 
     if (noLivesTimerInterval) clearInterval(noLivesTimerInterval);
 
+    const txLocal = (key, fb) => { const v = t(key); return v === key ? fb : v; };
     const updateTimer = () => {
         const ms = storage.getTimeUntilNextLife();
         if (ms <= 0) {
-            timerText.textContent = 'Yeni can hazir!';
+            timerText.textContent = txLocal('overlay.new_life_ready', 'Yeni can hazır!');
         } else {
-            timerText.textContent = 'Yeni can: ' + game.livesManager.formatTime(ms);
+            timerText.textContent = txLocal('overlay.new_life_in', 'Yeni can') + ': ' + game.livesManager.formatTime(ms);
         }
     };
     updateTimer();
@@ -714,7 +721,8 @@ document.getElementById('btn-modes-info-close')?.addEventListener('click', () =>
 });
 
 document.getElementById('setting-reset').addEventListener('click', () => {
-    if (confirm('Tum ilerlemen silinecek. Emin misin?')) {
+    const confirmText = (() => { const v = t('confirm.reset_progress'); return v === 'confirm.reset_progress' ? 'Tüm ilerlemen silinecek. Emin misin?' : v; })();
+    if (confirm(confirmText)) {
         storage.resetAll();
         localStorage.removeItem('ok_bulmacasi_tutorial_done');
         localStorage.removeItem('okchu_achievements');

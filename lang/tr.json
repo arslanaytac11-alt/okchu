@@ -69,7 +69,26 @@
   "daily": {
     "badge_time": "Süre Meydan Okuması",
     "badge_moves": "Hamle Meydan Okuması",
-    "already_done": "Bugünün meydan okumasını zaten tamamladın! Yarın tekrar gel."
+    "already_done": "Bugünün meydan okumasını zaten tamamladın! Yarın tekrar gel.",
+    "bonus": "Günlük Bonus"
+  },
+  "complete": {
+    "reward": "Ödül",
+    "new_artifact": "Yeni Eser!"
+  },
+  "powerup": {
+    "hint": "İpucu",
+    "freeze": "Dondurma",
+    "extra_undo": "Ekstra Geri Al"
+  },
+  "iap": {
+    "web_only_buy": "Satın alma sadece App Store sürümünde mevcut.",
+    "web_only_restore": "Geri yükleme sadece App Store sürümünde mevcut.",
+    "product_unavailable": "Ürün şu an mevcut değil. Lütfen daha sonra tekrar dene.",
+    "offer_unavailable": "Teklif şu an mevcut değil. Lütfen daha sonra tekrar dene."
+  },
+  "confirm": {
+    "reset_progress": "Tüm ilerlemen silinecek. Emin misin?"
   },
   "story": {
     "play_button": "Seviyelere Git"

@@ -69,7 +69,26 @@
   "daily": {
     "badge_time": "Time Challenge",
     "badge_moves": "Moves Challenge",
-    "already_done": "You've already completed today's challenge! Come back tomorrow."
+    "already_done": "You've already completed today's challenge! Come back tomorrow.",
+    "bonus": "Daily Bonus"
+  },
+  "complete": {
+    "reward": "Reward",
+    "new_artifact": "New Artifact!"
+  },
+  "powerup": {
+    "hint": "Hint",
+    "freeze": "Freeze",
+    "extra_undo": "Extra Undo"
+  },
+  "iap": {
+    "web_only_buy": "Purchases are only available on the App Store build.",
+    "web_only_restore": "Restore is only available on the App Store build.",
+    "product_unavailable": "Product unavailable. Please try again later.",
+    "offer_unavailable": "Offer unavailable. Please try again later."
+  },
+  "confirm": {
+    "reset_progress": "All your progress will be erased. Are you sure?"
   },
   "story": {
     "play_button": "Go to Levels"

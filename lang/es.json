@@ -69,7 +69,26 @@
   "daily": {
     "badge_time": "Desafio de Tiempo",
     "badge_moves": "Desafio de Movimientos",
-    "already_done": "Ya completaste el desafio de hoy! Vuelve manana."
+    "already_done": "Ya completaste el desafio de hoy! Vuelve manana.",
+    "bonus": "Bono Diario"
+  },
+  "complete": {
+    "reward": "Premio",
+    "new_artifact": "¡Nueva Reliquia!"
+  },
+  "powerup": {
+    "hint": "Pista",
+    "freeze": "Congelar",
+    "extra_undo": "Deshacer Extra"
+  },
+  "iap": {
+    "web_only_buy": "Las compras solo están disponibles en la versión de App Store.",
+    "web_only_restore": "La restauración solo está disponible en la versión de App Store.",
+    "product_unavailable": "Producto no disponible. Inténtalo de nuevo más tarde.",
+    "offer_unavailable": "Oferta no disponible. Inténtalo de nuevo más tarde."
+  },
+  "confirm": {
+    "reset_progress": "Se borrará todo tu progreso. ¿Estás seguro?"
   },
   "story": {
     "play_button": "Ir a Niveles"

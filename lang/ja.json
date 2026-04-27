@@ -69,7 +69,26 @@
   "daily": {
     "badge_time": "時間チャレンジ",
     "badge_moves": "手数チャレンジ",
-    "already_done": "今日のチャレンジは完了しました！明日また来てください。"
+    "already_done": "今日のチャレンジは完了しました！明日また来てください。",
+    "bonus": "デイリーボーナス"
+  },
+  "complete": {
+    "reward": "報酬",
+    "new_artifact": "新しい遺物！"
+  },
+  "powerup": {
+    "hint": "ヒント",
+    "freeze": "フリーズ",
+    "extra_undo": "追加アンドゥ"
+  },
+  "iap": {
+    "web_only_buy": "購入はApp Store版でのみご利用いただけます。",
+    "web_only_restore": "復元はApp Store版でのみご利用いただけます。",
+    "product_unavailable": "商品は現在ご利用いただけません。後でもう一度お試しください。",
+    "offer_unavailable": "オファーは現在ご利用いただけません。後でもう一度お試しください。"
+  },
+  "confirm": {
+    "reset_progress": "すべての進行状況が消去されます。よろしいですか？"
   },
   "story": {
     "play_button": "レベルへ"

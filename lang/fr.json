@@ -69,7 +69,26 @@
   "daily": {
     "badge_time": "Defi Temps",
     "badge_moves": "Defi Coups",
-    "already_done": "Vous avez deja termine le defi d'aujourd'hui! Revenez demain."
+    "already_done": "Vous avez deja termine le defi d'aujourd'hui! Revenez demain.",
+    "bonus": "Bonus Quotidien"
+  },
+  "complete": {
+    "reward": "Récompense",
+    "new_artifact": "Nouvelle Relique !"
+  },
+  "powerup": {
+    "hint": "Indice",
+    "freeze": "Geler",
+    "extra_undo": "Annulation Extra"
+  },
+  "iap": {
+    "web_only_buy": "Les achats sont uniquement disponibles sur la version App Store.",
+    "web_only_restore": "La restauration est uniquement disponible sur la version App Store.",
+    "product_unavailable": "Produit indisponible. Veuillez réessayer plus tard.",
+    "offer_unavailable": "Offre indisponible. Veuillez réessayer plus tard."
+  },
+  "confirm": {
+    "reset_progress": "Toute votre progression sera effacée. Êtes-vous sûr ?"
   },
   "story": {
     "play_button": "Aller aux Niveaux"
