@@ -324,35 +324,40 @@ export class Game {
         const TAP_MAX_MS = 350;
         const DOUBLE_TAP_MS = 300;
         const DOUBLE_TAP_RADIUS = 40;
-        // Finger-tip bias correction (iOS UX standard, same magnitude Apple's
-        // software keyboard uses internally). When the user taps a small
-        // target, they aim with the VISUAL tip of the finger, but the OS
-        // reports the centroid of the skin-contact patch — which sits ~5–6
-        // CSS px BELOW the nail. Without this correction, taps systematically
-        // land on the cell below the intended one. Shifting the Y up by 6
-        // CSS px matches the visual aim point and eliminates "I tapped here
-        // but it registered lower" complaints. Touch-only; mouse clicks are
-        // precise and skip this correction.
-        const TOUCH_Y_CORRECTION = 6;
+        // Finger-tip bias correction. Reduced to 3 px (was 6) because at small
+        // cell sizes (24 CSS px on iPhone with 16-wide grids) a 6-px shift =
+        // 0.25 cells = enough to push the tap into the neighbouring cell and
+        // make the WRONG arrow win. 3 px = ~0.12 cells: still helps resolve
+        // genuine finger-tip-vs-pad bias, but never large enough to cross a
+        // cell boundary on its own. Touch-only; mouse clicks skip this.
+        const TOUCH_Y_CORRECTION = 3;
 
-        // Tap resolution using fractional grid coords. We scan the 3x3 block
-        // around the tap and for each candidate path compute the TRUE Euclidean
-        // distance (in cell units) from the tap to the path's nearest cell
-        // centre. The closest wins. This fixes "tap lands on arrow A but the
-        // Math.floor quantization buckets it into neighbour B's cell" — the
-        // finger's actual position decides, not the cell index it rounded to.
-        //
-        // A blocked (non-clear) arrow gets a heavy score penalty so fat-finger
-        // tolerance never upgrades a near-miss into a wrong-move on a blocked
-        // neighbour when there is a clear arrow at comparable distance.
+        // Tap → path resolution. Two-tier strategy:
+        //   1. EXACT CELL HIT — if the (fractional) tap lands inside a cell
+        //      that already contains a path, return THAT path immediately.
+        //      No fuzzy-neighbour search ever runs in this case. This is the
+        //      single most important rule: it guarantees that taps clearly
+        //      inside an arrow can never be "stolen" by an adjacent arrow
+        //      via distance scoring. ("yan taraftaki ok" complaint fix.)
+        //   2. EMPTY CELL FALLBACK — only when the tapped cell is empty do we
+        //      scan the 3x3 neighbourhood and pick the nearest path by true
+        //      Euclidean distance to its closest cell centre. Blocked paths
+        //      get a heavy score penalty so fat-finger tolerance never
+        //      upgrades an empty-cell near-miss into a wrong-move on a
+        //      blocked neighbour when a clear one is at comparable distance.
         const findPathAt = (fx, fy) => {
             const cx = Math.floor(fx);
             const cy = Math.floor(fy);
+            // Tier 1: exact-cell hit always wins. No override possible.
+            const direct = this.grid.getPathAt(cx, cy);
+            if (direct) return direct;
+            // Tier 2: empty cell — fuzzy-search 3x3 neighbours.
             const seen = new Set();
             let best = null;
             let bestScore = Infinity;
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue; // tier 1 already handled
                     const p = this.grid.getPathAt(cx + dx, cy + dy);
                     if (!p || seen.has(p)) continue;
                     seen.add(p);
@@ -368,11 +373,11 @@ export class Game {
                     if (score < bestScore) { bestScore = score; best = p; }
                 }
             }
-            // Accept taps up to ~2 cells from the nearest arrow (score is in
-            // grid-cell units — larger threshold = more forgiving fat-finger
-            // tolerance at small cell sizes). Random empty-board taps still
-            // resolve to null because no path is within range.
-            if (best && bestScore <= 2.0) return best;
+            // Tighter empty-cell threshold (1.5 vs old 2.0): with tier-1 in
+            // place we no longer need wide fuzzy reach to compensate for
+            // boundary jitter, so tighten to reduce stray pulls from far
+            // arrows on near-empty regions of the grid.
+            if (best && bestScore <= 1.5) return best;
             return null;
         };
 
@@ -503,7 +508,16 @@ export class Game {
                 return;
             }
 
-            resolveTap(pendingTapStart.x, pendingTapStart.y - TOUCH_Y_CORRECTION);
+            // Use the AVERAGE of touchstart + touchend positions (the same
+            // technique iOS itself uses for software-keyboard hit testing).
+            // Fingers drift slightly mid-tap; the start position is biased
+            // toward "where they first contacted" and the end position toward
+            // "where they intended to lift" — averaging cancels noise from
+            // both. Falls back to start position if changedTouches is empty.
+            const lift = e.changedTouches && e.changedTouches[0];
+            const tapX = lift ? (pendingTapStart.x + lift.clientX) / 2 : pendingTapStart.x;
+            const tapY = lift ? (pendingTapStart.y + lift.clientY) / 2 : pendingTapStart.y;
+            resolveTap(tapX, tapY - TOUCH_Y_CORRECTION);
             pendingTapStart = null;
         }, { passive: false });
 

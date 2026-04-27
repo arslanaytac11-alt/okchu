@@ -1,11 +1,13 @@
 // js/rate-us.js
-// Rate-us funnel: 5-star modal. 4-5 stars → App Store URL (placeholder).
+// Rate-us funnel: 5-star modal. 4-5 stars → App Store review composer.
 // 1-3 stars → feedback email, keeping low ratings away from the store.
 
 import { t } from './i18n.js';
 
-// TODO: replace with real App Store URL once published.
-const APP_STORE_URL = 'https://apps.apple.com/app/idPLACEHOLDER';
+// `?action=write-review` sends the user straight to the rating composer in the
+// App Store app on iOS, instead of just opening the listing page — higher
+// conversion. The numeric ID is the published Okchu app on App Store Connect.
+const APP_STORE_URL = 'https://apps.apple.com/app/id6762461650?action=write-review';
 const FEEDBACK_EMAIL = 'arslan.aytac11@gmail.com';
 
 const STATE_KEY = 'okchu_rate_state';
