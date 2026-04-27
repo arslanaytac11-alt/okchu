@@ -29,7 +29,30 @@
     "score": "Score",
     "moves": "Coups",
     "time": "Temps",
-    "lives": "Vies"
+    "lives": "Vies",
+    "undo": "Annuler",
+    "canvas_label": "Zone du puzzle de flèches. Touchez les flèches pour les retirer dans le bon ordre.",
+    "zoom_hint": "Pincez avec deux doigts pour zoomer",
+    "banner_label": "Espace Publicitaire"
+  },
+  "common": {
+    "close": "Fermer"
+  },
+  "settings": {
+    "dark_mode": "Mode Sombre",
+    "reset_label": "Réinitialiser la Progression",
+    "reset_button": "Réinitialiser",
+    "privacy": "Politique de Confidentialité",
+    "terms": "Conditions d'Utilisation"
+  },
+  "collection": {
+    "hint": "Collectez 13+ étoiles dans un chapitre pour débloquer la relique"
+  },
+  "leaderboard": {
+    "hint": "Vos scores de défi quotidien des 7 derniers jours"
+  },
+  "time_up": {
+    "continue_ad": "Regarder Pub + Continuer"
   },
   "difficulty": {
     "easy": "Facile",
@@ -78,7 +101,9 @@
   },
   "powerup": {
     "hint": "Indice",
+    "hint_use": "Utiliser un Indice",
     "freeze": "Geler",
+    "freeze_use": "Geler le Temps (+15s)",
     "extra_undo": "Annulation Extra"
   },
   "iap": {

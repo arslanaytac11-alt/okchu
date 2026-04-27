@@ -29,7 +29,30 @@
     "score": "Score",
     "moves": "Moves",
     "time": "Time",
-    "lives": "Lives"
+    "lives": "Lives",
+    "undo": "Undo",
+    "canvas_label": "Arrow puzzle game area. Tap arrows to remove them in the correct order.",
+    "zoom_hint": "Pinch with two fingers to zoom",
+    "banner_label": "Ad Space"
+  },
+  "common": {
+    "close": "Close"
+  },
+  "settings": {
+    "dark_mode": "Dark Mode",
+    "reset_label": "Reset Progress",
+    "reset_button": "Reset",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use"
+  },
+  "collection": {
+    "hint": "Collect 13+ stars in a chapter to unlock the artifact"
+  },
+  "leaderboard": {
+    "hint": "Your daily challenge scores from the last 7 days"
+  },
+  "time_up": {
+    "continue_ad": "Watch Ad + Continue"
   },
   "difficulty": {
     "easy": "Easy",
@@ -78,7 +101,9 @@
   },
   "powerup": {
     "hint": "Hint",
+    "hint_use": "Use Hint",
     "freeze": "Freeze",
+    "freeze_use": "Freeze Time (+15s)",
     "extra_undo": "Extra Undo"
   },
   "iap": {

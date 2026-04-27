@@ -29,7 +29,30 @@
     "score": "スコア",
     "moves": "手数",
     "time": "時間",
-    "lives": "ライフ"
+    "lives": "ライフ",
+    "undo": "元に戻す",
+    "canvas_label": "矢印パズルのゲームエリア。正しい順番で矢印をタップして取り除きます。",
+    "zoom_hint": "2本指で広げてズーム",
+    "banner_label": "広告枠"
+  },
+  "common": {
+    "close": "閉じる"
+  },
+  "settings": {
+    "dark_mode": "ダークモード",
+    "reset_label": "進行状況をリセット",
+    "reset_button": "リセット",
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約"
+  },
+  "collection": {
+    "hint": "章で13個以上の星を集めると遺物が解放されます"
+  },
+  "leaderboard": {
+    "hint": "過去7日間のデイリーチャレンジスコア"
+  },
+  "time_up": {
+    "continue_ad": "広告を見て続行"
   },
   "difficulty": {
     "easy": "かんたん",
@@ -78,7 +101,9 @@
   },
   "powerup": {
     "hint": "ヒント",
+    "hint_use": "ヒントを使う",
     "freeze": "フリーズ",
+    "freeze_use": "時間停止 (+15秒)",
     "extra_undo": "追加アンドゥ"
   },
   "iap": {

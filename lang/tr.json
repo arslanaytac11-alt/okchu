@@ -29,7 +29,30 @@
     "score": "Skor",
     "moves": "Hamle",
     "time": "Süre",
-    "lives": "Can"
+    "lives": "Can",
+    "undo": "Geri Al",
+    "canvas_label": "Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun.",
+    "zoom_hint": "Yakınlaştırmak için iki parmakla aç",
+    "banner_label": "Reklam Alanı"
+  },
+  "common": {
+    "close": "Kapat"
+  },
+  "settings": {
+    "dark_mode": "Gece Modu",
+    "reset_label": "İlerlemeyi Sıfırla",
+    "reset_button": "Sıfırla",
+    "privacy": "Gizlilik Politikası",
+    "terms": "Kullanım Şartları"
+  },
+  "collection": {
+    "hint": "Bölümde 13+ yıldız toplayınca eser açılır"
+  },
+  "leaderboard": {
+    "hint": "Son 7 günün günlük meydan okuma skorları"
+  },
+  "time_up": {
+    "continue_ad": "Reklam İzle + Devam Et"
   },
   "difficulty": {
     "easy": "Kolay",
@@ -78,7 +101,9 @@
   },
   "powerup": {
     "hint": "İpucu",
+    "hint_use": "İpucu Kullan",
     "freeze": "Dondurma",
+    "freeze_use": "Zamanı Dondur (+15sn)",
     "extra_undo": "Ekstra Geri Al"
   },
   "iap": {

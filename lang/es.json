@@ -29,7 +29,30 @@
     "score": "Puntos",
     "moves": "Movim.",
     "time": "Tiempo",
-    "lives": "Vidas"
+    "lives": "Vidas",
+    "undo": "Deshacer",
+    "canvas_label": "Área del puzle de flechas. Toca las flechas para quitarlas en el orden correcto.",
+    "zoom_hint": "Pellizca con dos dedos para acercar",
+    "banner_label": "Espacio de Anuncio"
+  },
+  "common": {
+    "close": "Cerrar"
+  },
+  "settings": {
+    "dark_mode": "Modo Oscuro",
+    "reset_label": "Restablecer Progreso",
+    "reset_button": "Restablecer",
+    "privacy": "Política de Privacidad",
+    "terms": "Términos de Uso"
+  },
+  "collection": {
+    "hint": "Reúne 13+ estrellas en un capítulo para desbloquear la reliquia"
+  },
+  "leaderboard": {
+    "hint": "Tus puntuaciones del desafío diario de los últimos 7 días"
+  },
+  "time_up": {
+    "continue_ad": "Ver Anuncio + Continuar"
   },
   "difficulty": {
     "easy": "Facil",
@@ -78,7 +101,9 @@
   },
   "powerup": {
     "hint": "Pista",
+    "hint_use": "Usar Pista",
     "freeze": "Congelar",
+    "freeze_use": "Congelar Tiempo (+15s)",
     "extra_undo": "Deshacer Extra"
   },
   "iap": {

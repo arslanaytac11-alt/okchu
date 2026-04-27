@@ -31,6 +31,19 @@ const isWebDev = !isNativeApp && (
 );
 initAds({ testMode: isWebDev });
 
+// Silence non-critical console output in production. Keeps the iOS device-log
+// clean during App Review (Apple looks at it) and prevents accidental data
+// leakage if any future log statement includes user state. console.error is
+// preserved so genuine crashes still surface to anyone debugging via Safari
+// remote inspector.
+if (isNativeApp || (!isWebDev && location.protocol === 'https:')) {
+    const noop = () => {};
+    console.log = noop;
+    console.warn = noop;
+    console.info = noop;
+    console.debug = noop;
+}
+
 // IAP init — loads the Premium product from App Store and updates price label.
 // Also wires the entitlement callback: on successful purchase/restore we hide
 // the active banner immediately so the user sees the ad removal instantly.
@@ -57,12 +70,33 @@ document.getElementById('btn-dark-mode').addEventListener('click', () => {
     }
 });
 
-// Language system
+// Language system. Applies translations to:
+//  - data-i18n="key"        -> element.textContent
+//  - data-i18n-aria="key"   -> aria-label attribute (VoiceOver, screen readers)
+//  - data-i18n-title="key"  -> title attribute (long-press tooltips)
+//  - data-i18n-placeholder  -> placeholder attribute (input fields)
+// Without the *-aria / *-title hooks, decorative TR text leaks into VoiceOver
+// for non-TR users on iOS.
 function applyTranslations() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         const val = t(key);
         if (val && val !== key) el.textContent = val;
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+        const key = el.getAttribute('data-i18n-aria');
+        const val = t(key);
+        if (val && val !== key) el.setAttribute('aria-label', val);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        const val = t(key);
+        if (val && val !== key) el.setAttribute('title', val);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        const val = t(key);
+        if (val && val !== key) el.setAttribute('placeholder', val);
     });
     // Update language button text
     const langBtn = document.getElementById('btn-language');
@@ -191,6 +225,38 @@ let noLivesTimerInterval = null;
 
 // Render initial lives
 game.livesManager.renderLives(livesDisplay);
+
+// When the app comes back from background (iOS suspends WKWebView, freezes
+// setInterval timers and RAF), the lives counter on screen and the no-lives
+// overlay countdown can show a stale value compared to storage (which uses
+// real Date.now() math, not interval ticks). Re-render on visibility change
+// so users see the correct life count + remaining time the instant they
+// return from the home screen / multitasker.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    try {
+        game.livesManager.renderLives(livesDisplay);
+        // If the no-lives overlay is open, force its timer text to refresh.
+        const noLivesOverlay = document.getElementById('overlay-no-lives');
+        if (noLivesOverlay && !noLivesOverlay.classList.contains('hidden')) {
+            const ms = storage.getTimeUntilNextLife();
+            const timerText = document.getElementById('lives-timer-text');
+            if (timerText) {
+                if (ms <= 0) {
+                    timerText.textContent = (() => { const v = t('overlay.new_life_ready'); return v === 'overlay.new_life_ready' ? 'Yeni can hazır!' : v; })();
+                } else {
+                    const label = (() => { const v = t('overlay.new_life_in'); return v === 'overlay.new_life_in' ? 'Yeni can' : v; })();
+                    timerText.textContent = label + ': ' + game.livesManager.formatTime(ms);
+                }
+            }
+            // If lives auto-regenerated to >=1 while in background, close the
+            // overlay so the user can play immediately.
+            if (game.livesManager.getCurrentLives() > 0) {
+                noLivesOverlay.classList.add('hidden');
+            }
+        }
+    } catch {}
+});
 
 // When a level is selected from the menu
 screenManager.onStartLevel = (levelData, chapterData) => {
