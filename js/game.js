@@ -687,42 +687,61 @@ export class Game {
             this._showFloatingText('MUHTESEM!', burstCx, burstCy - 40, '#ffd700', 28);
         }
 
-        // Snake slither animation: the arrow slides out in its direction
-        // Head leads, body follows like a snake crawling away
+        // Snake slither animation — head darts out first, body cells chase
+        // it one-by-one along the same line (like Snake-game where the body
+        // follows the head's old positions). Tuned for satisfying "thwip"
+        // feel: faster than the previous implementation, tighter wave delay
+        // so the body chases the head closely instead of trailing far
+        // behind, and a cubic-ease-in-out velocity curve so the slither
+        // feels organic instead of linear.
         const cells = path.cells;
         const totalCells = cells.length;
         const { dx, dy } = getDirectionVector(path.direction);
         const origCells = cells.map(c => ({ x: c.x, y: c.y }));
         const startTime = performance.now();
 
-        // Speed: the arrow travels its own length + extra to fully exit
-        const travelDistance = totalCells + 3; // cells to travel before gone
-        const speed = 0.008; // cells per ms (tuned for smooth slither)
+        // Travel ~ path length + 4 cells of run-off so the head fully exits
+        // the grid even on edge plays.
+        const travelDistance = totalCells + 4;
+        // Faster than before (0.008 → 0.014 cells/ms). At cellSize=24 CSS px
+        // this is ~336 px/sec head speed — visually snappy without becoming
+        // unreadable.
+        const speed = 0.014;
         const totalDuration = travelDistance / speed;
-        // Each cell starts moving with a wave delay (tail follows head)
-        const waveDelay = 60; // ms between each cell starting to move
+        // Body cells lag behind the head by a fixed time offset. 35 ms (was
+        // 60 ms) keeps the body close — like a real snake whose body chases
+        // the head along the exact same line.
+        const waveDelay = 35;
+        // Cubic ease-in-out: slow → fast → slow. Gives the snake a natural
+        // "wind up, dart, settle" rhythm instead of a flat linear glide.
+        const easeInOut = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
         const cellStates = cells.map(() => ({ visible: true, offsetX: 0, offsetY: 0, alpha: 1 }));
 
         const animate = (time) => {
             const elapsed = time - startTime;
 
-            // Head cell (last in array) leads, tail (first) follows
+            // Head (last cell in array) starts immediately; each preceding
+            // body cell starts waveDelay ms later. The whole path runs
+            // travelDistance cells then disappears.
             for (let i = 0; i < totalCells; i++) {
-                // Reverse: head (last cell) has 0 delay, tail has most delay
                 const delay = (totalCells - 1 - i) * waveDelay;
                 const cellElapsed = Math.max(0, elapsed - delay);
-                const travel = cellElapsed * speed; // how many cells this cell has moved
-
-                if (travel > travelDistance) {
+                if (cellElapsed <= 0) continue;
+                const progress = Math.min(1, (cellElapsed * speed) / travelDistance);
+                if (progress >= 1) {
                     cellStates[i].visible = false;
                 } else {
-                    // Smooth acceleration at start
-                    const accel = Math.min(1, cellElapsed / 150);
-                    const smoothTravel = travel * (0.3 + 0.7 * accel);
-                    cellStates[i].offsetX = dx * smoothTravel;
-                    cellStates[i].offsetY = dy * smoothTravel;
-                    cellStates[i].alpha = Math.max(0, 1 - travel / travelDistance);
+                    const eased = easeInOut(progress);
+                    const travel = eased * travelDistance;
+                    cellStates[i].offsetX = dx * travel;
+                    cellStates[i].offsetY = dy * travel;
+                    // Fade tail end harder than head — body cells go
+                    // transparent quicker so the head-to-tail gradient
+                    // reads as a slithering snake instead of a uniform
+                    // sliding block.
+                    const fade = i === totalCells - 1 ? progress : Math.min(1, progress * 1.3);
+                    cellStates[i].alpha = Math.max(0, 1 - fade);
                 }
             }
 
@@ -735,6 +754,25 @@ export class Game {
 
             path._snakeCellStates = cellStates;
             this.renderer.drawGrid(this.grid);
+
+            // Trail particles — one small spark per body-cell midpoint per
+            // frame, scaled with combo. Gives the slithering arrow a sense
+            // of motion-blur and adds visual oomph without spamming the
+            // particle system. Skipped at low frame budgets to stay smooth.
+            if (this.renderer.burstParticles && totalCells <= 5 && Math.random() < 0.4) {
+                const headCell = path.cells[totalCells - 1];
+                if (cellStates[totalCells - 1].visible) {
+                    const px = this.renderer.gridOffsetX + (headCell.x + 0.5) * this.renderer.cellSize;
+                    const py = this.renderer.gridOffsetY + (headCell.y + 0.5) * this.renderer.cellSize;
+                    this.renderer.burstParticles.burst(px, py, 2, {
+                        speed: 30, spread: Math.PI / 2,
+                        angle: Math.atan2(-dy, -dx), // trail behind motion
+                        life: 0.25, size: 1.6,
+                        colors: [this.renderer.theme.arrowIdle, '#ffffff'],
+                        gravity: 20, shape: 'circle',
+                    });
+                }
+            }
 
             const allGone = cellStates.every(s => !s.visible);
             if (!allGone && elapsed < totalDuration) {
