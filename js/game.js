@@ -331,13 +331,14 @@ export class Game {
         const TAP_MAX_MS = 350;
         const DOUBLE_TAP_MS = 300;
         const DOUBLE_TAP_RADIUS = 40;
-        // Finger-tip bias correction. Reduced to 3 px (was 6) because at small
-        // cell sizes (24 CSS px on iPhone with 16-wide grids) a 6-px shift =
-        // 0.25 cells = enough to push the tap into the neighbouring cell and
-        // make the WRONG arrow win. 3 px = ~0.12 cells: still helps resolve
-        // genuine finger-tip-vs-pad bias, but never large enough to cross a
-        // cell boundary on its own. Touch-only; mouse clicks skip this.
-        const TOUCH_Y_CORRECTION = 3;
+        // Finger-tip bias correction DISABLED. Tested 6 px and 3 px; both
+        // values turned out to push the corrected position into the cell ABOVE
+        // the user's actual finger when cell sizes were small (≤ 24 CSS px on
+        // iPhones with wide grids). Net effect was MORE wrong-arrow misfires,
+        // not fewer. Tier-1 EXACT-cell-hit is doing all the heavy lifting now;
+        // no synthetic shift needed. Kept as a constant set to 0 so the
+        // touch-end call site stays readable and we can re-enable easily.
+        const TOUCH_Y_CORRECTION = 0;
 
         // Tap → path resolution. Two-tier strategy:
         //   1. EXACT CELL HIT — if the (fractional) tap lands inside a cell
@@ -450,15 +451,15 @@ export class Game {
                 lastSinglePanX = t.clientX;
                 lastSinglePanY = t.clientY;
                 e.preventDefault();
-                // Predictive preview: the moment a finger touches, light up the
-                // arrow that WOULD be selected if the player lifted right now.
-                // Same UX trick the iOS keyboard uses — instant feedback that
-                // the touch is registered and about to act on a specific
-                // target. The user can drag to a different arrow before
-                // lifting; touchmove updates the preview live below. Safe to
-                // skip when an animation is in flight.
+                // Predictive preview: the moment a finger touches, light up
+                // the arrow that WILL be selected on lift. Apple-keyboard
+                // style instant feedback. The highlight is LOCKED at this
+                // touchstart cell — it does NOT update during touchmove
+                // because resolveTap pins to the touchstart position too,
+                // so the visible highlight always matches the path that
+                // fires. Skip when an animation is in flight.
                 if (!this.isAnimating && this.grid) {
-                    const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY - TOUCH_Y_CORRECTION);
+                    const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY);
                     const previewPath = findPathAt(fx, fy);
                     if (previewPath) {
                         this.renderer.touchFeedback = { path: previewPath, startTime: performance.now() };
@@ -503,21 +504,15 @@ export class Game {
                         lastSinglePanX = t.clientX;
                         lastSinglePanY = t.clientY;
                         // Tap promoted to pan — clear the touchstart preview
-                        // so the dragged-over arrows don't keep flashing.
+                        // so the dragged-over arrow doesn't keep flashing.
                         this.renderer.touchFeedback = null;
-                    } else if (!this.isAnimating && this.grid) {
-                        // Drag-and-look: re-resolve the would-be-selected arrow
-                        // as the finger slides within the tap-tolerance radius.
-                        // Lets the player visually scrub between adjacent
-                        // arrows before committing on touchend.
-                        const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY - TOUCH_Y_CORRECTION);
-                        const dragPath = findPathAt(fx, fy);
-                        const current = this.renderer.touchFeedback?.path;
-                        if (dragPath !== current) {
-                            this.renderer.touchFeedback = dragPath ? { path: dragPath, startTime: performance.now() } : null;
-                            this.renderer.drawGrid(this.grid);
-                        }
                     }
+                    // Within tap-tolerance: do NOT update the highlight as the
+                    // finger drifts. Once the user committed (touchstart) we
+                    // lock onto that arrow visually so the highlight matches
+                    // the path that will actually fire on lift. Updating mid-
+                    // press confused users who saw highlight on neighbour B
+                    // while resolveTap (touchstart-pinned) fired arrow A.
                 }
                 if (isSinglePanning) {
                     e.preventDefault();
@@ -565,16 +560,12 @@ export class Game {
                 return;
             }
 
-            // Use the AVERAGE of touchstart + touchend positions (the same
-            // technique iOS itself uses for software-keyboard hit testing).
-            // Fingers drift slightly mid-tap; the start position is biased
-            // toward "where they first contacted" and the end position toward
-            // "where they intended to lift" — averaging cancels noise from
-            // both. Falls back to start position if changedTouches is empty.
-            const lift = e.changedTouches && e.changedTouches[0];
-            const tapX = lift ? (pendingTapStart.x + lift.clientX) / 2 : pendingTapStart.x;
-            const tapY = lift ? (pendingTapStart.y + lift.clientY) / 2 : pendingTapStart.y;
-            resolveTap(tapX, tapY - TOUCH_Y_CORRECTION);
+            // Use the touchstart position. Apple HIG default for fast taps —
+            // the user aimed where they first contacted, not where they
+            // happened to lift after a tiny finger drift. Averaging the
+            // start+end positions sounds clever but adds drift noise that
+            // can shift the tap into a neighbouring cell on small grids.
+            resolveTap(pendingTapStart.x, pendingTapStart.y);
             pendingTapStart = null;
         }, { passive: false });
 
