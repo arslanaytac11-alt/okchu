@@ -1135,6 +1135,38 @@ html, body {
     box-shadow: 0 2px 8px rgba(60,100,60,0.25);
 }
 
+/* Next-up indicator: the level the player should tap to resume. Strong
+   pulsing glow so it stands out from completed (green, dim) and other
+   uncompleted (currently-styled current). Combined with a floating
+   "OYNAT / PLAY" arrow above the circle for unmistakable affordance. */
+.level-node.next-up .level-node-circle {
+    background: linear-gradient(135deg, #ffb84d, #ff8a3d);
+    color: #2a1a0a;
+    box-shadow: 0 0 0 4px rgba(255,184,77,0.45), 0 4px 18px rgba(255,138,61,0.6);
+    animation: nextUpPulse 1.6s ease-in-out infinite;
+    transform: scale(1.06);
+}
+.level-node.next-up::before {
+    content: '\25BC';
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ff8a3d;
+    font-size: 18px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    animation: nextUpBounce 1s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes nextUpPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(255,184,77,0.45), 0 4px 18px rgba(255,138,61,0.6); }
+    50%      { box-shadow: 0 0 0 8px rgba(255,184,77,0.20), 0 4px 28px rgba(255,138,61,0.85); }
+}
+@keyframes nextUpBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-4px); }
+}
+
 @keyframes levelPulse {
     0%, 100% { box-shadow: 0 3px 12px var(--theme-accent-soft), 0 0 0 3px rgba(255,255,255,0.3); }
     50% { box-shadow: 0 3px 20px var(--theme-accent-soft), 0 0 0 5px rgba(255,255,255,0.15); }

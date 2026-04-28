@@ -58,6 +58,20 @@ export const storage = {
         saveData(data);
     },
 
+    // Track which chapter + level the player last started so the Play button
+    // can resume them straight back into the right chapter list instead of
+    // making them navigate Chapters → Egypt → Levels every session. Called
+    // by game.startLevel; read by main.js's Play handler.
+    setLastPlayed(chapterId, levelId) {
+        const data = loadData();
+        data.lastPlayed = { chapterId, levelId };
+        saveData(data);
+    },
+
+    getLastPlayed() {
+        return loadData().lastPlayed || null;
+    },
+
     getChapterPrefix(chapterId) {
         const prefixes = {
             1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',

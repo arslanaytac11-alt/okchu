@@ -94,6 +94,13 @@ export class Game {
         this.hintedPath = null;
         this.dailyModifier = opts.dailyModifier || null;
         this.applyChapterTheme(chapterData);
+        // Persist resume point so the Play button on the next launch jumps
+        // straight back to this chapter's level list. Skip for daily
+        // challenges — those are one-off and shouldn't override the campaign
+        // resume point.
+        if (!opts.dailyModifier && !opts.isDailyChallenge && chapterData?.id && levelData?.id) {
+            try { storage.setLastPlayed(chapterData.id, levelData.id); } catch {}
+        }
 
         this.grid = new Grid(levelData.gridWidth, levelData.gridHeight);
         this.grid.loadFromData(levelData.paths, levelData.walls || []);

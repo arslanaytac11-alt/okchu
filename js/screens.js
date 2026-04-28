@@ -51,6 +51,22 @@ export class ScreenManager {
 
     setupNavigation() {
         document.getElementById('btn-play').addEventListener('click', () => {
+            // Resume-on-Play: if the player previously started a level, jump
+            // straight to that chapter's level list (NOT to the chapters
+            // grid → chapter pick → levels chain). Saves three taps every
+            // launch and prevents the "I closed the app, came back, was
+            // supposed to play level 5 but it made me redo level 4 because
+            // I tapped the wrong tile" UX trap. Manual chapter navigation
+            // is still available via the back button on the levels screen.
+            const lastPlayed = storage.getLastPlayed();
+            if (lastPlayed && storage.isChapterUnlocked(lastPlayed.chapterId)) {
+                const ch = chapters.find(c => c.id === lastPlayed.chapterId);
+                if (ch) {
+                    this.currentChapter = ch;
+                    this.showLevels(ch);
+                    return;
+                }
+            }
             this.showChapters();
         });
 
@@ -373,6 +389,21 @@ export class ScreenManager {
             svg.appendChild(completedLine);
         }
 
+        // Find the "next to play" level: the FIRST uncompleted accessible
+        // level in the chapter. Used to add a `.next-up` class for a clear
+        // pulsing visual cue so players know exactly which tile to tap on
+        // resume — instead of accidentally re-tapping the most recent
+        // completed level (which is a common confusion since completed
+        // tiles also have a strong filled-in look).
+        let nextUpIdx = -1;
+        for (let j = 0; j < levels.length; j++) {
+            if (storage.isLevelCompleted(levels[j].id)) continue;
+            const isBossJ = (j === 4);
+            if (isBossJ && storage.isBossLocked(chapter.id, 5)) continue;
+            nextUpIdx = j;
+            break;
+        }
+
         // Create level nodes on the path
         for (let i = 0; i < levels.length; i++) {
             const level = levels[i];
@@ -388,6 +419,7 @@ export class ScreenManager {
             let cls = 'level-node' + (completed ? ' completed' : ' current');
             if (isBoss) cls += ' boss';
             if (bossLocked) cls += ' locked-boss';
+            if (i === nextUpIdx) cls += ' next-up';
             node.className = cls;
             node.style.left = positions[i].x + '%';
             node.style.top = positions[i].y + 'px';
