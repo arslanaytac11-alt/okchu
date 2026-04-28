@@ -22,6 +22,11 @@ export class Renderer {
         this.shakeY = 0;
         this.animTime = 0;
         this.touchFeedback = null;
+        // Predictive selection halo: stays visible from touchstart until
+        // touchend (or pan/animation cancellation). Lets the player SEE which
+        // arrow will fire BEFORE they lift their finger so they can correct
+        // aim if it landed on the wrong one. Cleared by game.js on touchend.
+        this.previewPath = null;
         this.ambientParticles = new ParticleSystem();
         this.burstParticles = new ParticleSystem();
         this.chapterId = 1;
@@ -547,6 +552,33 @@ export class Renderer {
         }
 
         ctx.setLineDash([]);
+        ctx.restore();
+    }
+
+    // Predictive selection halo. Drawn under the player's finger from
+    // touchstart until touchend so they can SEE the arrow that will fire
+    // and slide their finger to a different one if it landed wrong.
+    // Bright pulsing yellow ring around every cell of the path; the ring
+    // is wider than the cell so it stays visible even with thick arrows.
+    drawPreviewHalo(path) {
+        if (!path || !path.cells || path.cells.length === 0) return;
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.translate(this.panX, this.panY);
+        ctx.scale(this.scale, this.scale);
+        const phase = (performance.now() % 800) / 800;
+        const pulse = 0.7 + 0.3 * (0.5 - 0.5 * Math.cos(phase * Math.PI * 2));
+        ctx.strokeStyle = `rgba(255,210,80,${0.55 * pulse + 0.35})`;
+        ctx.lineWidth = Math.max(2, this.cellSize * 0.06);
+        ctx.shadowColor = 'rgba(255,210,80,0.85)';
+        ctx.shadowBlur = 14 * pulse;
+        for (const cell of path.cells) {
+            const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
+            const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, this.cellSize * 0.45, 0, Math.PI * 2);
+            ctx.stroke();
+        }
         ctx.restore();
     }
 

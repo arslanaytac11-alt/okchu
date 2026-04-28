@@ -340,32 +340,41 @@ export class Game {
         // touch-end call site stays readable and we can re-enable easily.
         const TOUCH_Y_CORRECTION = 0;
 
-        // Tap → path resolution. Two-tier strategy:
-        //   1. EXACT CELL HIT — if the (fractional) tap lands inside a cell
-        //      that already contains a path, return THAT path immediately.
-        //      No fuzzy-neighbour search ever runs in this case. This is the
-        //      single most important rule: it guarantees that taps clearly
-        //      inside an arrow can never be "stolen" by an adjacent arrow
-        //      via distance scoring. ("yan taraftaki ok" complaint fix.)
-        //   2. EMPTY CELL FALLBACK — only when the tapped cell is empty do we
-        //      scan the 3x3 neighbourhood and pick the nearest path by true
-        //      Euclidean distance to its closest cell centre. Blocked paths
-        //      get a heavy score penalty so fat-finger tolerance never
-        //      upgrades an empty-cell near-miss into a wrong-move on a
-        //      blocked neighbour when a clear one is at comparable distance.
+        // Tap → path resolution: PURE Voronoi-style distance hit testing.
+        //
+        // We scan a 5x5 cell neighbourhood around the fractional tap position
+        // and for every path that owns ANY cell in that area, compute the true
+        // Euclidean distance from the tap to the path's NEAREST cell centre.
+        // The path with the smallest distance wins. This is the geometrically
+        // correct answer to "which arrow is the player's finger closest to?"
+        //
+        // Why we DROPPED Math.floor cell-snapping (Tier-1): at cell boundaries,
+        // floor() rounds the tap to whichever cell index it lands in, and if
+        // that cell happens to belong to arrow B while the player's finger is
+        // essentially equidistant between A and B, B wins by accident — even
+        // though A's centre might actually be closer. Pure distance scoring
+        // never has this artefact: each arrow "owns" the Voronoi region
+        // around its cells, and the finger lands in exactly one region.
+        //
+        // 5x5 search (vs old 3x3): catches very light/imprecise taps that
+        // land further from any arrow. Combined with the 2.5-cell acceptance
+        // threshold, even fingers that just brush the screen near an arrow
+        // resolve correctly. Random empty-board taps still return null
+        // because no path is within 2.5 cells.
+        //
+        // Blocked-path penalty (2.0): if a clear arrow and a blocked arrow
+        // are at comparable distance, prefer the clear one — the player
+        // almost always means to remove a clear arrow, not waste a tap on
+        // a blocked one. The penalty is heavy enough to overcome ~2 cells
+        // of distance, so the clear arrow has to be reasonably close.
         const findPathAt = (fx, fy) => {
             const cx = Math.floor(fx);
             const cy = Math.floor(fy);
-            // Tier 1: exact-cell hit always wins. No override possible.
-            const direct = this.grid.getPathAt(cx, cy);
-            if (direct) return direct;
-            // Tier 2: empty cell — fuzzy-search 3x3 neighbours.
             const seen = new Set();
             let best = null;
             let bestScore = Infinity;
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    if (dx === 0 && dy === 0) continue; // tier 1 already handled
+            for (let dy = -2; dy <= 2; dy++) {
+                for (let dx = -2; dx <= 2; dx++) {
                     const p = this.grid.getPathAt(cx + dx, cy + dy);
                     if (!p || seen.has(p)) continue;
                     seen.add(p);
@@ -376,16 +385,12 @@ export class Game {
                         const d = Math.hypot(ddx, ddy);
                         if (d < minD) minD = d;
                     }
-                    const penalty = this.grid.isPathClear(p) ? 0 : 1.2;
+                    const penalty = this.grid.isPathClear(p) ? 0 : 2.0;
                     const score = minD + penalty;
                     if (score < bestScore) { bestScore = score; best = p; }
                 }
             }
-            // Tighter empty-cell threshold (1.5 vs old 2.0): with tier-1 in
-            // place we no longer need wide fuzzy reach to compensate for
-            // boundary jitter, so tighten to reduce stray pulls from far
-            // arrows on near-empty regions of the grid.
-            if (best && bestScore <= 1.5) return best;
+            if (best && bestScore <= 2.5) return best;
             return null;
         };
 
@@ -433,9 +438,12 @@ export class Game {
         this.canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
                 // Pinch begins — cancel any pending single-finger tap so the
-                // gesture doesn't accidentally fire a wrong-move on start.
+                // gesture doesn't accidentally fire a wrong-move on start,
+                // and clear the preview halo so the dragged-over arrow
+                // doesn't keep glowing during the pinch.
                 isPinching = true;
                 pendingTapStart = null;
+                this.renderer.previewPath = null;
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 lastPinchDist = Math.sqrt(dx * dx + dy * dy);
@@ -451,20 +459,14 @@ export class Game {
                 lastSinglePanX = t.clientX;
                 lastSinglePanY = t.clientY;
                 e.preventDefault();
-                // Predictive preview: the moment a finger touches, light up
-                // the arrow that WILL be selected on lift. Apple-keyboard
-                // style instant feedback. The highlight is LOCKED at this
-                // touchstart cell — it does NOT update during touchmove
-                // because resolveTap pins to the touchstart position too,
-                // so the visible highlight always matches the path that
-                // fires. Skip when an animation is in flight.
+                // Predictive preview halo: from this touchstart until lift,
+                // a bright yellow ring follows the path the finger is on.
+                // The user can SEE which arrow will fire and slide their
+                // finger to a different one before lifting. Drag-to-choose
+                // UX, same model as iOS keyboard letter selection.
                 if (!this.isAnimating && this.grid) {
                     const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY);
-                    const previewPath = findPathAt(fx, fy);
-                    if (previewPath) {
-                        this.renderer.touchFeedback = { path: previewPath, startTime: performance.now() };
-                        this.renderer.drawGrid(this.grid);
-                    }
+                    this.renderer.previewPath = findPathAt(fx, fy);
                 }
             }
         }, { passive: false });
@@ -503,16 +505,18 @@ export class Game {
                         isSinglePanning = true;
                         lastSinglePanX = t.clientX;
                         lastSinglePanY = t.clientY;
-                        // Tap promoted to pan — clear the touchstart preview
-                        // so the dragged-over arrow doesn't keep flashing.
-                        this.renderer.touchFeedback = null;
+                        // Tap promoted to pan — clear the preview halo so
+                        // dragged-over arrows don't keep glowing.
+                        this.renderer.previewPath = null;
+                    } else if (!this.isAnimating && this.grid) {
+                        // Drag-to-choose: while the finger is still within
+                        // tap-tolerance, update the preview halo to whichever
+                        // arrow is now closest. Lets the player visually
+                        // scrub between adjacent arrows; touchend then fires
+                        // exactly the one currently haloed.
+                        const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY);
+                        this.renderer.previewPath = findPathAt(fx, fy);
                     }
-                    // Within tap-tolerance: do NOT update the highlight as the
-                    // finger drifts. Once the user committed (touchstart) we
-                    // lock onto that arrow visually so the highlight matches
-                    // the path that will actually fire on lift. Updating mid-
-                    // press confused users who saw highlight on neighbour B
-                    // while resolveTap (touchstart-pinned) fired arrow A.
                 }
                 if (isSinglePanning) {
                     e.preventDefault();
@@ -560,14 +564,42 @@ export class Game {
                 return;
             }
 
-            // Use the touchstart position. Apple HIG default for fast taps —
-            // the user aimed where they first contacted, not where they
-            // happened to lift after a tiny finger drift. Averaging the
-            // start+end positions sounds clever but adds drift noise that
-            // can shift the tap into a neighbouring cell on small grids.
-            resolveTap(pendingTapStart.x, pendingTapStart.y);
+            // Drag-to-choose model: fire whichever arrow is currently shown
+            // by the preview halo. Touchstart sets the halo to the path
+            // under the finger; touchmove updates it as the finger drifts
+            // within tap tolerance; we now fire that exact path on lift —
+            // so what the player saw IS what fires. Falls back to a fresh
+            // resolveTap from touchstart coords if previewPath happened to
+            // be null (e.g. brand-new tap on an empty edge).
+            const liveTap = e.changedTouches && e.changedTouches[0];
+            const fireX = liveTap ? liveTap.clientX : pendingTapStart.x;
+            const fireY = liveTap ? liveTap.clientY : pendingTapStart.y;
+            const haloPath = this.renderer.previewPath;
+            this.renderer.previewPath = null;
+            if (haloPath && !haloPath.isRemoved()) {
+                this.hintedPath = null;
+                this.renderer.touchFeedback = { path: haloPath, startTime: performance.now() };
+                if (this.grid.isPathClear(haloPath)) {
+                    this.removePathWithAnimation(haloPath);
+                } else {
+                    this.handleWrongMove(haloPath);
+                }
+            } else {
+                resolveTap(fireX, fireY);
+            }
             pendingTapStart = null;
         }, { passive: false });
+
+        // iOS sometimes fires touchcancel instead of touchend (incoming call,
+        // system gesture, app switch). Reset the same state we'd reset on
+        // touchend so a stale preview halo doesn't get stuck on screen and
+        // a stranded pendingTapStart doesn't fire when the user comes back.
+        this.canvas.addEventListener('touchcancel', () => {
+            pendingTapStart = null;
+            isSinglePanning = false;
+            isPinching = false;
+            this.renderer.previewPath = null;
+        });
 
         // Mouse wheel zoom — passes client coords; renderer converts to canvas-local.
         this.canvas.addEventListener('wheel', (e) => {
@@ -1221,6 +1253,12 @@ export class Game {
             this.renderer.tick(time);
             if (!this.isAnimating && this.grid) {
                 this.renderer.drawGrid(this.grid);
+                // Predictive selection halo: drawn while the player's finger
+                // is down so they can SEE which arrow will fire on lift.
+                // Cleared in touchend / pan-promotion handlers.
+                if (this.renderer.previewPath && !this.renderer.previewPath.isRemoved()) {
+                    this.renderer.drawPreviewHalo(this.renderer.previewPath);
+                }
                 // Onboarding pointer: pulse on the next removable arrow until
                 // the new player has tapped a few times. Drawn after drawGrid
                 // so it sits on top. Picks the first removable path each
