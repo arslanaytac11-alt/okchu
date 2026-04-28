@@ -129,6 +129,45 @@ workflows:
       - name: Build web assets & sync Capacitor
         script: |
           npm run cap:sync
+      - name: Generate language stubs for App Store Languages list
+        script: |
+          # The App Store sidebar's "Languages" list is driven by the .lproj
+          # directories Apple finds inside the published .app bundle, NOT by
+          # the CFBundleLocalizations Info.plist key alone. Create one
+          # directory per supported locale with a minimal InfoPlist.strings
+          # so Apple registers all 5 (en, tr, es, fr, ja) as supported.
+          # Names of CFBundleDisplayName per locale optionally also localised
+          # so the home-screen icon label switches with the device language.
+          APP_DIR="ios/App/App"
+          declare -A NAMES=( [en]="Okchu" [tr]="Okchu" [es]="Okchu" [fr]="Okchu" [ja]="Okchu" )
+          for lang in en tr es fr ja; do
+            LPROJ="$APP_DIR/${lang}.lproj"
+            mkdir -p "$LPROJ"
+            cat > "$LPROJ/InfoPlist.strings" <<EOF
+          "CFBundleDisplayName" = "${NAMES[$lang]}";
+          "CFBundleName" = "${NAMES[$lang]}";
+          EOF
+          done
+          # Inject the .lproj folders into the Xcode project's Copy Resources
+          # build phase so they actually end up inside the .app bundle.
+          # Capacitor's default project doesn't reference them, so we use
+          # PlistBuddy-free shell because pbxproj editing is fragile — instead
+          # rely on Xcode's "Copy Bundle Resources" picking up loose .lproj
+          # directories that sit alongside Base.lproj. This works because
+          # Xcode auto-adds .lproj folders matching declared knownRegions.
+          # Add the regions to the project file if not already present.
+          PBX="ios/App/App.xcodeproj/project.pbxproj"
+          for lang in tr es fr ja; do
+            if ! grep -q "\"$lang\"," "$PBX" && ! grep -q "$lang \\*/" "$PBX"; then
+              # Insert into knownRegions array. The marker is "Base," in
+              # knownRegions list — append the language code right after.
+              sed -i.bak "s/Base,/Base,\\
+\\t\\t\\t\\t$lang,/" "$PBX"
+            fi
+          done
+          rm -f "$PBX.bak"
+          echo "=== Resulting knownRegions block ==="
+          grep -A 8 "knownRegions" "$PBX" | head -15
       - name: Generate all iOS app icon sizes
         script: |
           # AppIcon.appiconset only has the 1024x1024 marketing icon.
