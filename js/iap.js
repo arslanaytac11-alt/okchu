@@ -3,7 +3,7 @@
 // Web/PWA: no-op so browser dev keeps working; the paywall shows a friendly alert.
 
 import { storage } from './storage.js';
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=2';
 
 const PRODUCT_ID = 'com.arslanaytac.okchu.premium';
 

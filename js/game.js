@@ -8,6 +8,22 @@ import { storage } from './storage.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
 import { tapLight, tapMedium, tapHeavy, notifyError } from './haptics.js';
+import { t } from './i18n.js?v=2';
+
+// Map chapter id (1-10) to its difficulty translation key. Mirrors the table
+// in screens.js so the in-game header label localises the same way the level-
+// select chapter label does. Without this, `chapterData.difficulty` (which is
+// the hardcoded TR string "Kolay" / "Orta" / etc baked into chapters.js) leaked
+// into every non-Turkish locale.
+const DIFFICULTY_KEYS = {
+    1: 'easy', 2: 'medium', 3: 'hard', 4: 'hard_plus', 5: 'very_hard',
+    6: 'very_hard_plus', 7: 'legendary', 8: 'legendary_plus', 9: 'nightmare', 10: 'nightmare_plus',
+};
+function localizedDifficulty(chapter) {
+    const k = DIFFICULTY_KEYS[chapter?.id] || 'easy';
+    const v = t('difficulty.' + k);
+    return v === 'difficulty.' + k ? (chapter?.difficulty || '') : v;
+}
 
 const TIME_CONFIG = {
     // [baseSec, perPathSec] indexed by chapter
@@ -112,7 +128,7 @@ export class Game {
         this.hintManager.setLevel(levelData.id);
 
         document.getElementById('level-name').textContent = levelData.name;
-        document.getElementById('level-difficulty').textContent = chapterData.difficulty;
+        document.getElementById('level-difficulty').textContent = localizedDifficulty(chapterData);
 
         // Reset scoring
         this.score = 0;
@@ -761,25 +777,6 @@ export class Game {
 
             path._snakeCellStates = cellStates;
             this.renderer.drawGrid(this.grid);
-
-            // Trail particles — one small spark per body-cell midpoint per
-            // frame, scaled with combo. Gives the slithering arrow a sense
-            // of motion-blur and adds visual oomph without spamming the
-            // particle system. Skipped at low frame budgets to stay smooth.
-            if (this.renderer.burstParticles && totalCells <= 5 && Math.random() < 0.4) {
-                const headCell = path.cells[totalCells - 1];
-                if (cellStates[totalCells - 1].visible) {
-                    const px = this.renderer.gridOffsetX + (headCell.x + 0.5) * this.renderer.cellSize;
-                    const py = this.renderer.gridOffsetY + (headCell.y + 0.5) * this.renderer.cellSize;
-                    this.renderer.burstParticles.burst(px, py, 2, {
-                        speed: 30, spread: Math.PI / 2,
-                        angle: Math.atan2(-dy, -dx), // trail behind motion
-                        life: 0.25, size: 1.6,
-                        colors: [this.renderer.theme.arrowIdle, '#ffffff'],
-                        gravity: 20, shape: 'circle',
-                    });
-                }
-            }
 
             const allGone = cellStates.every(s => !s.visible);
             if (!allGone && elapsed < totalDuration) {

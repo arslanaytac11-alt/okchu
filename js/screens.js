@@ -4,7 +4,7 @@ import { chapters } from './data/chapters.js';
 import { getLevelsByChapter } from './levels.js';
 import { storage } from './storage.js';
 import { showBanner, hideBanner } from './ads.js';
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=2';
 
 // Translation key helpers. `chapters.js` stores Turkish names/difficulty/story
 // text inline because the data file was authored before i18n — rather than

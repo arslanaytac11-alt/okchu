@@ -7,10 +7,16 @@ const AVAILABLE_LANGS = ['tr', 'en', 'es', 'fr', 'ja'];
 let currentLang = null;
 let strings = {};
 
+// Bumped whenever the lang JSON files change so the service worker's
+// stale-while-revalidate cache can't serve last week's strings to a
+// player who installed the app today. Keeping it in sync with main.js?v=
+// is fine — both are part of the same release.
+const LANG_VERSION = '6';
+
 export async function loadLanguage(lang, { persist = true } = {}) {
     if (!AVAILABLE_LANGS.includes(lang)) lang = 'tr';
     try {
-        const resp = await fetch(`lang/${lang}.json`);
+        const resp = await fetch(`lang/${lang}.json?v=${LANG_VERSION}`, { cache: 'no-cache' });
         strings = await resp.json();
         currentLang = lang;
         if (persist) localStorage.setItem(LANG_KEY, lang);

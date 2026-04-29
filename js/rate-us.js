@@ -2,7 +2,7 @@
 // Rate-us funnel: 5-star modal. 4-5 stars → App Store review composer.
 // 1-3 stars → feedback email, keeping low ratings away from the store.
 
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=2';
 import { tapLight, tapMedium } from './haptics.js';
 
 // `?action=write-review` sends the user straight to the rating composer in the

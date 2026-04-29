@@ -1,11 +1,11 @@
 // js/main.js
 
-import { Game } from './game.js?v=2';
+import { Game } from './game.js?v=3';
 import { ScreenManager } from './screens.js?v=3';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
-import { initLanguage, loadLanguage, t, getLang, hasSavedLanguage } from './i18n.js';
+import { initLanguage, loadLanguage, t, getLang, hasSavedLanguage } from './i18n.js?v=2';
 import { getDailyChallenge, isDailyCompleted, completeDaily, getDailyStreak } from './daily.js';
 import { checkAchievements, getAllAchievements, getAchievementStats } from './achievements.js';
 import { allLevels } from './levels.js';
@@ -269,7 +269,10 @@ document.addEventListener('visibilitychange', () => {
 function maybeActivateOnboarding(levelData, chapterData) {
     try {
         if (localStorage.getItem('okchu_onboarding_done') === '1') return;
-        if (chapterData?.id !== 1 || levelData?.id !== 1) return;
+        // levelData.id is a STRING ("egypt_1"), so compare via level number
+        // within chapter. Previously compared `levelData.id !== 1` (number)
+        // which was always true and silently disabled onboarding.
+        if (chapterData?.id !== 1 || levelData?.level !== 1) return;
         game.onboardingActive = true;
         game.onboardingTapsLeft = 3;
     } catch {}

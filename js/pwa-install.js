@@ -4,7 +4,7 @@
 // Share button, and only on iOS Safari when the app is not already
 // running in standalone mode.
 
-import { t } from './i18n.js';
+import { t } from './i18n.js?v=2';
 
 const DISMISS_KEY = 'okchu_ios_install_dismissed_at';
 const DISMISS_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
