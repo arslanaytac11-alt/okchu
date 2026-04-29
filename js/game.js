@@ -681,34 +681,12 @@ export class Game {
 
 
 
-        // Combo-scaled particle burst
-        const head = path.getHead();
-        const burstCx = this.renderer.gridOffsetX + (head.x + 0.5) * this.renderer.cellSize;
-        const burstCy = this.renderer.gridOffsetY + (head.y + 0.5) * this.renderer.cellSize;
-        const dirVec = getDirectionVector(path.direction);
-        const burstAngle = Math.atan2(dirVec.dy, dirVec.dx);
-
-        const tier = COMBO_TIERS.find(t => this.combo >= t.min);
-        const colorIdx = Math.min(Math.floor(this.combo / 2), COMBO_COLORS.length - 1);
-
-        this.renderer.burstParticles.burst(burstCx, burstCy, tier.burstCount, {
-            speed: tier.burstSpeed,
-            spread: Math.PI * 0.8,
-            angle: burstAngle,
-            life: 0.5 + this.combo * 0.05,
-            size: 2 + this.combo * 0.3,
-            colors: [COMBO_COLORS[colorIdx], '#ffffff', this.renderer.theme.arrowIdle],
-            gravity: 80,
-            shape: tier.shape,
-        });
-
-        if (tier.shake > 0) {
-            this._doScreenShake(tier.shake, 80 + this.combo * 10);
-        }
-
-        if (this.combo >= MEGA_COMBO_THRESHOLD) {
-            this._showFloatingText('MUHTESEM!', burstCx, burstCy - 40, '#ffd700', 28);
-        }
+        // Particle burst, screen shake, and "MUHTESEM!" combo text removed
+        // per user request — only the snake-slither animation should accompany
+        // a successful tap. The score is still updated and a floating "+N"
+        // briefly drifts up from the arrow as quiet feedback that the move
+        // counted; everything else stays silent so the slither itself is the
+        // headline visual.
 
         // Snake slither animation — head darts out first, body cells chase
         // it one-by-one along the same line (like Snake-game where the body
