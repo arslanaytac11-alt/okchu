@@ -79,6 +79,8 @@
     "new_life_ready": "新しいライフ準備完了！",
     "new_life_in": "新しいライフまで",
     "watch_ad": "広告を見る (+1ライフ)",
+    "loading_ad": "広告を読み込み中...",
+    "ad_unavailable": "広告なし、再試行",
     "wait": "待つ",
     "time_up_title": "時間切れ！",
     "time_up_text": "時間が足りませんでした",

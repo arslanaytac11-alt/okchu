@@ -79,6 +79,8 @@
     "new_life_ready": "Nouvelle vie prete!",
     "new_life_in": "Nouvelle vie dans",
     "watch_ad": "Voir Pub (+1 Vie)",
+    "loading_ad": "Chargement pub...",
+    "ad_unavailable": "Pas de pub, reessaye",
     "wait": "Attendre",
     "time_up_title": "Temps Ecoule!",
     "time_up_text": "Le temps est ecoule",

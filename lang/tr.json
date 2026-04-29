@@ -79,6 +79,8 @@
     "new_life_ready": "Yeni can hazır!",
     "new_life_in": "Yeni can",
     "watch_ad": "Reklam İzle (+1 Can)",
+    "loading_ad": "Reklam yükleniyor...",
+    "ad_unavailable": "Reklam yok, tekrar dene",
     "wait": "Bekle",
     "time_up_title": "Süre Doldu!",
     "time_up_text": "Zamanı yetiştiremedin",

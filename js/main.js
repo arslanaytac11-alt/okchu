@@ -431,17 +431,31 @@ game.onTimeUp = () => {
 
     const close = () => overlay.classList.add('hidden');
 
+    // Same pattern as the no-lives overlay: remove { once: true } so a
+    // failed ad doesn't lock the player out, show loading state, retry
+    // available without re-opening, and goodwill-grant the +60 s after
+    // 3 silent failures so an AdMob no-fill doesn't strand them.
+    const txLocal2 = (key, fb) => { const v = t(key); return v === key ? fb : v; };
+    const adLabel = adBtn.textContent;
+    let adFailCount = 0;
     adBtn.addEventListener('click', async () => {
-        const earned = await showRewarded();
-        close();
-        if (earned) {
+        if (adBtn.disabled) return;
+        adBtn.disabled = true;
+        adBtn.textContent = txLocal2('overlay.loading_ad', 'Reklam yükleniyor...');
+        let earned = false;
+        try { earned = await showRewarded(); } catch { earned = false; }
+        if (earned || adFailCount >= 2) {
+            close();
             game.timeRemaining = 60;
             game._startCountdown();
             game.startRenderLoop();
-        } else {
-            screenManager.showChapters();
+            return;
         }
-    }, { once: true });
+        adFailCount++;
+        adBtn.disabled = false;
+        adBtn.textContent = txLocal2('overlay.ad_unavailable', 'Reklam yok, tekrar dene');
+        setTimeout(() => { adBtn.textContent = adLabel; }, 2500);
+    });
 
     retryBtn.addEventListener('click', () => {
         close();
@@ -534,14 +548,48 @@ function showNoLivesOverlay() {
         }
     };
 
+    // Resilient rewarded-ad handler. Removed `{ once: true }` so a failed
+    // load doesn't lock the player out — they can retry without closing
+    // the overlay. Shows a loading state on the button while preparing,
+    // surfaces a clear message if the ad never arrives, and only closes
+    // the overlay on actual success. Goodwill grace: if the ad fails
+    // 3 times in a row (likely AdMob no-fill on a brand-new account),
+    // grant the life anyway so the player isn't stuck — better to lose
+    // a few impressions than churn a paying user.
+    const adLabel = adBtn.textContent;
+    let adFailCount = 0;
     adBtn.addEventListener('click', async () => {
-        const earned = await showRewarded();
+        if (adBtn.disabled) return;
+        adBtn.disabled = true;
+        adBtn.textContent = txLocal('overlay.loading_ad', 'Reklam yükleniyor...');
+        let earned = false;
+        try {
+            earned = await showRewarded();
+        } catch {
+            earned = false;
+        }
         if (earned) {
             game.livesManager.addLife();
             game.livesManager.renderLives(livesDisplay);
+            closeOverlay();
+            return;
         }
-        closeOverlay();
-    }, { once: true });
+        adFailCount++;
+        if (adFailCount >= 3) {
+            // Goodwill: the player has tapped Watch Ad three times and
+            // every attempt failed (most likely AdMob no-fill). Grant
+            // the life so they can keep playing instead of leaving.
+            game.livesManager.addLife();
+            game.livesManager.renderLives(livesDisplay);
+            closeOverlay();
+            return;
+        }
+        adBtn.disabled = false;
+        adBtn.textContent = txLocal('overlay.ad_unavailable', 'Reklam yok, tekrar dene');
+        // Reset label after a short delay so the player sees the failure
+        // notice for ~2.5 s then the button looks clickable again.
+        setTimeout(() => { adBtn.textContent = adLabel; }, 2500);
+    });
 
     waitBtn.addEventListener('click', () => {
         closeOverlay();

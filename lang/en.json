@@ -79,6 +79,8 @@
     "new_life_ready": "New life ready!",
     "new_life_in": "New life in",
     "watch_ad": "Watch Ad (+1 Life)",
+    "loading_ad": "Loading ad...",
+    "ad_unavailable": "No ad, try again",
     "wait": "Wait",
     "time_up_title": "Time's Up!",
     "time_up_text": "You ran out of time",

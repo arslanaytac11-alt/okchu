@@ -79,6 +79,8 @@
     "new_life_ready": "Nueva vida lista!",
     "new_life_in": "Nueva vida en",
     "watch_ad": "Ver Anuncio (+1 Vida)",
+    "loading_ad": "Cargando anuncio...",
+    "ad_unavailable": "Sin anuncio, intenta de nuevo",
     "wait": "Esperar",
     "time_up_title": "Tiempo Agotado!",
     "time_up_text": "Se acabo el tiempo",
