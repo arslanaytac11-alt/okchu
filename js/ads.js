@@ -27,7 +27,9 @@ const MIN_INTERSTITIAL_GAP_MS = 90_000; // 90s floor
 const LAST_INTERSTITIAL_KEY = 'okchu.ads.lastInterstitialAt';
 
 let initialized = false;
+let initInFlight = null; // Promise — set by initAds, awaited by ad-show calls
 let bannerVisible = false;
+let bannerWantedVisible = false; // last requested state — used by retries
 let levelsSinceInterstitial = 0;
 // Persisted across app launches so the 90s gate can't be reset by killing and
 // reopening the app — matches AdMob policy spirit ("don't surprise the user
@@ -57,37 +59,51 @@ function unitId(kind) {
 
 export async function initAds({ testMode = false } = {}) {
     if (initialized) return;
-    useTestAds = testMode;
+    if (initInFlight) return initInFlight;
 
+    useTestAds = testMode;
     const A = getPlugin();
     if (!A) return;
 
-    try {
-        await A.initialize({
-            initializeForTesting: testMode,
-            testingDevices: [],
-            tagForChildDirectedTreatment: false,
-            tagForUnderAgeOfConsent: false,
-            maxAdContentRating: 'G',
-        });
-
+    initInFlight = (async () => {
         try {
-            const status = await A.trackingAuthorizationStatus();
-            if (status?.status === 'notDetermined') {
-                await A.requestTrackingAuthorization();
-            }
-        } catch {}
+            await A.initialize({
+                initializeForTesting: testMode,
+                testingDevices: [],
+                tagForChildDirectedTreatment: false,
+                tagForUnderAgeOfConsent: false,
+                maxAdContentRating: 'G',
+            });
 
-        initialized = true;
-    } catch (e) {
-        console.warn('[ads] init failed', e);
-    }
+            try {
+                const status = await A.trackingAuthorizationStatus();
+                if (status?.status === 'notDetermined') {
+                    await A.requestTrackingAuthorization();
+                }
+            } catch {}
+
+            initialized = true;
+            // Replay any pending banner request that came in before init finished.
+            if (bannerWantedVisible) {
+                showBanner().catch(() => {});
+            }
+        } catch (e) {
+            console.warn('[ads] init failed', e);
+        }
+    })();
+    return initInFlight;
 }
 
 export async function showBanner() {
+    bannerWantedVisible = true;
     if (isPremium()) return;
     const A = getPlugin();
-    if (!A || !initialized || bannerVisible) return;
+    if (!A) return;
+    // If init is still in-flight, wait for it instead of dropping the call.
+    if (!initialized && initInFlight) {
+        try { await initInFlight; } catch {}
+    }
+    if (!initialized || bannerVisible) return;
     try {
         await A.showBanner({
             adId: unitId('banner'),
@@ -99,10 +115,16 @@ export async function showBanner() {
         bannerVisible = true;
     } catch (e) {
         console.warn('[ads] showBanner failed', e);
+        // Retry once after 3 s — most failures here are transient
+        // network or no-fill that resolves shortly.
+        setTimeout(() => {
+            if (bannerWantedVisible && !bannerVisible) showBanner().catch(() => {});
+        }, 3000);
     }
 }
 
 export async function hideBanner() {
+    bannerWantedVisible = false;
     const A = getPlugin();
     if (!A || !bannerVisible) return;
     try { await A.hideBanner(); bannerVisible = false; } catch {}
