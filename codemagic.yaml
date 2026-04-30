@@ -129,48 +129,6 @@ workflows:
       - name: Build web assets & sync Capacitor
         script: |
           npm run cap:sync
-      - name: Generate language stubs for App Store Languages list
-        script: |
-          # The App Store sidebar's "Languages" list is driven by the .lproj
-          # directories Apple finds inside the published .app bundle, NOT by
-          # the CFBundleLocalizations Info.plist key alone. Create one
-          # directory per supported locale with a minimal InfoPlist.strings
-          # so Apple registers all 5 (en, tr, es, fr, ja) as supported.
-          APP_DIR="ios/App/App"
-          for lang in en tr es fr ja; do
-            LPROJ="$APP_DIR/${lang}.lproj"
-            mkdir -p "$LPROJ"
-            printf '"CFBundleDisplayName" = "Okchu";\n"CFBundleName" = "Okchu";\n' > "$LPROJ/InfoPlist.strings"
-          done
-          # Add the new languages to the Xcode project's knownRegions list
-          # via Python (pbxproj is plist-like; sed with multi-line + tabs
-          # was not yaml-friendly). Idempotent: skips any language already
-          # present so re-runs don't keep injecting.
-          python3 <<'PYEOF'
-          import re
-          PBX = 'ios/App/App.xcodeproj/project.pbxproj'
-          with open(PBX, 'r', encoding='utf-8') as f:
-              src = f.read()
-          # Match the knownRegions block: knownRegions = ( ... );
-          m = re.search(r'(knownRegions\s*=\s*\()([^)]*)(\)\s*;)', src, re.DOTALL)
-          if not m:
-              print('knownRegions block not found, skipping')
-              raise SystemExit(0)
-          head, body, tail = m.group(1), m.group(2), m.group(3)
-          existing = set(re.findall(r'\b([A-Za-z]{2,5})\b', body))
-          for lang in ('en', 'tr', 'es', 'fr', 'ja'):
-              if lang in existing:
-                  continue
-              # Insert before the closing paren, keep the indentation style
-              # the project file already uses (tabs).
-              body = body.rstrip() + '\n\t\t\t\t' + lang + ','
-              existing.add(lang)
-          new_block = head + body + '\n\t\t\t' + tail
-          src2 = src[:m.start()] + new_block + src[m.end():]
-          with open(PBX, 'w', encoding='utf-8') as f:
-              f.write(src2)
-          print('=== knownRegions now contains:', sorted(existing))
-          PYEOF
       - name: Generate all iOS app icon sizes
         script: |
           # AppIcon.appiconset only has the 1024x1024 marketing icon.
