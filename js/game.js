@@ -367,54 +367,18 @@ export class Game {
         //
         // We scan a 5x5 cell neighbourhood around the fractional tap position
         // and for every path that owns ANY cell in that area, compute the true
-        // Euclidean distance from the tap to the path's NEAREST cell centre.
-        // The path with the smallest distance wins. This is the geometrically
-        // correct answer to "which arrow is the player's finger closest to?"
+        // Hit-testing: pure cell ownership. The arrow's visual cells are its
+        // hit area, exactly. Tap inside one of an arrow's cells → that arrow
+        // fires. Tap on empty space → nothing fires. No distance magnetism,
+        // no slop, no auto-selecting a "nearby" arrow. This gives the player
+        // full control: what they touch is what fires, period.
         //
-        // Why we DROPPED Math.floor cell-snapping (Tier-1): at cell boundaries,
-        // floor() rounds the tap to whichever cell index it lands in, and if
-        // that cell happens to belong to arrow B while the player's finger is
-        // essentially equidistant between A and B, B wins by accident — even
-        // though A's centre might actually be closer. Pure distance scoring
-        // never has this artefact: each arrow "owns" the Voronoi region
-        // around its cells, and the finger lands in exactly one region.
-        //
-        // 5x5 search (vs old 3x3): catches very light/imprecise taps that
-        // land further from any arrow. Combined with the 2.5-cell acceptance
-        // threshold, even fingers that just brush the screen near an arrow
-        // resolve correctly. Random empty-board taps still return null
-        // because no path is within 2.5 cells.
-        //
-        // Blocked-path penalty (2.0): if a clear arrow and a blocked arrow
-        // are at comparable distance, prefer the clear one — the player
-        // almost always means to remove a clear arrow, not waste a tap on
-        // a blocked one. The penalty is heavy enough to overcome ~2 cells
-        // of distance, so the clear arrow has to be reasonably close.
+        // Imprecise taps are still recoverable: the drag-to-choose preview
+        // halo (touchmove handler) lets the player slide their finger to the
+        // intended arrow before lifting, with live visual confirmation of
+        // which arrow is currently selected.
         const findPathAt = (fx, fy) => {
-            const cx = Math.floor(fx);
-            const cy = Math.floor(fy);
-            const seen = new Set();
-            let best = null;
-            let bestScore = Infinity;
-            for (let dy = -2; dy <= 2; dy++) {
-                for (let dx = -2; dx <= 2; dx++) {
-                    const p = this.grid.getPathAt(cx + dx, cy + dy);
-                    if (!p || seen.has(p)) continue;
-                    seen.add(p);
-                    let minD = Infinity;
-                    for (const c of p.cells) {
-                        const ddx = (c.x + 0.5) - fx;
-                        const ddy = (c.y + 0.5) - fy;
-                        const d = Math.hypot(ddx, ddy);
-                        if (d < minD) minD = d;
-                    }
-                    const penalty = this.grid.isPathClear(p) ? 0 : 2.0;
-                    const score = minD + penalty;
-                    if (score < bestScore) { bestScore = score; best = p; }
-                }
-            }
-            if (best && bestScore <= 2.5) return best;
-            return null;
+            return this.grid.getPathAt(Math.floor(fx), Math.floor(fy));
         };
 
         // Single-slot tap queue: when an animation is in flight, hold the

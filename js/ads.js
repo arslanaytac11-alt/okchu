@@ -40,6 +40,31 @@ let lastInterstitialAt = (() => {
 })();
 let useTestAds = false;
 
+// Rewarded-ad event tracking. The @capacitor-community/admob v6 plugin has
+// two known iOS bugs that strand the show promise: (1) showRewardVideoAd's
+// call.resolve only fires inside userDidEarnRewardHandler, so a dismissal
+// without earning never resolves; (2) prepareRewardVideoAd's load completion
+// can hang on the second call in a session. Listening to the plugin's
+// events instead of awaiting the promises lets us detect both reward and
+// failure deterministically and recover with a timeout.
+let rewardListenersBound = false;
+let pendingReward = null; // { onLoaded, onLoadFail, onReward, onDismissed, onShowFail }
+
+function bindRewardListeners(A) {
+    if (rewardListenersBound) return;
+    rewardListenersBound = true;
+    const dispatch = (key, payload) => {
+        if (!pendingReward) return;
+        const fn = pendingReward[key];
+        if (fn) fn(payload);
+    };
+    A.addListener('onRewardedVideoAdLoaded',       (info)  => dispatch('onLoaded', info));
+    A.addListener('onRewardedVideoAdFailedToLoad', (err)   => dispatch('onLoadFail', err));
+    A.addListener('onRewardedVideoAdReward',       (rew)   => dispatch('onReward', rew));
+    A.addListener('onRewardedVideoAdDismissed',    ()      => dispatch('onDismissed'));
+    A.addListener('onRewardedVideoAdFailedToShow', (err)   => dispatch('onShowFail', err));
+}
+
 function isNative() {
     return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
@@ -161,12 +186,43 @@ export async function showRewarded() {
         // Web dev: grant reward immediately so the button still works.
         return true;
     }
-    try {
-        await A.prepareRewardVideoAd({ adId: unitId('rewarded'), isTesting: useTestAds });
-        const result = await A.showRewardVideoAd();
-        return !!(result && (result.type || result.amount));
-    } catch (e) {
-        console.warn('[ads] rewarded failed', e);
-        return false;
-    }
+    if (pendingReward) return false; // a request is already in flight
+    bindRewardListeners(A);
+
+    // Phase 1: load. Wait for either the Loaded or FailedToLoad event with a
+    // timeout — the prepare promise itself is unreliable across calls (see
+    // comment near rewardListenersBound).
+    const loaded = await new Promise((resolve) => {
+        let done = false;
+        const finish = (ok) => { if (!done) { done = true; pendingReward = null; resolve(ok); } };
+        pendingReward = {
+            onLoaded:   () => finish(true),
+            onLoadFail: () => finish(false),
+        };
+        A.prepareRewardVideoAd({ adId: unitId('rewarded'), isTesting: useTestAds })
+            .catch(() => finish(false));
+        setTimeout(() => finish(false), 10000);
+    });
+    if (!loaded) return false;
+
+    // Phase 2: show. Resolve when Rewarded fires (success), or Dismissed /
+    // FailedToShow / timeout (failure). We do not await showRewardVideoAd —
+    // its promise only resolves on reward in this plugin version, hanging on
+    // dismissal-without-reward.
+    return new Promise((resolve) => {
+        let done = false;
+        let earned = false;
+        const finish = (ok) => { if (!done) { done = true; pendingReward = null; resolve(ok); } };
+        pendingReward = {
+            onReward:    () => { earned = true; },
+            onDismissed: () => {
+                // Rewarded sometimes fires just after Dismissed on iOS — give
+                // it a tick before deciding.
+                setTimeout(() => finish(earned), 250);
+            },
+            onShowFail:  () => finish(false),
+        };
+        A.showRewardVideoAd().catch(() => {}); // its rejection path covered by onShowFail
+        setTimeout(() => finish(earned), 90000); // ad cap is ~30s; 90s is a safe ceiling
+    });
 }
