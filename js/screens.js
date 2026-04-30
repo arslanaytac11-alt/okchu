@@ -44,9 +44,14 @@ export class ScreenManager {
         for (const [key, el] of Object.entries(this.screens)) {
             if (el) el.classList.toggle('active', key === name);
         }
-        // Banner only on non-gameplay screens — keep the canvas unobstructed.
-        if (name === 'game') hideBanner();
-        else showBanner();
+        // Banner only on the game screen — that's where the .banner-ad
+        // placeholder div reserves bottom space for the native overlay.
+        // Other screens have no spacer, so a banner there would float over
+        // UI controls. (Inverted from initial integration: the original
+        // setup hid it during gameplay precisely where the spacer is, so
+        // players just saw the dashed "Reklam Alanı" placeholder.)
+        if (name === 'game') showBanner();
+        else hideBanner();
     }
 
     setupNavigation() {
