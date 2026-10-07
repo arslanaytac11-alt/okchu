@@ -8,8 +8,8 @@ globalThis.localStorage = {
     setItem: (key, value) => memory.set(key, value),
 };
 const pendingShows = [], pendingHides = [], retries = [];
-const nativeListeners = new Map(), cssProperties = new Map();
-globalThis.document = { documentElement: { style: { setProperty: (key, value) => cssProperties.set(key, value) } } };
+const nativeListeners = new Map(), cssProperties = new Map(), documentListeners = new Map(), appListeners = new Map();
+globalThis.document = { visibilityState:'visible', addEventListener:(name,fn)=>documentListeners.set(name,fn), documentElement: { style: { setProperty: (key, value) => cssProperties.set(key, value) } } };
 let showCalls = 0, hideCalls = 0, displayed = false, deferHides = false;
 let finishInitialize;
 const originalTimeout = globalThis.setTimeout;
@@ -34,7 +34,7 @@ const native = {
         return Promise.resolve();
     },
 };
-globalThis.window = { Capacitor: { isNativePlatform: () => true, Plugins: { AdMob: native, AdsConsent: { async gatherConsent() { return {canRequestAds:true,privacyOptionsRequired:false}; } } } } };
+globalThis.window = { Capacitor: { isNativePlatform: () => true, Plugins: { AdMob: native, App:{addListener(name,fn){appListeners.set(name,fn);return Promise.resolve({remove(){}});}}, AdsConsent: { async gatherConsent() { return {canRequestAds:true,privacyOptionsRequired:false}; } } } } };
 const { initAds, showBanner, hideBanner } = await import('../js/ads.js');
 const { storage } = await import('../js/storage.js');
 let checks = 0;
@@ -151,6 +151,37 @@ assert.equal(displayed, true);
 retries.splice(0).forEach(callback => callback());
 await tick();
 assert.equal(displayed, false);
+checks++;
+
+// Backgrounding while native show is pending suppresses its late response and
+// adaptive-size event. Foreground restoration keeps the latest game request.
+show = showBanner();
+document.visibilityState='hidden';
+documentListeners.get('visibilitychange')();
+pendingShows.shift().resolve();
+await show;await tick();
+assert.equal(displayed,false);
+nativeListeners.get('bannerAdSizeChanged')({height:140});
+assert.equal(cssProperties.get('--banner-height'),'0px');
+document.visibilityState='visible';
+documentListeners.get('visibilitychange')();
+await tick();
+assert.equal(pendingShows.length,1);
+pendingShows.shift().resolve();await tick();
+assert.equal(displayed,true);
+assert.equal(cssProperties.get('--banner-height'),'140px');
+checks++;
+
+// Native app state is an independent background guard when available; it
+// must suppress a banner even before a document visibility update arrives.
+appListeners.get('appStateChange')({isActive:false});await tick();
+assert.equal(displayed,false);
+assert.equal(cssProperties.get('--banner-height'),'0px');
+appListeners.get('appStateChange')({isActive:true});await tick();
+assert.equal(pendingShows.length,1);
+pendingShows.shift().resolve();await tick();
+assert.equal(displayed,true);
+await hideBanner();
 checks++;
 
 globalThis.setTimeout = originalTimeout;

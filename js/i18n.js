@@ -1,5 +1,6 @@
 // js/i18n.js
 // Internationalization system
+import { getContentText } from './content-updates.js';
 
 const LANG_KEY = 'ok_bulmacasi_lang';
 const AVAILABLE_LANGS = ['tr', 'en', 'es', 'fr', 'ja'];
@@ -11,7 +12,7 @@ let strings = {};
 // stale-while-revalidate cache can't serve last week's strings to a
 // player who installed the app today. Keeping it in sync with main.js?v=
 // is fine — both are part of the same release.
-const LANG_VERSION = '14';
+const LANG_VERSION = '15';
 
 export async function loadLanguage(lang, { persist = true } = {}) {
     if (!AVAILABLE_LANGS.includes(lang)) lang = 'tr';
@@ -33,6 +34,8 @@ export function hasSavedLanguage() {
 }
 
 export function t(key) {
+    const override = getContentText(currentLang || getLang(), key);
+    if (override !== undefined) return override;
     const parts = key.split('.');
     let val = strings;
     for (const p of parts) {

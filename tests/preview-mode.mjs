@@ -262,7 +262,7 @@ await check('five localized review notices, Play→Chapters and all 50 accessibl
     const { ScreenManager } = await import(isolatedModule('screens.js', { './storage.js': h.moduleURL }));
     const { chapters } = await import('../js/data/chapters.js');
     const { getLevelsByChapter } = await import('../js/levels.js');
-    const { loadLanguage, t } = await import('../js/i18n.js?v=2');
+    const { loadLanguage, t } = await import('../js/i18n.js?v=3');
     const manager = new ScreenManager(); let started = 0, lastStarted = null;
     manager.onStartLevel = (level, chapter) => { started++; lastStarted = { level, chapter }; manager.showScreen('game'); };
     for (const lang of ['tr', 'en', 'es', 'fr', 'ja']) {

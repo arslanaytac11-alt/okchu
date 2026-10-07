@@ -3,8 +3,8 @@
 import { chapters } from './data/chapters.js';
 import { getLevelsByChapter } from './levels.js';
 import { storage } from './storage.js';
-import { showBanner, hideBanner } from './ads.js';
-import { t } from './i18n.js?v=2';
+import { showBanner, hideBanner } from './ads.js?v=2';
+import { t } from './i18n.js?v=3';
 import { isLocalReviewMode } from './preview-mode.js';
 
 // Translation key helpers. `chapters.js` stores Turkish names/difficulty/story

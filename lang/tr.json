@@ -129,7 +129,9 @@
     "daily_fail_time_title": "Süre Bitti!",
     "daily_fail_moves_title": "Hamle Bitti!",
     "daily_fail_message": "Günlük meydan okumayı başaramadın. Yarın yeni bir level ile geri gel!",
-    "daily_fail_streak_note": "Seri sayacın korundu."
+    "daily_fail_streak_note": "Seri sayacın korundu.",
+    "premium_continue": "Ücretsiz Devam Et (+60 sn)",
+    "premium_life": "Ücretsiz Can Al (+1 Can)"
   },
   "daily": {
     "badge_time": "Süre Meydan Okuması",

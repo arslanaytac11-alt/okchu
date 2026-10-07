@@ -4,6 +4,8 @@
 // window.Capacitor.Plugins.AdMob (from @capacitor-community/admob native side).
 
 import { storage } from './storage.js';
+import { AD_POLICY, createInterstitialPolicy } from './ad-policy.js';
+import { isAdTypeDisabled } from './content-updates.js';
 
 const AD_UNITS = {
     banner:       'ca-app-pub-9257944510825127/1705675974',
@@ -19,11 +21,6 @@ const TEST_UNITS = {
     rewarded:     'ca-app-pub-3940256099942544/1712485313',
 };
 
-// Interstitial pacing: every N completed levels, but never closer than
-// MIN_INTERSTITIAL_GAP_MS apart so rapid replays don't get back-to-back ads.
-// Tuned for ~2-5 min sessions per level — 6 levels ≈ 15-25 min between ads.
-const INTERSTITIAL_EVERY_N_LEVELS = 6;
-const MIN_INTERSTITIAL_GAP_MS = 90_000; // 90s floor
 const LAST_INTERSTITIAL_KEY = 'okchu.ads.lastInterstitialAt';
 
 let initialized = false;
@@ -34,18 +31,24 @@ let bannerRequestEpoch = 0;
 let bannerSyncInFlight = null;
 let bannerMeasuredHeight = 50;
 let bannerSizeListenerBound = false;
-let levelsSinceInterstitial = 0;
-// Persisted across app launches so the 90s gate can't be reset by killing and
-// reopening the app — matches AdMob policy spirit ("don't surprise the user
-// with back-to-back ads"). localStorage survives WKWebView restarts.
-let lastInterstitialAt = (() => {
+// Persist the last actual presentation; reopening never resets the cooldown.
+const lastInterstitialAt = (() => {
     try { return parseInt(localStorage.getItem(LAST_INTERSTITIAL_KEY) || '0', 10) || 0; }
     catch { return 0; }
 })();
+const interstitialPolicy = createInterstitialPolicy({ lastShownAt: lastInterstitialAt });
 let useTestAds = false;
 let adsAllowed = false;
 let privacyOptionsRequired = false;
 let sdkInitInFlight = null;
+let foreground = true;
+let lifecycleBound = false;
+let adEpoch = 0;
+let fullScreenRequest = null;
+let fullScreenSuspended = false;
+let interstitialReadyAt = 0;
+let interstitialLoading = null;
+let listenersReady = null;
 
 function getConsentPlugin() {
     if (!isNative()) return null;
@@ -60,7 +63,7 @@ function applyConsentStatus(status) {
     if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') {
         document.dispatchEvent(new CustomEvent('okchu:ad-privacy', { detail: { privacyOptionsRequired } }));
     }
-    if (!adsAllowed) reserveBannerHeight(0);
+    if (!adsAllowed) cancelPendingAds();
 }
 
 export function isAdPrivacyOptionsRequired() { return privacyOptionsRequired; }
@@ -76,11 +79,12 @@ async function initializeAdSdk(A) {
             tagForUnderAgeOfConsent: false,
             maxAdContentRating: 'G',
         });
+        initialized = true;
+        if (!adsAllowed || isPremium() || !isForeground()) return;
         try {
             const status = await A.trackingAuthorizationStatus();
             if (status?.status === 'notDetermined') await A.requestTrackingAuthorization();
         } catch {}
-        initialized = true;
     })().finally(() => { sdkInitInFlight = null; });
     return sdkInitInFlight;
 }
@@ -100,29 +104,78 @@ export async function showAdPrivacyOptions() {
     }
 }
 
-// Rewarded-ad event tracking. The @capacitor-community/admob v6 plugin has
-// two known iOS bugs that strand the show promise: (1) showRewardVideoAd's
-// call.resolve only fires inside userDidEarnRewardHandler, so a dismissal
-// without earning never resolves; (2) prepareRewardVideoAd's load completion
-// can hang on the second call in a session. Listening to the plugin's
-// events instead of awaiting the promises lets us detect both reward and
-// failure deterministically and recover with a timeout.
-let rewardListenersBound = false;
-let pendingReward = null; // { onLoaded, onLoadFail, onReward, onDismissed, onShowFail }
+function isForeground() {
+    return foreground && (typeof document === 'undefined' || document.visibilityState !== 'hidden');
+}
 
-function bindRewardListeners(A) {
-    if (rewardListenersBound) return;
-    rewardListenersBound = true;
-    const dispatch = (key, payload) => {
-        if (!pendingReward) return;
-        const fn = pendingReward[key];
-        if (fn) fn(payload);
-    };
-    A.addListener('onRewardedVideoAdLoaded',       (info)  => dispatch('onLoaded', info));
-    A.addListener('onRewardedVideoAdFailedToLoad', (err)   => dispatch('onLoadFail', err));
-    A.addListener('onRewardedVideoAdReward',       (rew)   => dispatch('onReward', rew));
-    A.addListener('onRewardedVideoAdDismissed',    ()      => dispatch('onDismissed'));
-    A.addListener('onRewardedVideoAdFailedToShow', (err)   => dispatch('onShowFail', err));
+function canRequestAds(kind) {
+    return initialized && adsAllowed && !isPremium() && isForeground() &&
+        (!kind || !isAdTypeDisabled(kind));
+}
+
+function currentContext(options) {
+    if (typeof options?.isCurrent !== 'function') return false;
+    try { return options.isCurrent() === true; } catch { return false; }
+}
+
+function bindLifecycle() {
+    if (lifecycleBound) return;
+    lifecycleBound = true;
+    document?.addEventListener?.('visibilitychange', () => {
+        if (!isForeground()) cancelPendingAds();
+        else synchronizeBanner().catch(() => {});
+    });
+    window?.addEventListener?.('pagehide', () => cancelPendingAds());
+    const app = window.Capacitor?.Plugins?.App;
+    if (typeof app?.addListener === 'function') {
+        Promise.resolve(app.addListener('appStateChange', status => {
+            foreground = status?.isActive === true;
+            if (!foreground) cancelPendingAds();
+            else synchronizeBanner().catch(() => {});
+        })).catch(() => {});
+    }
+}
+
+function bindFullScreenListeners(A) {
+    if (listenersReady) return listenersReady;
+    const listen = (event, kind, action) => A.addListener(event, payload => {
+        const request = fullScreenRequest;
+        if (request?.kind === kind) request[action]?.(payload);
+    });
+    listenersReady = Promise.all([
+        listen('interstitialAdShowed', 'interstitial', 'onShowed'),
+        listen('interstitialAdDismissed', 'interstitial', 'onDismissed'),
+        listen('interstitialAdFailedToShow', 'interstitial', 'onShowFail'),
+        listen('onRewardedVideoAdLoaded', 'rewarded', 'onLoaded'),
+        listen('onRewardedVideoAdFailedToLoad', 'rewarded', 'onLoadFail'),
+        listen('onRewardedVideoAdReward', 'rewarded', 'onReward'),
+        listen('onRewardedVideoAdDismissed', 'rewarded', 'onDismissed'),
+        listen('onRewardedVideoAdFailedToShow', 'rewarded', 'onShowFail'),
+    ]).catch(error => { listenersReady = null; throw error; });
+    return listenersReady;
+}
+
+// Call on navigation or entitlement changes. An in-flight native request is
+// quarantined until its own terminal event, so a late reward cannot belong
+// to a new button press. Cancellation itself never earns a reward.
+export function cancelPendingAds() {
+    adEpoch++;
+    interstitialReadyAt = 0;
+    fullScreenRequest?.cancel();
+    bannerRequestEpoch++;
+    reserveBannerHeight(bannerShouldShow() ? bannerMeasuredHeight : 0);
+    synchronizeBanner().catch(() => {});
+}
+
+// A cancelled/timed-out promise does not dismiss native full-screen content.
+// Navigation must retain its result overlay until the SDK terminal event.
+export function isAdPresentationPending() {
+    return fullScreenRequest?.phase === 'showing' || fullScreenRequest?.phase === 'dismissed';
+}
+
+function bannerShouldShow() {
+    return bannerWantedVisible && adsAllowed && !isPremium() && isForeground() &&
+        !fullScreenSuspended && !isAdTypeDisabled('banner');
 }
 
 function isNative() {
@@ -155,7 +208,7 @@ function bindBannerSize(A) {
         const height = Number(info?.height);
         if (!Number.isFinite(height) || height < 0) return;
         if (height > 0) bannerMeasuredHeight = height;
-        reserveBannerHeight(bannerWantedVisible && adsAllowed && !isPremium() ? height : 0);
+        reserveBannerHeight(bannerShouldShow() ? height : 0);
     })).catch(() => { bannerSizeListenerBound = false; });
 }
 
@@ -166,6 +219,7 @@ export async function initAds({ testMode = false } = {}) {
     useTestAds = testMode;
     const A = getPlugin();
     if (!A) return;
+    bindLifecycle();
     bindBannerSize(A);
 
     initInFlight = (async () => {
@@ -190,7 +244,7 @@ export async function initAds({ testMode = false } = {}) {
 export async function showBanner() {
     bannerWantedVisible = true;
     bannerRequestEpoch++;
-    reserveBannerHeight(getPlugin() && adsAllowed && !isPremium() ? bannerMeasuredHeight : 0);
+    reserveBannerHeight(getPlugin() && bannerShouldShow() ? bannerMeasuredHeight : 0);
     return synchronizeBanner();
 }
 
@@ -217,7 +271,7 @@ function synchronizeBanner() {
         // is pending, so reconcile the latest request after every response.
         while (true) {
             const epoch = bannerRequestEpoch;
-            const wanted = bannerWantedVisible && adsAllowed && !isPremium();
+            const wanted = bannerShouldShow();
             if (wanted === bannerVisible) {
                 settledEpoch = epoch;
                 return;
@@ -242,7 +296,7 @@ function synchronizeBanner() {
                 // A retry belongs to the screen request that failed. It
                 // must not revive a banner after navigation or a purchase.
                 setTimeout(() => {
-                    if (bannerRequestEpoch === epoch && (bannerWantedVisible && adsAllowed && !isPremium()) !== bannerVisible) {
+                    if (bannerRequestEpoch === epoch && bannerShouldShow() !== bannerVisible) {
                         synchronizeBanner().catch(() => {});
                     }
                 }, 3000);
@@ -258,74 +312,154 @@ function synchronizeBanner() {
 }
 
 export function noteLevelCompleted() {
-    levelsSinceInterstitial += 1;
+    interstitialPolicy.noteCompletion();
+    // Load at the result boundary. The next button never waits for a load,
+    // nor can a late load completion open an unsolicited advertisement.
+    preloadInterstitial().catch(() => {});
 }
 
-export async function maybeShowInterstitial() {
-    if (isPremium() || !adsAllowed) return false;
-    if (levelsSinceInterstitial < INTERSTITIAL_EVERY_N_LEVELS) return false;
-    // Time-gate: even if level count hit, don't show if last ad was too recent.
-    const now = Date.now();
-    if (lastInterstitialAt && (now - lastInterstitialAt) < MIN_INTERSTITIAL_GAP_MS) return false;
+async function preloadInterstitial() {
+    if (!canRequestAds('interstitial') || fullScreenRequest || interstitialLoading ||
+        !interstitialPolicy.canShow({ placement: 'level-result' })) return;
+    if (interstitialReadyAt && Date.now() - interstitialReadyAt < AD_POLICY.loadedAdLifetimeMs) return;
     const A = getPlugin();
-    if (!A || !initialized) return false;
-    try {
-        await A.prepareInterstitial({ adId: unitId('interstitial'), isTesting: useTestAds });
-        if (!adsAllowed || isPremium()) return false;
-        await A.showInterstitial();
-        levelsSinceInterstitial = 0;
-        lastInterstitialAt = now;
-        try { localStorage.setItem(LAST_INTERSTITIAL_KEY, String(now)); } catch {}
-        return true;
-    } catch (e) {
-        console.warn('[ads] interstitial failed', e);
+    if (!A) return;
+    const epoch = adEpoch;
+    interstitialLoading = (async () => {
+        let timer;
+        try {
+            const loaded = await Promise.race([
+                Promise.resolve(A.prepareInterstitial({ adId: unitId('interstitial'), isTesting: useTestAds })).then(() => true),
+                new Promise(resolve => { timer = setTimeout(() => resolve(false), AD_POLICY.loadTimeoutMs); }),
+            ]);
+            if (loaded && epoch === adEpoch && canRequestAds('interstitial')) interstitialReadyAt = Date.now();
+        } catch { interstitialReadyAt = 0; }
+        finally { clearTimeout(timer); }
+    })().finally(() => { interstitialLoading = null; });
+    return interstitialLoading;
+}
+
+function suspendBanner(suspended) {
+    fullScreenSuspended = suspended;
+    bannerRequestEpoch++;
+    reserveBannerHeight(bannerShouldShow() ? bannerMeasuredHeight : 0);
+    return synchronizeBanner();
+}
+
+function makeFullScreenRequest(kind, options) {
+    const epoch = adEpoch;
+    const timers = new Set();
+    let settled = false;
+    let resolve;
+    const promise = new Promise(done => { resolve = done; });
+    const request = {
+        kind, phase: 'loading', cancelled: false, earned: false, shown: false,
+        promise,
+        valid: () => !request.cancelled && epoch === adEpoch && canRequestAds(kind) && currentContext(options),
+        timer(callback, delay) {
+            const id = setTimeout(() => { timers.delete(id); callback(); }, delay);
+            timers.add(id);
+            return id;
+        },
+        clearTimer(id) { clearTimeout(id); timers.delete(id); },
+        finish(ok, terminal = false) {
+            if (!settled) { settled = true; resolve(ok === true && request.valid()); }
+            if (terminal) {
+                for (const id of timers) clearTimeout(id);
+                timers.clear();
+                if (fullScreenRequest === request) {
+                    fullScreenRequest = null;
+                    suspendBanner(false).catch(() => {});
+                }
+            }
+        },
+        cancel() {
+            request.cancelled = true;
+            request.finish(false);
+            // Native load/presentation remains quarantined until its terminal
+            // event. No following request can consume that request's callbacks.
+        },
+    };
+    fullScreenRequest = request;
+    return request;
+}
+
+export async function maybeShowInterstitial(options = {}) {
+    if (!canRequestAds('interstitial') || fullScreenRequest || !currentContext(options) ||
+        !interstitialPolicy.canShow({ placement: options.placement })) return false;
+    const now = Date.now();
+    if (!interstitialReadyAt || now - interstitialReadyAt >= AD_POLICY.loadedAdLifetimeMs) {
+        preloadInterstitial().catch(() => {});
         return false;
     }
+    const A = getPlugin();
+    if (!A) return false;
+    const request = makeFullScreenRequest('interstitial', options);
+    request.onShowed = () => {
+        if (request.shown) return;
+        request.shown = true;
+        const shownAt = Date.now();
+        interstitialPolicy.noteShown(shownAt);
+        try { localStorage.setItem(LAST_INTERSTITIAL_KEY, String(shownAt)); } catch {}
+    };
+    request.onDismissed = () => request.finish(request.shown, true);
+    request.onShowFail = () => request.finish(false, true);
+    try {
+        await bindFullScreenListeners(A);
+        if (!request.valid()) { request.finish(false, true); return request.promise; }
+        await suspendBanner(true);
+        if (!request.valid()) { request.finish(false, true); return request.promise; }
+        interstitialReadyAt = 0; // Native full-screen objects are single-use.
+        request.phase = 'showing';
+        request.timer(() => request.cancel(), AD_POLICY.presentationTimeoutMs);
+        // On iOS this promise resolves at presentation, not dismissal.
+        // Navigation resumes only after the native terminal event.
+        Promise.resolve(A.showInterstitial()).catch(() => request.onShowFail());
+    } catch { request.finish(false, true); }
+    return request.promise;
 }
 
-export async function showRewarded() {
+export async function showRewarded(options = {}) {
+    // A reward requires an explicit offer/button and a live native SDK event.
+    // Web preview and Premium benefits belong to the caller's separate rules.
     const A = getPlugin();
-    // An unavailable native ad never earns a reward. The browser preview
-    // supplies it without an SDK, and Premium owners need no ad to continue.
-    if (!isNative() || isPremium()) return true;
-    if (!A || !initialized || !adsAllowed) return false;
-    if (pendingReward) return false; // a request is already in flight
-    bindRewardListeners(A);
-
-    // Phase 1: load. Wait for either the Loaded or FailedToLoad event with a
-    // timeout — the prepare promise itself is unreliable across calls (see
-    // comment near rewardListenersBound).
-    const loaded = await new Promise((resolve) => {
-        let done = false;
-        const finish = (ok) => { if (!done) { done = true; pendingReward = null; resolve(ok); } };
-        pendingReward = {
-            onLoaded:   () => finish(true),
-            onLoadFail: () => finish(false),
-        };
-        A.prepareRewardVideoAd({ adId: unitId('rewarded'), isTesting: useTestAds })
-            .catch(() => finish(false));
-        setTimeout(() => finish(false), 10000);
-    });
-    if (!loaded || !adsAllowed || isPremium()) return isPremium();
-
-    // Phase 2: show. Resolve when Rewarded fires (success), or Dismissed /
-    // FailedToShow / timeout (failure). We do not await showRewardVideoAd —
-    // its promise only resolves on reward in this plugin version, hanging on
-    // dismissal-without-reward.
-    return new Promise((resolve) => {
-        let done = false;
-        let earned = false;
-        const finish = (ok) => { if (!done) { done = true; pendingReward = null; resolve(ok); } };
-        pendingReward = {
-            onReward:    () => { earned = true; },
-            onDismissed: () => {
-                // Rewarded sometimes fires just after Dismissed on iOS — give
-                // it a tick before deciding.
-                setTimeout(() => finish(earned), 250);
-            },
-            onShowFail:  () => finish(false),
-        };
-        A.showRewardVideoAd().catch(() => {}); // its rejection path covered by onShowFail
-        setTimeout(() => finish(earned), 90000); // ad cap is ~30s; 90s is a safe ceiling
-    });
+    if (!A || !canRequestAds('rewarded') || options.userInitiated !== true ||
+        !currentContext(options) || fullScreenRequest || interstitialLoading) return false;
+    const request = makeFullScreenRequest('rewarded', options);
+    let loadTimer;
+    request.onLoaded = async () => {
+        if (request.phase !== 'loading') return;
+        request.phase = 'loaded';
+        request.clearTimer(loadTimer);
+        if (!request.valid()) { request.finish(false, true); return; }
+        try {
+            await suspendBanner(true);
+            if (!request.valid()) { request.finish(false, true); return; }
+            request.phase = 'showing';
+            request.timer(() => request.cancel(), AD_POLICY.presentationTimeoutMs);
+            // The installed iOS show promise hangs on a dismissal without a
+            // reward; SDK events below are the only reward authority.
+            Promise.resolve(A.showRewardVideoAd()).catch(() => request.onShowFail());
+        } catch { request.finish(false, true); }
+    };
+    request.onLoadFail = () => request.finish(false, true);
+    request.onReward = () => {
+        if ((request.phase === 'showing' || request.phase === 'dismissed') && request.valid()) request.earned = true;
+    };
+    request.onDismissed = () => {
+        if (request.phase !== 'showing') return;
+        request.phase = 'dismissed';
+        // A short callback-order grace accommodates mediated adapters. It is
+        // not a reward; only onReward can set earned, once for this request.
+        request.timer(() => request.finish(request.earned, true), AD_POLICY.rewardDismissGraceMs);
+    };
+    request.onShowFail = () => request.finish(false, true);
+    try {
+        await bindFullScreenListeners(A);
+        if (!request.valid()) { request.finish(false, true); return request.promise; }
+        loadTimer = request.timer(() => request.cancel(), AD_POLICY.loadTimeoutMs);
+        Promise.resolve(A.prepareRewardVideoAd({ adId: unitId('rewarded'), isTesting: useTestAds }))
+            .then(() => request.onLoaded(), () => request.onLoadFail());
+    } catch { request.finish(false, true); }
+    return request.promise;
 }

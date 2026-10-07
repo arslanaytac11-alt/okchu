@@ -1,6 +1,6 @@
 // Bump APP_VERSION on every deploy — the cache name derives from it so clients
 // pick up new assets and old caches are cleaned up on activate.
-const APP_VERSION = '40';
+const APP_VERSION = '41';
 const CACHE_NAME = `okchu-v${APP_VERSION}`;
 
 const ASSETS = [
@@ -16,6 +16,9 @@ const ASSETS = [
     '/js/pwa-install.js',
     '/js/rate-us.js',
     '/js/ads.js',
+    '/js/ad-policy.js',
+    '/js/content-updates.js',
+    '/js/rewarded-action.js',
     '/js/iap.js',
     '/js/game.js',
     '/js/hit-test.js',

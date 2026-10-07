@@ -11,7 +11,7 @@ import { isLocalReviewMode } from './preview-mode.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
 import { tapLight, tapMedium, tapHeavy, notifyError } from './haptics.js';
-import { t } from './i18n.js?v=2';
+import { t } from './i18n.js?v=3';
 import { getPuzzleTimeLimit, BOARD_VISUALS } from './balance.js?v=4';
 import { createArrowRoute, sampleArrowMotion, arrowExitDistance, arrowDepartureEase, assignBalancedArrowColors } from './arrow-motion.js?v=3';
 

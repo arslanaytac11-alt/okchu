@@ -1,5 +1,5 @@
 // A small narrative layer over existing Egypt progression; no save writes.
-import { t } from './i18n.js?v=2';
+import { t } from './i18n.js?v=3';
 
 export function renderEgyptResult(level, isDaily = false) {
     const card = document.getElementById('complete-story');

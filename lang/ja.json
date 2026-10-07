@@ -129,7 +129,9 @@
     "daily_fail_time_title": "時間切れ！",
     "daily_fail_moves_title": "手数切れ！",
     "daily_fail_message": "今日のデイリーチャレンジに挑戦できませんでした。明日、新しいレベルで戻ってきてください！",
-    "daily_fail_streak_note": "連続記録は保持されました。"
+    "daily_fail_streak_note": "連続記録は保持されました。",
+    "premium_continue": "無料で続ける（+60秒）",
+    "premium_life": "無料ライフ（+1）"
   },
   "daily": {
     "badge_time": "時間チャレンジ",

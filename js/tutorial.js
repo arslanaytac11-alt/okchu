@@ -1,7 +1,7 @@
 // js/tutorial.js
 // First-time player tutorial
 
-import { t } from './i18n.js?v=2';
+import { t } from './i18n.js?v=3';
 
 const TUTORIAL_KEY = 'ok_bulmacasi_tutorial_done';
 

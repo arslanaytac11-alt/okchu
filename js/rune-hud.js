@@ -1,4 +1,4 @@
-import { t } from './i18n.js?v=2';
+import { t } from './i18n.js?v=3';
 export const RUNE_GLYPHS = ['○', '◇', '△', '□'];
 const NAMES = ['circle', 'diamond', 'triangle', 'square'];
 export function runeName(rune) { return t(`runes.${NAMES[rune]}`); }

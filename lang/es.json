@@ -129,7 +129,9 @@
     "daily_fail_time_title": "Tiempo Agotado!",
     "daily_fail_moves_title": "Sin Movimientos!",
     "daily_fail_message": "No superaste el desafio diario. Vuelve manana para un nuevo nivel!",
-    "daily_fail_streak_note": "Tu racha se mantiene."
+    "daily_fail_streak_note": "Tu racha se mantiene.",
+    "premium_continue": "Continuar gratis (+60 s)",
+    "premium_life": "Obtener vida gratis (+1 vida)"
   },
   "daily": {
     "badge_time": "Desafio de Tiempo",

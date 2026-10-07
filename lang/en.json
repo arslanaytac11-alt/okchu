@@ -129,7 +129,9 @@
     "daily_fail_time_title": "Time's Up!",
     "daily_fail_moves_title": "Out of Moves!",
     "daily_fail_message": "You didn't beat today's daily challenge. Come back tomorrow for a new level!",
-    "daily_fail_streak_note": "Your streak is preserved."
+    "daily_fail_streak_note": "Your streak is preserved.",
+    "premium_continue": "Continue free (+60 sec)",
+    "premium_life": "Get a free life (+1 life)"
   },
   "daily": {
     "badge_time": "Time Challenge",

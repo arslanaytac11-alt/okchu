@@ -9,7 +9,7 @@ Object.defineProperty(globalThis,'navigator',{value:{},configurable:true});globa
 function element(id){if(!elements.has(id)){const classes=new Set();elements.set(id,{style:{setProperty(){}},classList:{add(...k){k.forEach(x=>classes.add(x));},remove(...k){k.forEach(x=>classes.delete(x));},toggle(k,on){(on===undefined?!classes.has(k):on)?classes.add(k):classes.delete(k);},contains:k=>classes.has(k)},textContent:'',innerHTML:'',addEventListener(){},setAttribute(){}});}return elements.get(id);}
 globalThis.document={getElementById:element,documentElement:element('root'),body:{dataset:{}}};
 globalThis.fetch=async url=>({json:async()=>JSON.parse(readFileSync(String(url).split('?')[0],'utf8'))});
-const {loadLanguage}=await import('../js/i18n.js?v=2');await loadLanguage('tr',{persist:false});
+const {loadLanguage}=await import('../js/i18n.js?v=3');await loadLanguage('tr',{persist:false});
 const {Game}=await import('../js/game.js');const {storage}=await import('../js/storage.js');const {chapters}=await import('../js/data/chapters.js');
 const {allLevels}=await import('../js/levels.js');const {validateLevel}=await import('../js/level-validator.js');const {createRuneSolver}=await import('../js/rune-order.js');
 const trap={id:'rune-probe',name:'probe',gridWidth:9,gridHeight:11,runeCycle:[0,1,2],paths:[

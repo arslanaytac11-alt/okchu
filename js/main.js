@@ -1,23 +1,25 @@
 // js/main.js
 
-import { Game } from './game.js?v=11';
-import { ScreenManager } from './screens.js?v=6';
+import { Game } from './game.js?v=12';
+import { ScreenManager } from './screens.js?v=7';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
-import { initLanguage, loadLanguage, t, getLang, hasSavedLanguage } from './i18n.js?v=2';
+import { initLanguage, loadLanguage, t, getLang, hasSavedLanguage } from './i18n.js?v=3';
 import { getDailyChallenge, isDailyCompleted, completeDaily, getDailyStreak } from './daily.js';
 import { checkAchievements, getAllAchievements, getAchievementStats } from './achievements.js';
 import { allLevels } from './levels.js';
 import { maybeShowIosInstall } from './pwa-install.js';
 import { shouldShowRatePrompt, showRatePrompt } from './rate-us.js';
-import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded, showAdPrivacyOptions, isAdPrivacyOptionsRequired } from './ads.js';
+import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded, showAdPrivacyOptions, isAdPrivacyOptionsRequired, cancelPendingAds, isAdPresentationPending } from './ads.js?v=2';
 import { initIAP, buyPremium, restorePurchases, onPremiumOwned, isPremiumOwned } from './iap.js';
 import { notifySuccess, tapLight } from './haptics.js';
 import { renderEgyptResult } from './egypt-story.js';
 import { installDialogFocus } from './dialog-focus.js';
 import { createLaunchScheduler } from './launch-scheduler.js';
 import { isLocalReviewMode } from './preview-mode.js';
+import { createRewardedAction } from './rewarded-action.js';
+import { loadCachedContentUpdates, initializeContentUpdates } from './content-updates.js';
 
 // Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
 // CRITICAL: location.hostname is "localhost" inside the Capacitor iOS shell
@@ -35,6 +37,8 @@ const isWebDev = !isNativeApp && (
     location.protocol === 'http:'
 );
 const isNativeDebug = isNativeApp && window.Capacitor.DEBUG === true;
+loadCachedContentUpdates();
+void initializeContentUpdates();
 initAds({ testMode: isWebDev || isNativeDebug });
 
 // Silence non-critical console output in production. Keeps the iOS device-log
@@ -55,6 +59,7 @@ if ((isNativeApp && !isNativeDebug) || (!isNativeApp && !isWebDev && location.pr
 // the active banner immediately so the user sees the ad removal instantly.
 onPremiumOwned(() => {
     document.body.dataset.premium = 'true';
+    cancelPendingAds();
     hideBanner();
     requestAnimationFrame(() => game.handleResize());
     const overlay = document.getElementById('overlay-premium');
@@ -225,8 +230,13 @@ const launchScheduler = createLaunchScheduler({
         if (label) label.textContent = chapterName === chapterNameKey ? chapter?.name || '' : chapterName;
     },
 });
+let navigationGeneration = 0;
+let rewardOfferGeneration = 0;
 const originalShowScreen = screenManager.showScreen.bind(screenManager);
 screenManager.showScreen = name => {
+    navigationGeneration++;
+    rewardOfferGeneration++;
+    cancelPendingAds();
     if (name !== 'game') launchScheduler.cancel();
     return originalShowScreen(name);
 };
@@ -460,15 +470,28 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
     // overlay open is discarded (overlay can reopen across levels).
     const oldBtn = document.getElementById('btn-next-level');
     const nextBtn = oldBtn.cloneNode(true);
+    nextBtn.disabled = false;
     oldBtn.parentNode.replaceChild(nextBtn, oldBtn);
     noteLevelCompleted();
     nextBtn.addEventListener('click', async () => {
-        const completedEpoch = game._levelEpoch;
+        const navigation = navigationGeneration;
+        const sameCompletion = () => navigation === navigationGeneration && isStillCompleted() &&
+            document.getElementById('screen-game').classList.contains('active');
+        const isCurrent = () => sameCompletion() && !document.hidden;
+        if (nextBtn.disabled || !isCurrent()) return;
+        nextBtn.disabled = true;
         overlay.classList.add('hidden');
-        await maybeShowInterstitial();
-        // A slow native ad must not launch a puzzle after the player went
-        // back, retried, or opened another level while it was loading.
-        if (game._levelEpoch !== completedEpoch || !document.getElementById('screen-game').classList.contains('active')) return;
+        await maybeShowInterstitial({ placement: 'level-result', isCurrent });
+        // Native presentation resolves only when its own ad is dismissed.
+        if (!isCurrent() || isAdPresentationPending()) {
+            // A suspended app or quarantined native presentation cannot start
+            // a timed puzzle behind the ad. Keep this result available to retry.
+            if (sameCompletion()) {
+                overlay.classList.remove('hidden');
+                nextBtn.disabled = false;
+            }
+            return;
+        }
         if (nextLevel && nextLevel.chapter === completedLevel.chapter) {
             const chapter = chapters.find(c => c.id === nextLevel.chapter);
             if (storage.isBossLocked(chapter.id, (nextLevel.level - 1) % 5 + 1)) {
@@ -479,7 +502,7 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
         } else {
             screenManager.showChapters();
         }
-    }, { once: true });
+    });
 };
 
 // When lives run out
@@ -502,6 +525,7 @@ game.onTimeUp = () => {
     const freshen = (id) => {
         const old = document.getElementById(id);
         const clone = old.cloneNode(true);
+        clone.disabled = false;
         old.parentNode.replaceChild(clone, old);
         return clone;
     };
@@ -511,28 +535,9 @@ game.onTimeUp = () => {
 
     const close = () => overlay.classList.add('hidden');
 
-    // Same pattern as the no-lives overlay: remove { once: true } so a
-    // failed ad doesn't lock the player out, show loading state, retry
-    // available without re-opening, and goodwill-grant the +60 s after
-    // 3 silent failures so an AdMob no-fill doesn't strand them.
-    const txLocal2 = (key, fb) => { const v = t(key); return v === key ? fb : v; };
-    const adLabel = adBtn.textContent;
-    let adFailCount = 0;
-    adBtn.addEventListener('click', async () => {
-        if (adBtn.disabled) return;
-        adBtn.disabled = true;
-        adBtn.textContent = txLocal2('overlay.loading_ad', 'Reklam yükleniyor...');
-        let earned = false;
-        try { earned = await showRewarded(); } catch { earned = false; }
-        if (earned || adFailCount >= 2) {
-            close();
-            game.resumeLevel(60);
-            return;
-        }
-        adFailCount++;
-        adBtn.disabled = false;
-        adBtn.textContent = txLocal2('overlay.ad_unavailable', 'Reklam yok, tekrar dene');
-        setTimeout(() => { adBtn.textContent = adLabel; }, 2500);
+    bindRewardOffer(adBtn, overlay, 'overlay.premium_continue', () => {
+        close();
+        game.resumeLevel(60);
     });
 
     retryBtn.addEventListener('click', () => {
@@ -575,6 +580,7 @@ function showDailyFailOverlay(reason) {
     const freshen = (id) => {
         const old = document.getElementById(id);
         const clone = old.cloneNode(true);
+        clone.disabled = false;
         old.parentNode.replaceChild(clone, old);
         return clone;
     };
@@ -596,6 +602,7 @@ function showNoLivesOverlay() {
     const freshen = (id) => {
         const old = document.getElementById(id);
         const clone = old.cloneNode(true);
+        clone.disabled = false;
         old.parentNode.replaceChild(clone, old);
         return clone;
     };
@@ -627,55 +634,52 @@ function showNoLivesOverlay() {
         }
     };
 
-    // Resilient rewarded-ad handler. Removed `{ once: true }` so a failed
-    // load doesn't lock the player out — they can retry without closing
-    // the overlay. Shows a loading state on the button while preparing,
-    // surfaces a clear message if the ad never arrives, and only closes
-    // the overlay on actual success. Goodwill grace: if the ad fails
-    // 3 times in a row (likely AdMob no-fill on a brand-new account),
-    // grant the life anyway so the player isn't stuck — better to lose
-    // a few impressions than churn a paying user.
-    const adLabel = adBtn.textContent;
-    let adFailCount = 0;
-    adBtn.addEventListener('click', async () => {
-        if (adBtn.disabled) return;
-        adBtn.disabled = true;
-        adBtn.textContent = txLocal('overlay.loading_ad', 'Reklam yükleniyor...');
-        let earned = false;
-        try {
-            earned = await showRewarded();
-        } catch {
-            earned = false;
+    bindRewardOffer(adBtn, overlay, 'overlay.premium_life', () => {
+        game.livesManager.addLife();
+        game.livesManager.renderLives(livesDisplay);
+        closeOverlay();
+        if (document.getElementById('screen-game').classList.contains('active') && game.currentLevel) {
+            game.resumeLevel(game.timeRemaining);
         }
-        if (earned) {
-            game.livesManager.addLife();
-            game.livesManager.renderLives(livesDisplay);
-            closeOverlay();
-            if (document.getElementById('screen-game').classList.contains('active')) game.resumeLevel(game.timeRemaining);
-            return;
-        }
-        adFailCount++;
-        if (adFailCount >= 3) {
-            // Goodwill: the player has tapped Watch Ad three times and
-            // every attempt failed (most likely AdMob no-fill). Grant
-            // the life so they can keep playing instead of leaving.
-            game.livesManager.addLife();
-            game.livesManager.renderLives(livesDisplay);
-            closeOverlay();
-            if (document.getElementById('screen-game').classList.contains('active')) game.resumeLevel(game.timeRemaining);
-            return;
-        }
-        adBtn.disabled = false;
-        adBtn.textContent = txLocal('overlay.ad_unavailable', 'Reklam yok, tekrar dene');
-        // Reset label after a short delay so the player sees the failure
-        // notice for ~2.5 s then the button looks clickable again.
-        setTimeout(() => { adBtn.textContent = adLabel; }, 2500);
     });
 
     waitBtn.addEventListener('click', () => {
         closeOverlay();
         screenManager.showChapters();
     }, { once: true });
+}
+
+// Bind one visible offer to its current route, level and opening. Leaving or
+// reopening an overlay invalidates its asynchronous callbacks and label timer.
+function bindRewardOffer(button, overlay, premiumLabelKey, grant) {
+    const offer = ++rewardOfferGeneration;
+    const navigation = navigationGeneration;
+    const epoch = game._levelEpoch;
+    const level = game.currentLevel;
+    const offerCurrent = () => offer === rewardOfferGeneration && navigation === navigationGeneration &&
+        epoch === game._levelEpoch && level === game.currentLevel && !overlay.classList.contains('hidden');
+    const isCurrent = () => offerCurrent() && !document.hidden;
+    const baseLabel = t(button.getAttribute('data-i18n'));
+    button.disabled = false;
+    const label = () => isPremiumOwned() ? t(premiumLabelKey) : baseLabel;
+    button.textContent = label();
+    const action = createRewardedAction({
+        isCurrent, hasPremium: isPremiumOwned, requestReward: showRewarded, applyReward: grant,
+    });
+    button.addEventListener('click', async () => {
+        if (button.disabled || !isCurrent()) return;
+        button.disabled = true;
+        button.textContent = t('overlay.loading_ad');
+        const result = await action.run();
+        if (!offerCurrent()) return;
+        button.disabled = false;
+        if (result === 'unavailable') {
+            button.textContent = t('overlay.ad_unavailable');
+            setTimeout(() => { if (isCurrent()) button.textContent = label(); }, 2500);
+        } else {
+            button.textContent = label();
+        }
+    });
 }
 
 // Hint button

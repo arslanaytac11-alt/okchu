@@ -5,7 +5,7 @@ function el(id){if(!elements.has(id)){const classes=new Set();elements.set(id,{t
 globalThis.document={getElementById:el,documentElement:{}};
 globalThis.localStorage={getItem:()=>null,setItem(){throw Error('Pilot must not write a save')}};
 globalThis.fetch=async url=>({json:async()=>JSON.parse(readFileSync(new URL('../'+url.split('?')[0],import.meta.url)))});
-const {loadLanguage,t}=await import('../js/i18n.js?v=2');
+const {loadLanguage,t}=await import('../js/i18n.js?v=3');
 const {renderEgyptResult}=await import('../js/egypt-story.js');
 let checks=0;
 for(const lang of ['tr','en','es','fr','ja']){

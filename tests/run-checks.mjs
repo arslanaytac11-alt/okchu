@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-const checks = ['rune-order','rune-game','input-state','touch-usability','story-navigation','level-audit','egypt-pilot','redesign-puzzles','puzzle-authoring','launch-scheduler','ad-banner','ad-consent','iap','rating','haptics','arrow-motion','blocked-feedback','celebration','progress-reset','board-outline','duo-viewport','preview-mode','service-worker'];
+const checks = ['rune-order','rune-game','input-state','touch-usability','story-navigation','level-audit','egypt-pilot','redesign-puzzles','puzzle-authoring','launch-scheduler','rewarded-action','content-updates','ad-flow','ad-disabled','ad-banner','ad-consent','iap','rating','haptics','arrow-motion','blocked-feedback','celebration','progress-reset','board-outline','duo-viewport','preview-mode','service-worker'];
 const results = {};
 for (const name of checks) {
     const result = spawnSync(process.execPath, [`tests/${name}.mjs`], { encoding:'utf8' });

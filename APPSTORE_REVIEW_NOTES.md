@@ -8,6 +8,10 @@ No account or login is required. Open Play, select the first chapter, and start 
 
 For precision selection, briefly hold an arrow to magnify the touch area and preview it, then lift the same finger to move it. Pinching or panning cancels a pending selection; zoomed board edges remain reachable.
 
+The app can download a strictly validated JSON packet from https://raw.githubusercontent.com/arslanaytac11-alt/okchu/main/ota/stable.json. This only corrects existing help/story text or disables an existing ad type. It does not download executable code, CSS, rules, puzzles, plugins, purchase settings or permissions. Valid data takes effect on the next app launch, with bundled offline fallback. The initial packet is an empty revision 1.
+
+Interstitials are preloaded and considered only when the player taps Next after a completed puzzle: at least 6 completions, 120 seconds since the previous ad and 180 seconds since app launch. A puzzle does not start behind an undismissed ad. Banner space is reserved inside the safe gameplay pane and suppressed during full-screen ads. Reward videos require the explicit life/continuation button; only the SDK reward event plus dismissal grants once, with no failure-based reward. Premium receives those explicit offers without an ad request.
+
 The local browser inspection flag opens all levels solely on an explicitly requested loopback preview. It cannot activate in the native application or on a remote host, and it does not alter real saved progress or Premium ownership.
 
 The existing non-consumable StoreKit product is `com.arslanaytac.okchu.premium` (Remove Ads). Purchase restoration is available from the premium screen. The app uses Google AdMob with ATT and UMP consent handling. There is no third-party payment processor or required external account.

@@ -129,7 +129,9 @@
     "daily_fail_time_title": "Temps Ecoule!",
     "daily_fail_moves_title": "Plus de Coups!",
     "daily_fail_message": "Vous n'avez pas reussi le defi quotidien. Revenez demain pour un nouveau niveau!",
-    "daily_fail_streak_note": "Votre serie est preservee."
+    "daily_fail_streak_note": "Votre serie est preservee.",
+    "premium_continue": "Continuer gratuitement (+60 s)",
+    "premium_life": "Vie gratuite (+1 vie)"
   },
   "daily": {
     "badge_time": "Defi Temps",

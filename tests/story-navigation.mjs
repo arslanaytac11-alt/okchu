@@ -44,7 +44,7 @@ const { ScreenManager } = await import('../js/screens.js');
 const { chapters } = await import('../js/data/chapters.js');
 const { allLevels, getLevelsByChapter, getNextLevel } = await import('../js/levels.js');
 const { storage } = await import('../js/storage.js');
-const { loadLanguage, t } = await import('../js/i18n.js?v=2');
+const { loadLanguage, t } = await import('../js/i18n.js?v=3');
 globalThis.fetch = async url => ({
     json: async () => JSON.parse(readFileSync(new URL('../' + url.split('?')[0], import.meta.url), 'utf8')),
 });

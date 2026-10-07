@@ -60,12 +60,12 @@ f=await fixture({canRequestAds:true,privacyOptionsRequired:false},{premium:true}
 await f.ads.initAds();await f.ads.showBanner();
 assert.equal(f.calls.initialize,0,'Premium must not initialize advertising or request ATT');
 assert.equal(f.calls.tracking,0);assert.equal(f.calls.show,0);
-assert.equal(await f.ads.showRewarded(),true,'Premium continues without an ad');
+assert.equal(await f.ads.showRewarded({userInitiated:true,isCurrent:()=>true}),false,'Premium never reports an SDK-earned reward; free benefits belong to the caller');
 assert.equal(await f.ads.showAdPrivacyOptions(),false,'No privacy UI when SDK says it is not required');
 checks++;
 
 globalThis.window = {Capacitor:{isNativePlatform:()=>false}};
 f=await import(`../js/ads.js?consent-test=web`);
-assert.equal(await f.showRewarded(),true,'Web preview remains playable without native SDK');
+assert.equal(await f.showRewarded({userInitiated:true,isCurrent:()=>true}),false,'Web never manufactures an SDK-earned reward');
 checks++;
 console.log(JSON.stringify({passed:checks,scope:'Native consent permission gating, pending/missing/failed permission, options revocation, reward eligibility and Premium; mocked SDK only'},null,2));
