@@ -5,6 +5,10 @@
     "title": "Okchu",
     "subtitle": "Antik Yolculuk"
   },
+  "review": {
+    "notice": "Kontrol modu · 50 bulmaca açık",
+    "play": "Tüm bulmacaları incele"
+  },
   "menu": {
     "play": "Oyna",
     "language": "Dil",

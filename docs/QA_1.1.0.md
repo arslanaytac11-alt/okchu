@@ -1,10 +1,20 @@
 # Okchu 1.1.0 QA record
 
+## Current local inspection update
+
+The restored `http://127.0.0.1:5188/?kontrol=1` serves main 50 / Game 7 / SW 36 / redesign CSS 5. A detached local Node process continues after its starter exits; HEAD checks return 200, correct module/HTML MIME types and no-store headers, while non-public package/release paths return 404. The process is bound to 127.0.0.1. Opening its Codex browser panel was queued; no fresh GUI observation is claimed while Mac unlock remains unconfirmed.
+
+All **20 suites**, 50 puzzle validations and 46 JS syntax checks passed. Evidence: `outputs/qa/review-mode-test.log` and current `outputs/qa/test-results.json`. The review suite verifies 48 URL/native-bridge guard cases, 250 clickable puzzle rows across five languages, and a real Game/Grid Egypt-1 solve in untimed Zen. Scores/progress/resources/reset/mode changes stay in memory; actual saved bytes and Premium are preserved, with zero real storage writes during the solve. Regular play keeps its 8-star final-puzzle and 10-star civilization gates.
+
+The actual service worker's install/activate/fetch behavior passed 85 checks in a VM with in-memory Cache Storage/network: all 41 static boot modules work after a completed install without earlier controlled fetches, plus 5 language files and 27 artwork/icon/style resources. Removing each of the four previously missing boot imports makes the regression fail. A network-refreshed exact query URL remains current offline instead of returning an older unversioned precache entry. This verifies cache behavior, not real browser/native offline operation.
+
+The signed production snapshot below remains SW35/main49/Game6. Its original 18-suite aggregate is preserved in `outputs/qa/final-test-production-1.1.0.log` and `outputs/qa/test-results-production-1.1.0.json`. New browser-control/cache changes have not been copied into a new native artifact or uploaded.
+
 7 October 2026. Candidate source commit: `363903d0e37ec2973199bba9ddfaf00b392f278d`, version 1.1.0(148), Game `v=6` / main 49 / SW 35. Existing bundle ID `com.arslanaytac.okchu` and premium product ID are retained. This record distinguishes automated geometry/state checks, browser observations, and native simulator observations. It does not certify physical touch quality or Duo support.
 
 ## Automated verification
 
-The latest full `npm test` / `node tests/run-checks.mjs` bundle exited 0 after the stone contour/facets, balanced palette, dark-error contrast, freeze eligibility, campaign difficulty, consent/StoreKit, import-cache fixes, native Duo viewport helper, new icons, requested slimmer arrows and urgency-vignette correction. All 18 suites, the 50-level validator and 45 JavaScript syntax checks passed on the Game `v=6` / main 49 / SW 35 source snapshot. This records the tested source snapshot; it does not imply that every native feature was operated. Evidence: `outputs/qa/final-test.log` and `outputs/qa/test-results.json`.
+The production snapshot's full `npm test` / `node tests/run-checks.mjs` bundle exited 0 after the stone contour/facets, balanced palette, dark-error contrast, freeze eligibility, campaign difficulty, consent/StoreKit, import-cache fixes, native Duo viewport helper, new icons, requested slimmer arrows and urgency-vignette correction. All 18 suites, the 50-level validator and 45 JavaScript syntax checks passed on the Game `v=6` / main 49 / SW 35 source snapshot. This records the tested source snapshot; it does not imply that every native feature was operated. Evidence: `outputs/qa/final-test-production-1.1.0.log` and `outputs/qa/test-results-production-1.1.0.json`.
 
 The vignette regression passes within that full bundle with the actual production renderer setter/state retained in the input fixture: 24 input groups and 99,252 coordinate cases. It starts the real Pyramid countdown below ten seconds, verifies a positive warning, and checks immediate clearing on leave and before the timeout callback. Timeout→Zen Diamond, timeout→untimed Daily Moves and Classic retry remain clear; untimed modes display infinity and have no countdown. The fix clears the public renderer vignette in `leaveLevel`. Balance `v=2`/renderer `v=4` are retained. The fresh native copy, build, installation and launch have passed; actual post-fix native UI inspection is pending.
 

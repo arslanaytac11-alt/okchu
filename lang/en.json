@@ -5,6 +5,10 @@
     "title": "Okchu",
     "subtitle": "Arrow Puzzle"
   },
+  "review": {
+    "notice": "Review mode · All 50 puzzles open",
+    "play": "Explore all puzzles"
+  },
   "menu": {
     "play": "Play",
     "language": "Language",

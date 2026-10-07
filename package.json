@@ -4,6 +4,8 @@
   "description": "Okchu: Arrow Puzzle \u2014 10 ancient civilizations, 50 levels",
   "private": true,
   "scripts": {
+    "preview": "node preview-server.mjs",
+    "preview:start": "node start-preview.mjs",
     "build": "node build-www.mjs",
     "cap:sync": "node build-www.mjs && npx cap sync ios",
     "cap:add-ios": "node build-www.mjs && npx cap add ios",

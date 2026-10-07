@@ -1,9 +1,14 @@
 // js/storage.js
 
+import { isLocalReviewMode } from './preview-mode.js';
+
 const STORAGE_KEY = 'ok_bulmacasi_save';
+let reviewSnapshot = null;
+let reviewGameMode = 'zen';
 
 function loadData() {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = isLocalReviewMode() && reviewSnapshot !== null
+        ? reviewSnapshot : localStorage.getItem(STORAGE_KEY);
     if (!raw) return getDefaultData();
     try {
         const parsed = JSON.parse(raw);
@@ -15,6 +20,12 @@ function loadData() {
 
 function saveData(data) {
     try {
+        // Review actions can be played normally without altering the real save.
+        // Serializing also prevents callers from sharing mutable snapshot objects.
+        if (isLocalReviewMode()) {
+            reviewSnapshot = JSON.stringify(data);
+            return;
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
         // storage quota or privacy mode — fail silently, game keeps working in-memory
@@ -85,12 +96,14 @@ export const storage = {
     },
 
     isChapterUnlocked(chapterId) {
+        if (isLocalReviewMode() && Number.isInteger(chapterId) && chapterId >= 1 && chapterId <= 10) return true;
         return loadData().unlockedChapters.includes(chapterId);
     },
 
     // Boss level = level 5 of each chapter. Locked until the first 4 levels in
     // the chapter sum to at least 8 stars (out of possible 12 = 2-star average).
     isBossLocked(chapterId, levelNumInChapter) {
+        if (isLocalReviewMode() && Number.isInteger(chapterId) && chapterId >= 1 && chapterId <= 10) return false;
         if (levelNumInChapter !== 5) return false;
         const prefix = this.getChapterPrefix(chapterId);
         const data = loadData();
@@ -218,6 +231,7 @@ export const storage = {
     resetAll() {
         // Reset the adventure without erasing a paid non-consumable purchase.
         const premium = loadData().premium === true;
+        if (isLocalReviewMode()) reviewGameMode = 'zen';
         saveData({ ...getDefaultData(), premium });
     },
 
@@ -292,10 +306,15 @@ export const storage = {
 
     // === Game mode ===
     getGameMode() {
+        if (isLocalReviewMode()) return reviewGameMode;
         return loadData().gameMode || 'classic';
     },
 
     setGameMode(mode) {
+        if (isLocalReviewMode()) {
+            if (['classic', 'timed', 'moves', 'zen'].includes(mode)) reviewGameMode = mode;
+            return;
+        }
         const data = loadData();
         data.gameMode = mode;
         saveData(data);

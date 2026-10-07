@@ -5,6 +5,10 @@
     "title": "Okchu",
     "subtitle": "Arrow Puzzle"
   },
+  "review": {
+    "notice": "確認モード · 全50パズルを開放",
+    "play": "すべてのパズルを見る"
+  },
   "menu": {
     "play": "プレイ",
     "language": "言語",

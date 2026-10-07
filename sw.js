@@ -1,6 +1,6 @@
 // Bump APP_VERSION on every deploy — the cache name derives from it so clients
 // pick up new assets and old caches are cleaned up on activate.
-const APP_VERSION = '35';
+const APP_VERSION = '36';
 const CACHE_NAME = `okchu-v${APP_VERSION}`;
 
 const ASSETS = [
@@ -12,6 +12,11 @@ const ASSETS = [
     '/js/dialog-focus.js',
     '/js/launch-scheduler.js',
     '/js/main.js',
+    '/js/preview-mode.js',
+    '/js/pwa-install.js',
+    '/js/rate-us.js',
+    '/js/ads.js',
+    '/js/iap.js',
     '/js/game.js',
     '/js/hit-test.js',
     '/js/egypt-story.js',
@@ -108,7 +113,8 @@ self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
     if (url.origin !== self.location.origin) return;
     const code = event.request.mode === 'navigate' || /\.(?:html|js|css|json)$/.test(url.pathname);
-    const cached = () => caches.open(CACHE_NAME).then(cache => cache.match(event.request, {ignoreSearch: true}));
+    const cached = () => caches.open(CACHE_NAME).then(async cache =>
+        (await cache.match(event.request)) || cache.match(event.request, {ignoreSearch: true}));
     const network = () => fetch(event.request).then(response => {
         if (response.ok) {
             const copy = response.clone();

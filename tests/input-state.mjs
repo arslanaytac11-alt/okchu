@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { isLocalReviewMode } from '../js/preview-mode.js';
 let now=10000,nextId=1;const intervals=new Map(),rafs=[],timeouts=[];
 globalThis.performance={now:()=>now};Date.now=()=>now;
 globalThis.setInterval=fn=>{const id=nextId++;intervals.set(id,fn);return id;};globalThis.clearInterval=id=>intervals.delete(id);
@@ -188,7 +189,7 @@ check('actual back routing stops both classic/daily sessions; stale celebration 
 });
 check('zero-life Zen entry reaches the puzzle, classic entry still requests lives',()=>{
  const h=fresh();h.game.livesManager.renderLives=()=>{};for(let i=0;i<3;i++)storage.loseLife();const source=readFileSync(new URL('../js/main.js',import.meta.url),'utf8'),a=source.indexOf('screenManager.onStartLevel = (levelData, chapterData) => {'),b=source.indexOf('\n};',a);const manager={showScreen(){}};let blocked=0;
- new Function('game','screenManager','storage','showNoLivesOverlay','renderDailyBadge','tutorial','livesDisplay','maybeActivateOnboarding','launchScheduler',source.slice(a,b+3))(h.game,manager,storage,()=>blocked++,()=>{},{shouldShow:()=>false},{},()=>{},{schedule:(...args)=>setTimeout(()=>h.game.startLevel(...args),50)});
+ new Function('game','screenManager','storage','showNoLivesOverlay','renderDailyBadge','tutorial','livesDisplay','maybeActivateOnboarding','launchScheduler','isLocalReviewMode',source.slice(a,b+3))(h.game,manager,storage,()=>blocked++,()=>{},{shouldShow:()=>false},{},()=>{},{schedule:(...args)=>setTimeout(()=>h.game.startLevel(...args),50)},isLocalReviewMode);
  storage.setGameMode('classic');manager.onStartLevel(simple,chapters[0]);assert.equal(blocked,1);storage.setGameMode('zen');manager.onStartLevel(simple,chapters[0]);timeouts.splice(0).forEach(fn=>fn());assert.equal(blocked,1);assert.equal(h.game.zenMode,true);assert.equal(h.game._active,true);
 });
 check('resize during removal preserves the session, score, path identity and final outcome',()=>{

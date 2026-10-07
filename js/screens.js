@@ -5,6 +5,7 @@ import { getLevelsByChapter } from './levels.js';
 import { storage } from './storage.js';
 import { showBanner, hideBanner } from './ads.js';
 import { t } from './i18n.js?v=2';
+import { isLocalReviewMode } from './preview-mode.js';
 
 // Translation key helpers. `chapters.js` stores Turkish names/difficulty/story
 // text inline because the data file was authored before i18n — rather than
@@ -68,6 +69,10 @@ export class ScreenManager {
 
     setupNavigation() {
         document.getElementById('btn-play').addEventListener('click', () => {
+            if (isLocalReviewMode()) {
+                this.showChapters();
+                return;
+            }
             const { chapter, level } = this._getContinuationTarget();
             this.currentChapter = chapter;
             this.applyChapterTheme(chapter);
@@ -127,11 +132,14 @@ export class ScreenManager {
 
         const { chapter, level, lastPlayed } = this._getContinuationTarget();
         const title = document.getElementById('menu-continue-title');
-        if (title) title.textContent = lastPlayed
+        if (title) title.textContent = isLocalReviewMode()
+            ? text('review.play', 'Tüm bulmacaları incele') : lastPlayed
             ? text('menu.continue_title', 'Macerana devam et')
             : text('menu.first_puzzle', 'İlk bulmacanı çöz');
         const subtitle = document.getElementById('menu-continue-subtitle');
-        if (subtitle) subtitle.textContent = text('menu.continue_subtitle', '{chapter} · Bulmaca {level}', {
+        if (subtitle) subtitle.textContent = isLocalReviewMode()
+            ? text('review.notice', 'Kontrol modu · 50 bulmaca açık')
+            : text('menu.continue_subtitle', '{chapter} · Bulmaca {level}', {
             chapter: tChapter(chapter, 'name'), level: level?.level || 1,
         });
         const image = document.getElementById('menu-chapter-image');
@@ -142,9 +150,22 @@ export class ScreenManager {
         }
     }
 
+    _createReviewNotice() {
+        if (!isLocalReviewMode()) return null;
+        const notice = document.createElement('p');
+        notice.className = 'level-chapter-summary review-mode-notice';
+        notice.style.gridColumn = '1 / -1';
+        notice.setAttribute('data-i18n', 'review.notice');
+        notice.setAttribute('role', 'status');
+        notice.textContent = text('review.notice', 'Kontrol modu · 50 bulmaca açık');
+        return notice;
+    }
+
     showChapters() {
         const list = document.getElementById('chapter-list');
         list.innerHTML = '';
+        const reviewNotice = this._createReviewNotice();
+        if (reviewNotice) list.appendChild(reviewNotice);
 
         const header = document.querySelector('#screen-chapters .screen-header h2');
         if (header) header.textContent = t('chapters.title');
@@ -379,6 +400,8 @@ export class ScreenManager {
         list.innerHTML = '';
 
         const levels = getLevelsByChapter(chapter.id);
+        const reviewNotice = this._createReviewNotice();
+        if (reviewNotice) list.appendChild(reviewNotice);
 
         // Game mode selector
         const modeBar = document.createElement('div');

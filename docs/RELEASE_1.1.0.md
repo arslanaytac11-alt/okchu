@@ -1,5 +1,7 @@
 # Okchu 1.1.0 release candidate
 
+> Local inspection now uses main50/Game7/SW36 with an explicit loopback-only all-level control mode and offline boot/cache repairs. The signed IPA below remains the verified main49/Game6/SW35 snapshot; it does not contain those subsequent browser changes. Rebuild/verify the selected final source before upload. No upload has occurred.
+
 Updated 7 October 2026. The final local signed candidate is **1.1.0 (148)**, built with **Xcode 27.1 / 27A9275**. No build has been uploaded, submitted for review, or released from this work. Simulator checks, source tests, and signed-artifact checks below have different scopes; live purchase/restore and a public-install upgrade remain pending.
 
 ## Identity and update behavior

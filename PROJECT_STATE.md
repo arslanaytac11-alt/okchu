@@ -1,5 +1,13 @@
 # Okchu — project state
 
+## Temporary browser inspection
+
+The local preview is restored at `http://127.0.0.1:5188/?kontrol=1`. `npm run preview:start` starts it independently of the invoking terminal; `npm run preview` runs it in the foreground. Only public game files are served, on IPv4 loopback, with no-store headers.
+
+The explicit local browser control mode opens all ten chapters and fifty puzzles, including their final puzzles. It starts in untimed Zen; review gameplay/mode changes use memory seeded from the actual save and never overwrite real progression, scores, resources or Premium. Native bridges, non-HTTP origins and remote hosts cannot enable it. Ordinary play retains its star gates. Main 50 / Game 7 / SW 36 passed all twenty suites, fifty level validations and forty-six JS syntax checks.
+
+The first-offline boot graph now precaches its four previously missing imports and the review helper. Cached exact module URLs take precedence over unversioned fallback entries. These browser changes are **not in the signed SW35/main49 IPA documented below**. Rebuild and verify the chosen final source before uploading; no upload has occurred.
+
 Updated 7 October 2026. No build has been uploaded, submitted or released during this redesign work.
 
 | Field | Current state |

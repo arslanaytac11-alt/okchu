@@ -6,6 +6,7 @@ import { Renderer } from './renderer.js?v=4';
 import { LivesManager } from './lives.js';
 import { HintManager } from './hints.js';
 import { storage } from './storage.js';
+import { isLocalReviewMode } from './preview-mode.js';
 import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
 import { tapLight, tapMedium, tapHeavy, notifyError } from './haptics.js';
@@ -111,7 +112,7 @@ export class Game {
         this.dailyModifier = opts.dailyModifier || null;
         let onboardingDone = false;
         try { onboardingDone = localStorage.getItem('okchu_onboarding_done') === '1'; } catch {}
-        this.onboardingActive = levelData.id === 'egypt_1' && !this.dailyModifier && !opts.isDailyChallenge &&
+        this.onboardingActive = !isLocalReviewMode() && levelData.id === 'egypt_1' && !this.dailyModifier && !opts.isDailyChallenge &&
             !storage.isLevelCompleted(levelData.id) && !onboardingDone;
         this.onboardingTapsLeft = this.onboardingActive ? 3 : 0;
         this._updateGameFeedback();

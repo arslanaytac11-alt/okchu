@@ -1,7 +1,7 @@
 // js/main.js
 
-import { Game } from './game.js?v=6';
-import { ScreenManager } from './screens.js?v=3';
+import { Game } from './game.js?v=7';
+import { ScreenManager } from './screens.js?v=4';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
@@ -17,6 +17,7 @@ import { notifySuccess, tapLight } from './haptics.js';
 import { renderEgyptResult } from './egypt-story.js';
 import { installDialogFocus } from './dialog-focus.js';
 import { createLaunchScheduler } from './launch-scheduler.js';
+import { isLocalReviewMode } from './preview-mode.js';
 
 // Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
 // CRITICAL: location.hostname is "localhost" inside the Capacitor iOS shell
@@ -80,7 +81,7 @@ if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('da
 syncNativeStatusBar();
 document.getElementById('btn-dark-mode').addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    if (!isLocalReviewMode()) localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
     syncNativeStatusBar();
     // Re-apply theme to canvas if in game
     if (game.currentChapter) {
@@ -122,7 +123,11 @@ function applyTranslations() {
     if (langBtn) langBtn.textContent = getLang().toUpperCase();
 }
 
-initLanguage().then(() => { applyTranslations(); screenManager.updateMenuDashboard(); });
+initLanguage().then(() => {
+    applyTranslations();
+    screenManager.updateMenuDashboard();
+    if (isLocalReviewMode() && document.getElementById('screen-chapters').classList.contains('active')) screenManager.showChapters();
+});
 
 // Language picker
 document.getElementById('btn-language').addEventListener('click', () => {
@@ -168,6 +173,11 @@ setTimeout(() => {
     app.classList.remove('app-hidden');
     app.classList.add('app-visible');
     setTimeout(() => splash.remove(), 600);
+
+    if (isLocalReviewMode()) {
+        screenManager.showChapters();
+        return;
+    }
 
     // First-launch onboarding flow: language picker → tutorial.
     // hasSavedLanguage() returns false only until the user explicitly picks
@@ -346,7 +356,7 @@ screenManager.onStartLevel = (levelData, chapterData) => {
     renderDailyBadge(null);
 
     // Show tutorial before first game
-    if (tutorial.shouldShow()) {
+    if (!isLocalReviewMode() && tutorial.shouldShow()) {
         tutorial.show(() => {
             screenManager.showScreen('game');
             game.livesManager.renderLives(livesDisplay);
@@ -370,24 +380,24 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
 
     // Daily + achievements
     if (game._isDailyChallenge) {
-        completeDaily(stats.score, stats.stars);
+        if (!isLocalReviewMode()) completeDaily(stats.score, stats.stars);
         storage.recordDailyScore(stats.score, stats.stars);
         game._isDailyChallenge = false;
         game._dailyModifier = null;
         renderDailyBadge(null);
     }
-    setTimeout(() => { if (isStillCompleted()) checkAndShowAchievements(); }, 1500);
+    setTimeout(() => { if (!isLocalReviewMode() && isStillCompleted()) checkAndShowAchievements(); }, 1500);
 
     // iOS install banner + rate-us prompt — both gated behind progression
     // so new users aren't spammed. Staggered after the completion overlay so
     // the celebration lands first.
     setTimeout(() => {
-        if (!isStillCompleted()) return;
+        if (isLocalReviewMode() || !isStillCompleted()) return;
         const progress = storage.getProgress();
         maybeShowIosInstall((progress.completedLevels || []).length);
     }, 2500);
     setTimeout(() => {
-        if (isStillCompleted() && shouldShowRatePrompt(getPlayerStats())) showRatePrompt();
+        if (!isLocalReviewMode() && isStillCompleted() && shouldShowRatePrompt(getPlayerStats())) showRatePrompt();
     }, 3500);
 
     // Animated stars
@@ -877,7 +887,7 @@ document.getElementById('btn-settings-close').addEventListener('click', () => {
 
 document.getElementById('setting-dark').addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    if (!isLocalReviewMode()) localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
     syncNativeStatusBar();
     document.getElementById('setting-dark').classList.toggle('active', document.body.classList.contains('dark-mode'));
 });
@@ -927,13 +937,15 @@ document.getElementById('setting-reset').addEventListener('click', () => {
     const confirmText = (() => { const v = t('confirm.reset_progress'); return v === 'confirm.reset_progress' ? 'Tüm ilerlemen silinecek. Emin misin?' : v; })();
     if (confirm(confirmText)) {
         storage.resetAll();
-        localStorage.removeItem('ok_bulmacasi_tutorial_done');
-        localStorage.removeItem('okchu_achievements');
-        localStorage.removeItem('okchu_daily');
-        localStorage.removeItem('okchu_onboarding_done');
-        localStorage.removeItem('okchu_ios_install_dismissed_at');
-        localStorage.removeItem('okchu_rate_state');
-        localStorage.removeItem('okchu.ads.lastInterstitialAt');
+        if (!isLocalReviewMode()) {
+            localStorage.removeItem('ok_bulmacasi_tutorial_done');
+            localStorage.removeItem('okchu_achievements');
+            localStorage.removeItem('okchu_daily');
+            localStorage.removeItem('okchu_onboarding_done');
+            localStorage.removeItem('okchu_ios_install_dismissed_at');
+            localStorage.removeItem('okchu_rate_state');
+            localStorage.removeItem('okchu.ads.lastInterstitialAt');
+        }
         location.reload();
     }
 });

@@ -1,5 +1,7 @@
 # Okchu update submission
 
+> The temporary all-level browser preview and SW36 offline/cache repairs are subsequent source changes. The signed IPA described below is still the frozen SW35/main49 snapshot. Rebuild and verify the selected final source before submitting the update; the browser inspection flag must remain disabled for native/remote play.
+
 The existing application is App Store ID `6762461650`, bundle `com.arslanaytac.okchu`, with the same premium product `com.arslanaytac.okchu.premium`. The new candidate requires **iOS 15.0+**; do not reuse metadata claiming iOS 13 support.
 
 The current final local signed candidate is **1.1.0 (148)** at `outputs/native/export-1.1.0-148-final/App.ipa`, built with Xcode 27.1/27A9275. It includes the new icon, ten chapter PNGs, revised puzzle shapes/difficulty, slimmer arrows, timeout-vignette reset, IAP/consent repairs, native Duo reserved-region layout and guarded native banner pane. Its extracted 113-file payload, native manifest, existing profile/certificate, entitlements, production settings and deep signature passed. Proof is `outputs/native/release-verification-final.json`. Earlier unsuffixed/preicon/prearrow/prevignette artifacts are historical. **No upload/submission/release has been performed.**
