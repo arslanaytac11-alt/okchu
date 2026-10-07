@@ -47,7 +47,7 @@ check('two rapid adjacent arrow taps both fire, synthetic click does not fire ag
  const h=fresh({width:96,height:96});h.game.startLevel(simple,chapters[0]);const fired=[];h.game.removePathWithAnimation=p=>fired.push(h.game.grid.paths.indexOf(p));
  tap(h,point(h.game,.5,.5));now+=150;tap(h,point(h.game,1.5,.5));const p=point(h.game,1.5,.5);h.listeners.click({...p,detail:1});assert.deepEqual(fired,[0,1]);
 });
-check('lift position resolves a final boundary crossing, cancelled/long/pan gestures do not move arrows',()=>{
+check('lift resolves the final boundary; cancelled, unarmed expired and pan gestures do not move arrows',()=>{
  const h=fresh({width:96,height:96});h.game.startLevel(simple,chapters[0]);const fired=[];h.game.removePathWithAnimation=p=>fired.push(h.game.grid.paths.indexOf(p));
  tap(h,point(h.game,.95,.5),point(h.game,1.05,.5));assert.deepEqual(fired,[1]);
  const p=point(h.game,.5,.5);h.listeners.touchstart({touches:[p],preventDefault(){}});h.listeners.touchcancel();h.listeners.touchend({touches:[],changedTouches:[p],cancelable:true,preventDefault(){}});assert.equal(fired.length,1);

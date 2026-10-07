@@ -1,6 +1,6 @@
 // js/main.js
 
-import { Game } from './game.js?v=10';
+import { Game } from './game.js?v=11';
 import { ScreenManager } from './screens.js?v=6';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';

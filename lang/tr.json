@@ -52,7 +52,7 @@
     "lives": "Can",
     "undo": "Geri Al",
     "canvas_label": "Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun.",
-    "zoom_hint": "Yakınlaştırmak için iki parmakla aç",
+    "zoom_hint": "Oku basılı tutarak büyüt · İki parmakla yakınlaştır",
     "banner_label": "Reklam Alanı",
     "blocked_feedback": "Yolu kapalı. Önce engelleyen oku kaldır.",
     "guided_feedback": "İşaretlenen oka dokun; yolu açık.",

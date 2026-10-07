@@ -52,7 +52,7 @@
     "lives": "Vies",
     "undo": "Annuler",
     "canvas_label": "Zone du puzzle de flèches. Touchez les flèches pour les retirer dans le bon ordre.",
-    "zoom_hint": "Pincez avec deux doigts pour zoomer",
+    "zoom_hint": "Maintenez une flèche pour agrandir · Pincez pour zoomer",
     "banner_label": "Espace Publicitaire",
     "blocked_feedback": "Sortie bloquée. Retire d’abord l’autre flèche.",
     "guided_feedback": "Touche la flèche indiquée : sa sortie est libre.",

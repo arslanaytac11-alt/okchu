@@ -11,7 +11,7 @@ let strings = {};
 // stale-while-revalidate cache can't serve last week's strings to a
 // player who installed the app today. Keeping it in sync with main.js?v=
 // is fine — both are part of the same release.
-const LANG_VERSION = '13';
+const LANG_VERSION = '14';
 
 export async function loadLanguage(lang, { persist = true } = {}) {
     if (!AVAILABLE_LANGS.includes(lang)) lang = 'tr';

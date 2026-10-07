@@ -52,7 +52,7 @@
     "lives": "Lives",
     "undo": "Undo",
     "canvas_label": "Arrow puzzle game area. Tap arrows to remove them in the correct order.",
-    "zoom_hint": "Pinch with two fingers to zoom",
+    "zoom_hint": "Hold an arrow for precision · Pinch to zoom",
     "banner_label": "Ad Space",
     "blocked_feedback": "Exit blocked. Clear the blocking arrow first.",
     "guided_feedback": "Tap the marked arrow; its exit is clear.",

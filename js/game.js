@@ -3,7 +3,7 @@
 import { Grid } from './grid.js';
 import { updateRuneHud, bindRuneHelp, RUNE_GLYPHS } from './rune-hud.js';
 import { hitTestPath } from './hit-test.js';
-import { Renderer } from './renderer.js?v=6';
+import { Renderer } from './renderer.js?v=7';
 import { LivesManager } from './lives.js';
 import { HintManager } from './hints.js';
 import { storage } from './storage.js';
@@ -466,6 +466,17 @@ export class Game {
         const DOUBLE_TAP_RADIUS = 40;
         let lastTapWasEmpty = false;
         let lastTouchEnd = -Infinity;
+        let blockedGesture = false;
+        let precisionTimer = null;
+        let precisionArmed = false;
+        const PRECISION_DELAY = 180;
+        const PRECISION_MAX_MS = 5000;
+        const clearPrecision = () => {
+            if (precisionTimer !== null) clearTimeout(precisionTimer);
+            precisionTimer = null;
+            precisionArmed = false;
+        };
+        const sameContact = (touch, pending) => pending.identifier === undefined || touch?.identifier === pending.identifier;
         const findPathAt = (clientX, clientY) => hitTestPath(this.grid, this.renderer, clientX, clientY);
 
         // Single-slot tap queue: when an animation is in flight, hold the
@@ -479,6 +490,7 @@ export class Game {
             if (!queuedTap) return;
             const t = queuedTap;
             queuedTap = null;
+            if (isPinching || isSinglePanning || blockedGesture) return;
             if (t.epoch === this._levelEpoch && performance.now() - t.at < 400) {
                 this._clearBlockedFeedback();
                 firePath(t.path);
@@ -520,12 +532,26 @@ export class Game {
 
         this.canvas.addEventListener('touchstart', (e) => {
             if (!this._active || !this.grid) return;
+            if (blockedGesture || e.touches.length > 2) {
+                clearPrecision();
+                blockedGesture = true;
+                pendingTapStart = null;
+                isPinching = false;
+                isSinglePanning = false;
+                queuedTap = null;
+                this.renderer.previewPath = null;
+                e.preventDefault();
+                return;
+            }
             if (e.touches.length === 2) {
                 // Pinch begins — cancel any pending single-finger tap so the
                 // gesture doesn't accidentally fire a wrong-move on start,
                 // and clear the preview halo so the dragged-over arrow
                 // doesn't keep glowing during the pinch.
                 isPinching = true;
+                clearPrecision();
+                queuedTap = null;
+                isSinglePanning = false;
                 pendingTapStart = null;
                 this.renderer.previewPath = null;
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -537,8 +563,11 @@ export class Game {
                 return;
             }
             if (e.touches.length === 1) {
+                if (isPinching) { e.preventDefault(); return; }
                 const t = e.touches[0];
-                pendingTapStart = { x: t.clientX, y: t.clientY, at: performance.now() };
+                clearPrecision();
+                pendingTapStart = { x: t.clientX, y: t.clientY, lastX:t.clientX, lastY:t.clientY,
+                    identifier:t.identifier, at: performance.now(), epoch:this._levelEpoch };
                 isSinglePanning = false;
                 lastSinglePanX = t.clientX;
                 lastSinglePanY = t.clientY;
@@ -551,10 +580,47 @@ export class Game {
                 if (!this.isAnimating && this.grid) {
                     this.renderer.previewPath = findPathAt(t.clientX, t.clientY);
                 }
+                if (findPathAt(t.clientX,t.clientY)) {
+                    const contact = pendingTapStart;
+                    precisionTimer = setTimeout(() => {
+                        precisionTimer = null;
+                        if (!this._active || contact !== pendingTapStart || contact.epoch !== this._levelEpoch ||
+                            blockedGesture || isPinching || isSinglePanning) return;
+                        const path = findPathAt(contact.lastX,contact.lastY);
+                        if (!path) return;
+                        const r = this.renderer, rect = this.canvas.getBoundingClientRect();
+                        const size = r.cellSize*r.scale*Math.min(rect.width/(r._cssWidth||rect.width),rect.height/(r._cssHeight||rect.height));
+                        const previous = {scale:r.scale,panX:r.panX,panY:r.panY};
+                        if (size>0 && size<30) r.setZoom(r.scale*30/size,contact.lastX,contact.lastY);
+                        if (findPathAt(contact.lastX,contact.lastY) !== path) {
+                            Object.assign(r,previous);
+                            return;
+                        }
+                        precisionArmed = true;
+                        this.renderer.previewPath = path;
+                        r.drawGrid(this.grid);
+                        tapLight();
+                    }, PRECISION_DELAY);
+                }
             }
         }, { passive: false });
 
         this.canvas.addEventListener('touchmove', (e) => {
+            if (blockedGesture || e.touches.length > 2) {
+                clearPrecision();
+                blockedGesture = true;
+                pendingTapStart = null;
+                queuedTap = null;
+                this.renderer.previewPath = null;
+                e.preventDefault();
+                return;
+            }
+            if (e.touches.length === 2 && !isPinching) {
+                this._resetInput();
+                blockedGesture = true;
+                e.preventDefault();
+                return;
+            }
             if (e.touches.length === 2 && isPinching) {
                 e.preventDefault();
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -562,7 +628,12 @@ export class Game {
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
+                if (dist < 8 || lastPinchDist < 8) {
+                    lastPinchDist = dist;
+                    lastPanX = centerX;
+                    lastPanY = centerY;
+                    return;
+                }
                 const scaleChange = dist / lastPinchDist;
                 this.renderer.setZoom(this.renderer.scale * scaleChange, centerX, centerY);
                 this.renderer.setPan(centerX - lastPanX, centerY - lastPanY);
@@ -581,9 +652,14 @@ export class Game {
             if (e.touches.length === 1) {
                 const t = e.touches[0];
                 if (pendingTapStart && !isSinglePanning) {
+                    if (!sameContact(t,pendingTapStart)) { this._resetInput(); blockedGesture=true; return; }
+                    pendingTapStart.lastX = t.clientX;
+                    pendingTapStart.lastY = t.clientY;
                     const dx = t.clientX - pendingTapStart.x;
                     const dy = t.clientY - pendingTapStart.y;
                     if (Math.hypot(dx, dy) > TAP_MAX_MOVE) {
+                        clearPrecision();
+                        queuedTap = null;
                         pendingTapStart = null;
                         isSinglePanning = true;
                         lastSinglePanX = t.clientX;
@@ -618,6 +694,10 @@ export class Game {
             // event.detail !== 0 on the synthetic click and the click handler's
             // guard fails. cancelable is false on stale events, so guard.
             if (e.cancelable) e.preventDefault();
+            if (blockedGesture) {
+                if (e.touches.length === 0) this._resetInput();
+                return;
+            }
             if (isPinching) {
                 // Only reset when all fingers lift; a 2→1 transition shouldn't
                 // leave a dangling pending tap.
@@ -629,14 +709,20 @@ export class Game {
                 return;
             }
             if (!pendingTapStart) return;
+            if (e.touches.length > 0 || e.changedTouches?.length > 1) {
+                this._resetInput(); blockedGesture = e.touches.length>0; return;
+            }
             const now = performance.now();
-            if (now - pendingTapStart.at > TAP_MAX_MS) { pendingTapStart = null; this.renderer.previewPath = null; return; }
+            const maxDuration = precisionArmed ? PRECISION_MAX_MS : TAP_MAX_MS;
+            if (now - pendingTapStart.at > maxDuration) { clearPrecision(); pendingTapStart = null; this.renderer.previewPath = null; return; }
 
             lastTouchEnd = now;
-            const liveTap = e.changedTouches && e.changedTouches[0];
+            const liveTap = e.changedTouches && Array.from(e.changedTouches).find(t=>sameContact(t,pendingTapStart));
+            if (pendingTapStart.identifier !== undefined && !liveTap) { this._resetInput(); return; }
             const fireX = liveTap ? liveTap.clientX : pendingTapStart.x;
             const fireY = liveTap ? liveTap.clientY : pendingTapStart.y;
             if (Math.hypot(fireX - pendingTapStart.x, fireY - pendingTapStart.y) > TAP_MAX_MOVE) {
+                clearPrecision();
                 pendingTapStart = null;
                 this.renderer.previewPath = null;
                 return;
@@ -649,6 +735,7 @@ export class Game {
             lastTapAt = now;
             lastTapPos = { x: fireX, y: fireY };
             lastTapWasEmpty = !path;
+            clearPrecision();
             this.renderer.previewPath = null;
             if (isDoubleTap) {
                 lastTapWasEmpty = false;
@@ -661,6 +748,8 @@ export class Game {
         }, { passive: false });
 
         this._resetInput = () => {
+            clearPrecision();
+            blockedGesture = false;
             pendingTapStart = null;
             isSinglePanning = false;
             isPinching = false;
@@ -1385,6 +1474,7 @@ export class Game {
 
     handleResize() {
         if (this.grid && this.currentLevel) {
+            this._resetInput?.();
             this.renderer.resize(this.currentLevel.gridWidth, this.currentLevel.gridHeight, { preserveView: true });
             this.renderer.drawGrid(this.grid);
         }

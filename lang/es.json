@@ -52,7 +52,7 @@
     "lives": "Vidas",
     "undo": "Deshacer",
     "canvas_label": "Área del puzle de flechas. Toca las flechas para quitarlas en el orden correcto.",
-    "zoom_hint": "Pellizca con dos dedos para acercar",
+    "zoom_hint": "Mantén una flecha para ampliar · Pellizca para zoom",
     "banner_label": "Espacio de Anuncio",
     "blocked_feedback": "Salida bloqueada. Retira primero la otra flecha.",
     "guided_feedback": "Toca la flecha marcada; su salida está libre.",

@@ -22,7 +22,7 @@ export class Renderer {
         this.gridOffsetY = 0;
         this.scale = 1;
         this.minScale = 0.5;
-        this.maxScale = 3;
+        this.maxScale = 5;
         this.panX = 0;
         this.panY = 0;
         this.shakeX = 0;
@@ -292,12 +292,15 @@ export class Renderer {
         const width = this._cssWidth || rect.width;
         const height = this._cssHeight || rect.height;
         const margin = Math.min(width, height) / 3;
-        const maxPan = width - margin;
-        const maxPanY = height - margin;
-        if (this.panX > maxPan) this.panX = maxPan;
-        if (this.panX < -maxPan) this.panX = -maxPan;
-        if (this.panY > maxPanY) this.panY = maxPanY;
-        if (this.panY < -maxPanY) this.panY = -maxPanY;
+        const bounds = this._boardShapeBounds || {left:0,top:0,right:this._gridWidth||1,bottom:this._gridHeight||1};
+        const left = (this.gridOffsetX + bounds.left * this.cellSize) * this.scale;
+        const right = (this.gridOffsetX + bounds.right * this.cellSize) * this.scale;
+        const top = (this.gridOffsetY + bounds.top * this.cellSize) * this.scale;
+        const bottom = (this.gridOffsetY + bounds.bottom * this.cellSize) * this.scale;
+        // Clamp the rendered content, rather than an unscaled viewport-sized
+        // translation. Every edge of a magnified board must remain reachable.
+        this.panX = Math.max(margin - right, Math.min(width - margin - left, this.panX));
+        this.panY = Math.max(margin - bottom, Math.min(height - margin - top, this.panY));
     }
 
     // Reset zoom + pan to the initial fit-to-screen view.
