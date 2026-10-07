@@ -56,9 +56,13 @@ export class LivesManager {
 
     renderLives(container) {
         container.innerHTML = '';
+        container.setAttribute('role', 'status');
+        container.setAttribute('aria-label', `${this.lives}/3`);
         for (let i = 0; i < 3; i++) {
             const icon = document.createElement('div');
             icon.className = 'life-icon ' + (i < this.lives ? 'alive' : 'dead');
+            icon.setAttribute('aria-hidden', 'true');
+            icon.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21S3 15.5 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-9 12-9 12Z"/></svg>';
             container.appendChild(icon);
         }
     }

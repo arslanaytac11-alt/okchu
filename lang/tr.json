@@ -13,17 +13,33 @@
     "collection": "Koleksiyon",
     "leaderboard": "Haftalık Skorlarım",
     "settings": "Ayarlar",
-    "remove_ads": "✨ Reklamları Kaldır"
+    "remove_ads": "✨ Reklamları Kaldır",
+    "continue_title": "Macerana devam et",
+    "first_puzzle": "İlk bulmacanı çöz",
+    "continue_subtitle": "{chapter} · Bulmaca {level}"
   },
   "chapters": {
     "title": "Bölümler",
-    "locked": "Kilitli"
+    "locked": "Kilitli",
+    "progress": "{completed}/{total} bulmaca",
+    "unlock_requirement": "{chapter} bölümünde {stars} yıldız topla",
+    "chapter_number": "Bölüm {number}"
   },
   "levels": {
     "title": "Seviyeler",
     "mode_classic": "Klasik",
     "mode_timed": "Hızlı",
-    "mode_zen": "Zen"
+    "mode_zen": "Zen",
+    "puzzle_number": "Bulmaca {number}",
+    "arrows": "{count} ok",
+    "next": "Sıradaki",
+    "completed": "Tamamlandı",
+    "ready": "Oynamaya hazır",
+    "boss": "Final bulmacası",
+    "boss_requirement": "İlk dört bulmacada {stars} yıldız topla",
+    "chapter_progress": "{completed}/{total} tamamlandı",
+    "shape": "Şekil",
+    "star_count": "{stars}/3 yıldız"
   },
   "game": {
     "score": "Skor",
@@ -33,23 +49,41 @@
     "undo": "Geri Al",
     "canvas_label": "Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun.",
     "zoom_hint": "Yakınlaştırmak için iki parmakla aç",
-    "banner_label": "Reklam Alanı"
+    "banner_label": "Reklam Alanı",
+    "blocked_feedback": "Yolu kapalı. Önce engelleyen oku kaldır.",
+    "guided_feedback": "İşaretlenen oka dokun; yolu açık."
   },
   "common": {
-    "close": "Kapat"
+    "close": "Kapat",
+    "back": "Geri"
   },
   "settings": {
     "dark_mode": "Gece Modu",
     "reset_label": "İlerlemeyi Sıfırla",
     "reset_button": "Sıfırla",
     "privacy": "Gizlilik Politikası",
-    "terms": "Kullanım Şartları"
+    "terms": "Kullanım Şartları",
+    "rate_app": "App Store’da değerlendir",
+    "ad_privacy": "Reklam gizliliği tercihleri"
   },
   "collection": {
-    "hint": "Bölümde 13+ yıldız toplayınca eser açılır"
+    "hint": "Bölümde 13+ yıldız toplayınca eser açılır",
+    "names": {
+      "1": "Firavun Mührü",
+      "2": "Zeus Asası",
+      "3": "Lejyon Kalkanı",
+      "4": "Viking Baltası",
+      "5": "Osmanlı Tuğrası",
+      "6": "Çin Ejderi",
+      "7": "Maya Takvimi",
+      "8": "Lotus Çiçeği",
+      "9": "Gotik Haç",
+      "10": "Bilgelik Tacı"
+    }
   },
   "leaderboard": {
-    "hint": "Son 7 günün günlük meydan okuma skorları"
+    "hint": "Son 7 günün günlük meydan okuma skorları",
+    "empty": "Henüz skor yok. Günlük meydan okumayı oyna!"
   },
   "time_up": {
     "continue_ad": "Reklam İzle + Devam Et"
@@ -123,16 +157,16 @@
   "tutorial": {
     "step1_title": "Okchu'ya Hoş Geldin!",
     "step1_text": "Amacın grid'de bulunan tüm okları doğru sırayla kaldırmak.",
-    "step2_title": "Hangi Oku Tıklayacaksın?",
-    "step2_text": "Bir ok, ucunun gösterdiği yönde yolu açıksa kaldırılabilir. Önünü başka bir ok engelliyorsa tıklanmaz!",
+    "step2_title": "Hangi Oku Seçeceksin?",
+    "step2_text": "Okun ucunun gösterdiği yönde başka bir ok yoksa çıkabilir. Yolu kapalıysa önce engelleyen oku kaldır.",
     "step3_title": "Doğru Hamle",
-    "step3_text": "Yolu açık bir oku tıklarsan, ok yılan gibi kayarak ekrandan çıkar. Puan kazanırsın!",
+    "step3_text": "Yolu açık bir oka dokun; kıvrımlarını takip ederek ekrandan çıkar. Puan kazanırsın!",
     "step4_title": "Yanlış Hamle",
-    "step4_text": "Engelli bir oku tıklarsan can kaybedersin ve süreden 5 saniye düşer. 3 canın var, dikkatli ol!",
+    "step4_text": "Önü kapalı bir oka dokunmak Klasik ve Hızlı modda bir can götürür. Zen modunda ceza yok; başka bir ok dene.",
     "step5_title": "Zamana Karşı Yarış",
-    "step5_text": "Her seviyede bir süre limitin var. Doğru hamleler +3 saniye kazandırır. Süreyi iyi kullan!",
+    "step5_text": "Klasik ve Hızlı modda bulmacayı süre bitmeden çöz. Zen modunda süre sınırı yok.",
     "step6_title": "Yıldız Topla",
-    "step6_text": "Hızlı bitir ve hata yapma - 3 yıldız kazan! Yıldızlar yeni bölümlerin kilidini açar.",
+    "step6_text": "İpucusuz ve hatasız çözerek 3 yıldız kazan. Hızlı modda süre de önemlidir. Yıldızlar yeni bölümleri açar.",
     "next": "Devam",
     "start": "Başla!",
     "skip": "Atla"
@@ -140,15 +174,23 @@
   "civilizations": {
     "1": {
       "name": "Mısır",
-      "title": "Antik Mısır",
+      "title": "Nil'in Sessiz Odası",
       "period": "M.Ö. 3100 - M.Ö. 30",
-      "text": "Firavunların topraklarında piramitler gökyüzüne uzanır. Hiyeroglif yazıtlar binlerce yıldır çözülmemiş sırlar barındırır. Nil'in bereketli topraklarında kurulan bu medeniyet, insanlık tarihinin en büyüleyici yapılarını bıraktı.",
-      "mystery": "Piramitlerin içindeki gizli odalarda saklanan ok işaretlerini çöz ve firavunun hazinesine ulaşan yolu bul!",
+      "text": "Nil kıyısındaki arşivde bir haritanın son parçası eksik. Taşa işlenmiş oklar, kapalı geçitleri gösteriyor. Genç bir kâtip, kaybolan mührü bulmak için senden yardım istiyor. Her açtığın yol, haritanın yeni bir bölümünü ortaya çıkaracak. Acele etmeden işaretleri oku; mühre ulaşmak için önce odanın düzenini anlamalısın.",
+      "mystery": "Önü açık okları kaldır ve kayıp mühre giden geçidi aç.",
       "facts": [
         "Keops Piramidi 146m",
         "Hiyeroglif yazısı",
         "Mumyalama sanatı",
         "Yıldız haritacılığı"
+      ],
+      "result_title": "Haritanın İzinde",
+      "results": [
+        "İlk geçit açıldı. Kâtip, haritanın kenarında bir işaret buldu.",
+        "İşaretler birleşiyor. Kumların altında ikinci bir oda var.",
+        "Odanın kapısı açıldı. Mührün izi artık daha belirgin.",
+        "Son geçit göründü. Mühür, kapalı odanın ardında seni bekliyor.",
+        "Mühür bulundu. Kâtip haritayı tamamladı; şimdi yol seni Yunanistan'a götürüyor."
       ]
     },
     "2": {
@@ -275,12 +317,6 @@
     "step_share": "Paylaş",
     "step_add": "Ana Ekrana Ekle"
   },
-  "rate": {
-    "title": "Okchu'yu beğeniyor musun?",
-    "subtitle": "Geri bildirimin bize yol gösterir",
-    "later": "Sonra",
-    "email_body": "Merhaba! Okchu hakkındaki görüşlerim:\n\n"
-  },
   "appstore": {
     "title": "Okchu: Arrow Puzzle - Antik Yolculuk",
     "subtitle": "Ok Bulmaca Oyunu",
@@ -306,8 +342,72 @@
     "classic_title": "Klasik",
     "classic_text": "Standart mod: süre ve can sistemiyle oyna. Yıldız kazan, zorluklar aç.",
     "timed_title": "Hızlı",
-    "timed_text": "Süre yarıya düşer — refleks ve hız isteyen zorlu mod.",
+    "timed_text": "Klasik moda göre %35 daha kısa süre. Doğru sırayı daha hızlı bul.",
     "zen_title": "Zen",
     "zen_text": "Süre yok, can yok, baskı yok. Sadece bulmacayı keşfet."
+  },
+  "design": {
+    "home_eyebrow": "10 MEDENİYET · 50 BULMACA",
+    "home_title": "Bir sonraki sır senin.",
+    "home_description": "Okları çöz, kayıp medeniyetleri keşfet.",
+    "puzzles": "bulmaca",
+    "stars": "yıldız",
+    "civilizations": "medeniyet",
+    "adventure": "MACERA",
+    "daily_description": "Bugün için yeni bir bulmaca.",
+    "explore": "Medeniyetleri keşfet",
+    "navigation": "Oyun menüsü",
+    "game_goal": "Yolları aç.",
+    "game_description": "Önü boş olan bir oka dokun. Doğru sırayla tüm okları çıkar.",
+    "fit_board": "Görünümü ortala"
+  },
+  "shapes": {
+    "pyramid": "Piramit",
+    "sphinx": "Sfenks",
+    "diamond": "Elmas",
+    "steps": "Basamaklar",
+    "scarab": "Skarabe",
+    "temple": "Tapınak",
+    "amphora": "Amfora",
+    "laurel": "Defne",
+    "acropolis": "Akropolis",
+    "owl": "Baykuş",
+    "colosseum": "Kolezyum",
+    "eagle": "Kartal",
+    "aqueduct": "Su kemeri",
+    "arena": "Arena",
+    "crown": "Taç",
+    "ship": "Gemi",
+    "hammer": "Çekiç",
+    "rune": "Rün",
+    "mountain": "Dağ",
+    "helmet": "Miğfer",
+    "mosque": "Cami",
+    "tulip": "Lale",
+    "dome": "Kubbe",
+    "minaret": "Minare",
+    "turban": "Kavuk",
+    "pagoda": "Pagoda",
+    "dragon": "Ejderha",
+    "silk": "İpek",
+    "wall": "Sur",
+    "fan": "Yelpaze",
+    "calendar": "Takvim",
+    "jaguar": "Jaguar",
+    "sun": "Güneş",
+    "serpent": "Yılan",
+    "palace": "Saray",
+    "lotus": "Lotus",
+    "mandala": "Mandala",
+    "river": "Nehir",
+    "castle": "Kale",
+    "shield": "Kalkan",
+    "cathedral": "Katedral",
+    "flask": "İksir",
+    "rosette": "Rozet",
+    "portal": "Geçit",
+    "trophy": "Kupa",
+    "jewel": "Mücevher",
+    "infinity": "Sonsuzluk"
   }
 }

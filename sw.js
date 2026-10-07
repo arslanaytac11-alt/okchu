@@ -1,20 +1,30 @@
 // Bump APP_VERSION on every deploy — the cache name derives from it so clients
 // pick up new assets and old caches are cleaned up on activate.
-const APP_VERSION = '24';
+const APP_VERSION = '35';
 const CACHE_NAME = `okchu-v${APP_VERSION}`;
 
 const ASSETS = [
     '/',
     '/index.html',
     '/css/style.css',
+    '/css/redesign.css',
+    '/css/tutorial-demo.css',
+    '/js/dialog-focus.js',
+    '/js/launch-scheduler.js',
     '/js/main.js',
     '/js/game.js',
+    '/js/hit-test.js',
+    '/js/egypt-story.js',
     '/js/renderer.js',
     '/js/arrow.js',
+    '/js/arrow-motion.js',
+    '/js/board-outline.js',
     '/js/grid.js',
     '/js/screens.js',
     '/js/storage.js',
     '/js/levels.js',
+    '/js/balance.js',
+    '/js/puzzle-catalog.js',
     '/js/particles.js',
     '/js/themes.js',
     '/js/lives.js',
@@ -45,7 +55,19 @@ const ASSETS = [
     '/lang/fr.json',
     '/lang/ja.json',
     '/assets/menu-bg.png',
-    '/assets/icons/icon-192.png',
+    '/assets/characters/explorer-v1.png',
+    '/assets/icons/icon-192-expedition.png',
+    '/assets/icons/icon-512-expedition.png',
+    '/assets/backgrounds/expedition-egypt.png',
+    '/assets/backgrounds/expedition-greek.png',
+    '/assets/backgrounds/expedition-rome.png',
+    '/assets/backgrounds/expedition-viking.png',
+    '/assets/backgrounds/expedition-ottoman.png',
+    '/assets/backgrounds/expedition-china.png',
+    '/assets/backgrounds/expedition-maya.png',
+    '/assets/backgrounds/expedition-india.png',
+    '/assets/backgrounds/expedition-medieval.png',
+    '/assets/backgrounds/expedition-final.png',
     '/assets/backgrounds/bg-egypt.jpg',
     '/assets/backgrounds/bg-greek.jpg',
     '/assets/backgrounds/bg-rome.jpg',
@@ -79,21 +101,22 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Stale-while-revalidate for GETs: serve cache instantly, refresh in background.
-// This means users get new content on the SECOND visit after a deploy — bump
-// APP_VERSION above to force immediate eviction for critical releases.
-self.addEventListener('fetch', (event) => {
+// Code and copy are network-first so a release cannot mix old input code
+// with the new UI. Native Capacitor does not register this worker.
+self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
-    event.respondWith(
-        caches.match(event.request).then((cached) => {
-            const networkPromise = fetch(event.request).then((response) => {
-                if (response && response.ok) {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-                }
-                return response;
-            }).catch(() => cached || caches.match('/index.html'));
-            return cached || networkPromise;
-        })
-    );
+    const url = new URL(event.request.url);
+    if (url.origin !== self.location.origin) return;
+    const code = event.request.mode === 'navigate' || /\.(?:html|js|css|json)$/.test(url.pathname);
+    const cached = () => caches.open(CACHE_NAME).then(cache => cache.match(event.request, {ignoreSearch: true}));
+    const network = () => fetch(event.request).then(response => {
+        if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)));
+        }
+        return response;
+    });
+    const offline = async () => (await cached()) || (event.request.mode === 'navigate'
+        ? await caches.match('/index.html') : Response.error());
+    event.respondWith(code ? network().catch(offline) : cached().then(hit => hit || network().catch(offline)));
 });

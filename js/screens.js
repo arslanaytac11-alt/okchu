@@ -15,10 +15,20 @@ const DIFFICULTY_KEYS = {
     1: 'easy', 2: 'medium', 3: 'hard', 4: 'hard_plus', 5: 'very_hard',
     6: 'very_hard_plus', 7: 'legendary', 8: 'legendary_plus', 9: 'nightmare', 10: 'nightmare_plus',
 };
+const BACKGROUNDS = {
+    1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
+    6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final',
+};
+const text = (key, fallback, values = {}) => {
+    const translated = t(key);
+    const template = typeof translated === 'string' && translated !== key ? translated : fallback;
+    return template.replace(/\{(\w+)\}/g, (_, name) => values[name] ?? `{${name}}`);
+};
+const chapterImage = chapter => chapter.artwork?.image || `assets/backgrounds/bg-${BACKGROUNDS[chapter.id] || 'final'}.jpg`;
 const tChapter = (chapter, field) => {
     const key = `civilizations.${chapter.id}.${field}`;
     const val = t(key);
-    return val === key ? (chapter[field] ?? chapter.name) : val;
+    return val === key ? (chapter[field] ?? chapter.story?.[field] ?? chapter.name) : val;
 };
 const tDifficulty = (chapter) => {
     const key = `difficulty.${DIFFICULTY_KEYS[chapter.id] || 'easy'}`;
@@ -38,6 +48,7 @@ export class ScreenManager {
         this.onStartLevel = null;
         this.currentChapter = null;
         this.setupNavigation();
+        this.updateMenuDashboard();
     }
 
     showScreen(name) {
@@ -52,28 +63,18 @@ export class ScreenManager {
         // players just saw the dashed "Reklam Alanı" placeholder.)
         if (name === 'game') showBanner();
         else hideBanner();
+        if (name === 'menu') this.updateMenuDashboard();
     }
 
     setupNavigation() {
         document.getElementById('btn-play').addEventListener('click', () => {
-            // Resume-on-Play: if the player previously started a level, jump
-            // straight to that chapter's level list (NOT to the chapters
-            // grid → chapter pick → levels chain). Saves three taps every
-            // launch and prevents the "I closed the app, came back, was
-            // supposed to play level 5 but it made me redo level 4 because
-            // I tapped the wrong tile" UX trap. Manual chapter navigation
-            // is still available via the back button on the levels screen.
-            const lastPlayed = storage.getLastPlayed();
-            if (lastPlayed && storage.isChapterUnlocked(lastPlayed.chapterId)) {
-                const ch = chapters.find(c => c.id === lastPlayed.chapterId);
-                if (ch) {
-                    this.currentChapter = ch;
-                    this.showLevels(ch);
-                    return;
-                }
-            }
-            this.showChapters();
+            const { chapter, level } = this._getContinuationTarget();
+            this.currentChapter = chapter;
+            this.applyChapterTheme(chapter);
+            if (level && this.onStartLevel) this.onStartLevel(level, chapter);
+            else this.showLevels(chapter);
         });
+        document.getElementById('btn-explore')?.addEventListener('click', () => this.showChapters());
 
         document.getElementById('btn-chapters-back').addEventListener('click', () => {
             this.showScreen('menu');
@@ -98,29 +99,84 @@ export class ScreenManager {
         // for the daily's chapter.
         this.getGameBackTarget = () => 'levels';
         document.getElementById('btn-game-back').addEventListener('click', () => {
-            this.showScreen(this.getGameBackTarget());
+            const target = this.getGameBackTarget();
+            if (target === 'levels' && this.currentChapter) this.showLevels(this.currentChapter);
+            else this.showScreen(target);
         });
+    }
+
+    _getContinuationTarget() {
+        const lastPlayed = storage.getLastPlayed();
+        const chapter = chapters.find(ch => ch.id === lastPlayed?.chapterId && storage.isChapterUnlocked(ch.id)) || chapters[0];
+        const playable = getLevelsByChapter(chapter.id).filter((level, index) => !storage.isBossLocked(chapter.id, index + 1));
+        const level = playable.find(candidate => !storage.isLevelCompleted(candidate.id))
+            || playable.find(candidate => candidate.id === lastPlayed?.levelId)
+            || playable[0];
+        return { chapter, level, lastPlayed };
+    }
+
+    updateMenuDashboard() {
+        const allLevels = chapters.flatMap(chapter => getLevelsByChapter(chapter.id));
+        const completed = allLevels.filter(level => storage.isLevelCompleted(level.id)).length;
+        const progress = document.getElementById('menu-progress-value');
+        if (progress) progress.textContent = `${completed}/${allLevels.length}`;
+        const stars = document.getElementById('menu-stars-value');
+        if (stars) stars.textContent = `${storage.getTotalStars()}/${allLevels.length * 3}`;
+        const progressBar = document.getElementById('menu-progress-bar');
+        if (progressBar) progressBar.style.width = `${allLevels.length ? completed / allLevels.length * 100 : 0}%`;
+
+        const { chapter, level, lastPlayed } = this._getContinuationTarget();
+        const title = document.getElementById('menu-continue-title');
+        if (title) title.textContent = lastPlayed
+            ? text('menu.continue_title', 'Macerana devam et')
+            : text('menu.first_puzzle', 'İlk bulmacanı çöz');
+        const subtitle = document.getElementById('menu-continue-subtitle');
+        if (subtitle) subtitle.textContent = text('menu.continue_subtitle', '{chapter} · Bulmaca {level}', {
+            chapter: tChapter(chapter, 'name'), level: level?.level || 1,
+        });
+        const image = document.getElementById('menu-chapter-image');
+        if (image) {
+            image.src = chapterImage(chapter);
+            image.style.objectPosition = chapter.artwork?.focal || 'center';
+            image.alt = '';
+        }
     }
 
     showChapters() {
         const list = document.getElementById('chapter-list');
         list.innerHTML = '';
 
-        // Total stars in header
         const header = document.querySelector('#screen-chapters .screen-header h2');
-        if (header) {
-            header.textContent = `${t('chapters.title')} \u2605 ${storage.getTotalStars()}/150`;
-        }
+        if (header) header.textContent = t('chapters.title');
+        const starTotal = document.getElementById('chapters-stars-value');
+        if (starTotal) starTotal.textContent = `${storage.getTotalStars()}/150`;
 
         for (const chapter of chapters) {
             const unlocked = storage.isChapterUnlocked(chapter.id);
-            const card = document.createElement('div');
-            card.className = 'chapter-card' + (unlocked ? '' : ' locked');
+            const levels = getLevelsByChapter(chapter.id);
+            const completedCount = levels.filter(level => storage.isLevelCompleted(level.id)).length;
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'chapter-card' + (unlocked ? '' : ' locked') + (completedCount === levels.length ? ' completed' : '');
+            card.dataset.chapter = String(chapter.id);
+            card.setAttribute('aria-disabled', String(!unlocked));
+
+            const art = document.createElement('div');
+            art.className = 'chapter-art';
+            const image = document.createElement('img');
+            image.className = 'chapter-thumb';
+            image.src = chapterImage(chapter);
+            image.style.objectPosition = chapter.artwork?.focal || 'center';
+            image.alt = '';
+            image.loading = 'lazy';
+            image.decoding = 'async';
+            art.appendChild(image);
 
             const numDiv = document.createElement('div');
             numDiv.className = 'chapter-number';
-            numDiv.style.background = chapter.theme.arrowRemovable || chapter.theme.arrowIdle;
-            numDiv.textContent = chapter.id;
+            numDiv.textContent = String(chapter.id).padStart(2, '0');
+            numDiv.setAttribute('aria-label', text('chapters.chapter_number', 'Bölüm {number}', { number: chapter.id }));
+            art.appendChild(numDiv);
 
             const infoDiv = document.createElement('div');
             infoDiv.className = 'chapter-info';
@@ -128,6 +184,10 @@ export class ScreenManager {
             const nameSpan = document.createElement('div');
             nameSpan.className = 'chapter-name';
             nameSpan.textContent = tChapter(chapter, 'name');
+
+            const period = document.createElement('div');
+            period.className = 'chapter-period';
+            period.textContent = tChapter(chapter, 'period');
 
             const diffSpan = document.createElement('div');
             diffSpan.className = 'chapter-difficulty';
@@ -138,29 +198,49 @@ export class ScreenManager {
             const chapterStars = storage.getChapterStars(chapter.id);
             starsSpan.textContent = `\u2605 ${chapterStars}/15`;
 
-            // Progress bar
             const progressDiv = document.createElement('div');
             progressDiv.className = 'chapter-progress';
+            progressDiv.setAttribute('role', 'progressbar');
+            progressDiv.setAttribute('aria-valuemin', '0');
+            progressDiv.setAttribute('aria-valuemax', String(levels.length));
+            progressDiv.setAttribute('aria-valuenow', String(completedCount));
+            progressDiv.setAttribute('aria-label', text('chapters.progress', '{completed}/{total} bulmaca', { completed: completedCount, total: levels.length }));
             const progressFill = document.createElement('div');
             progressFill.className = 'chapter-progress-fill';
-            const completedCount = getLevelsByChapter(chapter.id).filter(l => storage.isLevelCompleted(l.id)).length;
-            progressFill.style.width = `${(completedCount / 5) * 100}%`;
+            progressFill.style.width = `${levels.length ? completedCount / levels.length * 100 : 0}%`;
             progressDiv.appendChild(progressFill);
 
             infoDiv.appendChild(nameSpan);
+            infoDiv.appendChild(period);
             infoDiv.appendChild(diffSpan);
             infoDiv.appendChild(starsSpan);
             infoDiv.appendChild(progressDiv);
 
-            card.appendChild(numDiv);
+            card.appendChild(art);
             card.appendChild(infoDiv);
 
+            const status = document.createElement('div');
+            status.className = 'chapter-status';
             if (!unlocked) {
                 const lock = document.createElement('span');
                 lock.className = 'chapter-lock-icon';
                 lock.textContent = '\u{1F512}';
-                card.appendChild(lock);
+                lock.setAttribute('aria-hidden', 'true');
+                status.appendChild(lock);
+                const reason = document.createElement('span');
+                reason.className = 'chapter-lock-reason';
+                reason.textContent = text('chapters.unlock_requirement', '{chapter} bölümünde {stars} yıldız topla', {
+                    chapter: tChapter(chapters.find(ch => ch.id === chapter.id - 1) || chapter, 'name'), stars: 10,
+                });
+                infoDiv.appendChild(reason);
+            } else {
+                const chevron = document.createElement('span');
+                chevron.className = 'chapter-chevron';
+                chevron.textContent = '\u2192';
+                chevron.setAttribute('aria-hidden', 'true');
+                status.appendChild(chevron);
             }
+            card.appendChild(status);
 
             if (unlocked) {
                 card.addEventListener('click', () => {
@@ -176,17 +256,14 @@ export class ScreenManager {
     }
 
     showStory(chapter) {
+        this.currentChapter = chapter;
         this.applyChapterTheme(chapter);
 
-        const story = chapter.story || {};
-        const bgNames = {
-            1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
-            6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
-        };
-
-        // Set image
         const img = document.getElementById('story-image');
-        img.src = `assets/backgrounds/bg-${bgNames[chapter.id] || 'final'}.jpg`;
+        img.src = chapterImage(chapter);
+        img.alt = tChapter(chapter, 'name');
+        const header = document.querySelector('#screen-story .screen-header h2');
+        if (header) header.textContent = tChapter(chapter, 'name');
 
         // Set text content — pulled from lang JSON so English/Spanish/French/
         // Japanese players don't see the Turkish originals in chapters.js.
@@ -209,7 +286,11 @@ export class ScreenManager {
         for (let i = 0; i < labels.length; i++) {
             const tag = document.createElement('span');
             tag.className = 'story-fact';
-            tag.innerHTML = `<span class="story-fact-icon">${icons[i] || ''}</span>${labels[i]}`;
+            const icon = document.createElement('span');
+            icon.className = 'story-fact-icon';
+            icon.textContent = icons[i] || '';
+            icon.setAttribute('aria-hidden', 'true');
+            tag.append(icon, document.createTextNode(labels[i]));
             factsEl.appendChild(tag);
         }
 
@@ -290,6 +371,7 @@ export class ScreenManager {
     }
 
     showLevels(chapter) {
+        this.currentChapter = chapter;
         this.applyChapterTheme(chapter);
         document.getElementById('level-screen-title').textContent = tChapter(chapter, 'name');
 
@@ -309,7 +391,9 @@ export class ScreenManager {
         const activeMode = storage.getGameMode();
         for (const m of modes) {
             const btn = document.createElement('button');
+            btn.type = 'button';
             btn.className = 'mode-btn' + (m.id === activeMode ? ' active' : '');
+            btn.setAttribute('aria-pressed', String(m.id === activeMode));
             btn.innerHTML = `<span class="mode-icon">${m.icon}</span><span>${m.label}</span>`;
             btn.addEventListener('click', () => {
                 storage.setGameMode(m.id);
@@ -331,147 +415,114 @@ export class ScreenManager {
         modeBar.appendChild(infoBtn);
         list.appendChild(modeBar);
 
-        // Path map layout - zigzag pattern
+        const summary = document.createElement('div');
+        summary.className = 'level-chapter-summary';
+        const completedCount = levels.filter(level => storage.isLevelCompleted(level.id)).length;
+        const progressText = document.createElement('span');
+        progressText.className = 'level-chapter-progress';
+        progressText.textContent = text('levels.chapter_progress', '{completed}/{total} tamamlandı', {
+            completed: completedCount, total: levels.length,
+        });
+        const chapterStars = document.createElement('span');
+        chapterStars.className = 'level-chapter-stars';
+        chapterStars.textContent = `★ ${storage.getChapterStars(chapter.id)}/${levels.length * 3}`;
+        summary.append(progressText, chapterStars);
+        list.appendChild(summary);
+
         const pathContainer = document.createElement('div');
-        pathContainer.className = 'level-path';
+        pathContainer.className = 'level-path level-journey';
 
-        // SVG for connecting lines — SVGElement.className is a read-only
-        // SVGAnimatedString; use setAttribute('class', ...) instead.
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'level-path-svg');
-        svg.setAttribute('viewBox', '0 0 300 600');
-        svg.setAttribute('preserveAspectRatio', 'none');
-        pathContainer.appendChild(svg);
+        // Keep the next playable puzzle clear without a moving target or a
+        // winding map: each row shows its real board and a useful status.
+        const nextUpIdx = levels.findIndex((level, index) => !storage.isLevelCompleted(level.id)
+            && !storage.isBossLocked(chapter.id, index + 1));
 
-        // Zigzag positions: alternate left-center-right
-        const positions = [
-            { x: 50, y: 90 },
-            { x: 75, y: 210 },
-            { x: 35, y: 330 },
-            { x: 70, y: 450 },
-            { x: 45, y: 560 },
-        ];
-
-        // Draw path lines
-        let pathD = '';
-        for (let i = 0; i < positions.length; i++) {
-            const px = positions[i].x * 3;
-            const py = positions[i].y;
-            if (i === 0) pathD += `M ${px} ${py}`;
-            else pathD += ` L ${px} ${py}`;
-        }
-
-        const pathLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        pathLine.setAttribute('d', pathD);
-        pathLine.setAttribute('stroke', 'rgba(140,110,70,0.25)');
-        pathLine.setAttribute('stroke-width', '4');
-        pathLine.setAttribute('stroke-dasharray', '8 6');
-        pathLine.setAttribute('fill', 'none');
-        pathLine.setAttribute('stroke-linecap', 'round');
-        svg.appendChild(pathLine);
-
-        // Draw completed path overlay
-        let completedCount = 0;
-        for (const level of levels) {
-            if (storage.isLevelCompleted(level.id)) completedCount++;
-            else break;
-        }
-
-        if (completedCount > 0) {
-            let completedD = '';
-            for (let i = 0; i <= Math.min(completedCount, positions.length - 1); i++) {
-                const px = positions[i].x * 3;
-                const py = positions[i].y;
-                if (i === 0) completedD += `M ${px} ${py}`;
-                else completedD += ` L ${px} ${py}`;
-            }
-            const completedLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            completedLine.setAttribute('d', completedD);
-            completedLine.setAttribute('stroke', 'var(--theme-accent, #a07030)');
-            completedLine.setAttribute('stroke-width', '4');
-            completedLine.setAttribute('fill', 'none');
-            completedLine.setAttribute('stroke-linecap', 'round');
-            svg.appendChild(completedLine);
-        }
-
-        // Find the "next to play" level: the FIRST uncompleted accessible
-        // level in the chapter. Used to add a `.next-up` class for a clear
-        // pulsing visual cue so players know exactly which tile to tap on
-        // resume — instead of accidentally re-tapping the most recent
-        // completed level (which is a common confusion since completed
-        // tiles also have a strong filled-in look).
-        let nextUpIdx = -1;
-        for (let j = 0; j < levels.length; j++) {
-            if (storage.isLevelCompleted(levels[j].id)) continue;
-            const isBossJ = (j === 4);
-            if (isBossJ && storage.isBossLocked(chapter.id, 5)) continue;
-            nextUpIdx = j;
-            break;
-        }
-
-        // Create level nodes on the path
         for (let i = 0; i < levels.length; i++) {
             const level = levels[i];
             const completed = storage.isLevelCompleted(level.id);
-            const score = storage.getLevelScore(level.id);
-            const stars = score?.stars || 0;
-            const levelNumInChapter = i + 1;
-            const isBoss = levelNumInChapter === 5;
-            const bossLocked = isBoss && storage.isBossLocked(chapter.id, levelNumInChapter);
-            const isAccessible = !bossLocked;
+            const stars = Math.max(0, Math.min(3, storage.getLevelScore(level.id)?.stars || 0));
+            const isBoss = i === levels.length - 1;
+            const bossLocked = storage.isBossLocked(chapter.id, i + 1);
+            const nextUp = i === nextUpIdx;
+            const node = document.createElement('button');
+            node.type = 'button';
+            node.className = 'level-node level-row' + (completed ? ' completed' : ' current')
+                + (isBoss ? ' boss' : '') + (bossLocked ? ' locked-boss' : '') + (nextUp ? ' next-up' : '');
+            node.dataset.levelId = level.id;
+            node.setAttribute('aria-disabled', String(bossLocked));
 
-            const node = document.createElement('div');
-            let cls = 'level-node' + (completed ? ' completed' : ' current');
-            if (isBoss) cls += ' boss';
-            if (bossLocked) cls += ' locked-boss';
-            if (i === nextUpIdx) cls += ' next-up';
-            node.className = cls;
-            node.style.left = positions[i].x + '%';
-            node.style.top = positions[i].y + 'px';
-
-            // Level number circle
-            const circle = document.createElement('div');
-            circle.className = 'level-node-circle';
-            circle.textContent = isBoss ? '\u{1F451}' : level.level;
-            node.appendChild(circle);
-
-            // Level name
-            const name = document.createElement('div');
-            name.className = 'level-node-name';
-            name.textContent = level.name;
-            node.appendChild(name);
-
-            // Boss gate progress
-            if (bossLocked) {
-                const gate = storage.getBossGateProgress(chapter.id);
-                const gateEl = document.createElement('div');
-                gateEl.className = 'level-node-gate';
-                gateEl.textContent = `\u{1F512} \u2605 ${gate.current}/${gate.required}`;
-                node.appendChild(gateEl);
-            }
-
-            // Stars
-            if (stars > 0) {
-                const starsEl = document.createElement('div');
-                starsEl.className = 'level-node-stars';
-                starsEl.textContent = '\u2605'.repeat(stars) + '\u2606'.repeat(3 - stars);
-                node.appendChild(starsEl);
-            }
-
-            // Thumbnail preview (mini grid)
+            const preview = document.createElement('div');
+            preview.className = 'level-preview';
             const thumb = document.createElement('canvas');
             thumb.className = 'level-thumb';
-            thumb.width = 60;
-            thumb.height = 60;
+            thumb.width = 160;
+            thumb.height = 160;
+            thumb.setAttribute('aria-hidden', 'true');
             this._drawLevelThumbnail(thumb, level);
-            node.appendChild(thumb);
+            preview.appendChild(thumb);
+            const circle = document.createElement('span');
+            circle.className = 'level-node-circle';
+            circle.textContent = String(level.level).padStart(2, '0');
+            circle.setAttribute('aria-hidden', 'true');
+            preview.appendChild(circle);
+            node.appendChild(preview);
 
-            if (isAccessible && this.onStartLevel) {
-                node.addEventListener('click', () => {
-                    this.onStartLevel(level, chapter);
-                });
+            const details = document.createElement('div');
+            details.className = 'level-row-details';
+            const eyebrow = document.createElement('span');
+            eyebrow.className = 'level-row-eyebrow';
+            eyebrow.textContent = isBoss
+                ? text('levels.boss', 'Final bulmacası')
+                : text('levels.puzzle_number', 'Bulmaca {number}', { number: level.level });
+            details.appendChild(eyebrow);
+            const name = document.createElement('span');
+            name.className = 'level-node-name';
+            const nameKey = `puzzles.${level.id}`;
+            const translatedName = t(nameKey);
+            const shapeKey = `shapes.${level.shape}`;
+            const translatedShape = level.shape ? t(shapeKey) : '';
+            const shapeLabel = translatedShape && translatedShape !== shapeKey ? translatedShape : '';
+            name.textContent = translatedName !== nameKey ? translatedName : shapeLabel || level.name;
+            details.appendChild(name);
+            const meta = document.createElement('span');
+            meta.className = 'level-row-meta';
+            meta.textContent = [
+                translatedName !== nameKey && shapeLabel ? shapeLabel : tDifficulty(chapter),
+                text('levels.arrows', '{count} ok', { count: level.paths.length }),
+            ].filter(Boolean).join(' · ');
+            details.appendChild(meta);
+
+            const state = document.createElement('span');
+            state.className = 'level-row-state';
+            if (bossLocked) {
+                const gate = storage.getBossGateProgress(chapter.id);
+                state.classList.add('level-node-gate');
+                state.textContent = `${text('levels.boss_requirement', 'İlk dört bulmacada {stars} yıldız topla', { stars: gate.required })} · ${gate.current}/${gate.required}`;
+            } else {
+                state.textContent = completed
+                    ? text('levels.completed', 'Tamamlandı')
+                    : nextUp ? text('levels.next', 'Sıradaki') : text('levels.ready', 'Oynamaya hazır');
             }
+            details.appendChild(state);
+            node.appendChild(details);
 
+            const trailing = document.createElement('div');
+            trailing.className = 'level-row-trailing';
+            const starsEl = document.createElement('span');
+            starsEl.className = 'level-node-stars';
+            starsEl.textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+            starsEl.setAttribute('aria-label', text('levels.star_count', '{stars}/3 yıldız', { stars }));
+            trailing.appendChild(starsEl);
+            const action = document.createElement('span');
+            action.className = 'level-row-action';
+            action.textContent = bossLocked ? '🔒' : '→';
+            action.setAttribute('aria-hidden', 'true');
+            trailing.appendChild(action);
+            node.appendChild(trailing);
+
+            if (!bossLocked) {
+                node.addEventListener('click', () => this.onStartLevel?.(level, chapter));
+            }
             pathContainer.appendChild(node);
         }
 
@@ -481,29 +532,53 @@ export class ScreenManager {
 
     _drawLevelThumbnail(canvas, level) {
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
         const w = canvas.width;
         const h = canvas.height;
         const gw = level.gridWidth;
         const gh = level.gridHeight;
-        const cs = Math.min(w / gw, h / gh);
+        const cs = Math.min((w - 20) / gw, (h - 20) / gh);
         const ox = (w - gw * cs) / 2;
         const oy = (h - gh * cs) / 2;
 
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.strokeStyle = 'rgba(80,60,30,0.5)';
-        ctx.lineWidth = Math.max(1, cs * 0.15);
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = 'rgba(21,77,72,0.055)';
+        for (const path of level.paths) {
+            for (const cell of path.cells) {
+                ctx.beginPath();
+                ctx.arc(ox + (cell[0] + 0.5) * cs, oy + (cell[1] + 0.5) * cs, cs * 0.43, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.strokeStyle = '#154D48';
+        ctx.lineWidth = Math.max(1.2, cs * 0.16);
         ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        const vectors = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
         for (const p of level.paths) {
             if (p.cells.length === 0) continue;
+            const [dx, dy] = vectors[p.direction] || [1, 0];
+            const tail = p.cells[0];
+            const next = p.cells[1];
+            const tailDx = next ? next[0] - tail[0] : dx;
+            const tailDy = next ? next[1] - tail[1] : dy;
             ctx.beginPath();
-            const c0 = p.cells[0];
-            ctx.moveTo(ox + c0[0] * cs + cs / 2, oy + c0[1] * cs + cs / 2);
-            for (let i = 1; i < p.cells.length; i++) {
+            ctx.moveTo(ox + (tail[0] + 0.5 - tailDx * 0.28) * cs, oy + (tail[1] + 0.5 - tailDy * 0.28) * cs);
+            for (let i = 0; i < p.cells.length; i++) {
                 ctx.lineTo(ox + p.cells[i][0] * cs + cs / 2, oy + p.cells[i][1] * cs + cs / 2);
             }
+            const head = p.cells[p.cells.length - 1];
+            const tipX = ox + (head[0] + 0.5 + dx * 0.35) * cs;
+            const tipY = oy + (head[1] + 0.5 + dy * 0.35) * cs;
+            ctx.lineTo(tipX, tipY);
+            ctx.stroke();
+            const headSize = cs * 0.3;
+            const spread = headSize * 0.65;
+            ctx.beginPath();
+            ctx.moveTo(tipX - dx * headSize - dy * spread, tipY - dy * headSize + dx * spread);
+            ctx.lineTo(tipX, tipY);
+            ctx.lineTo(tipX - dx * headSize + dy * spread, tipY - dy * headSize - dx * spread);
             ctx.stroke();
         }
     }
@@ -521,16 +596,11 @@ export class ScreenManager {
         root.style.setProperty('--theme-border', theme.borderColor || 'rgba(100,70,40,0.15)');
         root.style.setProperty('--theme-pattern', theme.patternColor || 'rgba(120,80,40,0.08)');
         document.body.dataset.theme = chapter.id === 5 ? 'ottoman' : 'default';
+        document.body.dataset.chapter = String(chapter.id);
 
-        // Set chapter map background on levels screen
-        const bgNames = {
-            1: 'egypt', 2: 'greek', 3: 'rome', 4: 'viking', 5: 'ottoman',
-            6: 'china', 7: 'maya', 8: 'india', 9: 'medieval', 10: 'final'
-        };
-        const bgName = bgNames[chapter.id] || 'final';
         const levelsScreen = document.getElementById('screen-levels');
         if (levelsScreen) {
-            levelsScreen.style.backgroundImage = `linear-gradient(180deg, rgba(240,228,200,0.45) 0%, rgba(220,200,170,0.5) 100%), url('assets/backgrounds/bg-${bgName}.jpg')`;
+            levelsScreen.style.backgroundImage = `linear-gradient(180deg, rgba(244,247,244,0.96) 0%, rgba(244,247,244,0.9) 100%), url('${chapterImage(chapter)}')`;
             levelsScreen.style.backgroundSize = 'auto, cover';
             levelsScreen.style.backgroundPosition = 'center, center';
             levelsScreen.style.backgroundRepeat = 'no-repeat, no-repeat';

@@ -1,7 +1,8 @@
 // js/game.js
 
 import { Grid } from './grid.js';
-import { Renderer } from './renderer.js?v=2';
+import { hitTestPath } from './hit-test.js';
+import { Renderer } from './renderer.js?v=4';
 import { LivesManager } from './lives.js';
 import { HintManager } from './hints.js';
 import { storage } from './storage.js';
@@ -9,6 +10,8 @@ import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
 import { tapLight, tapMedium, tapHeavy, notifyError } from './haptics.js';
 import { t } from './i18n.js?v=2';
+import { getPuzzleTimeLimit, BOARD_VISUALS } from './balance.js?v=2';
+import { createArrowRoute, sampleArrowMotion, arrowExitDistance, arrowDepartureEase, assignBalancedArrowColors } from './arrow-motion.js?v=3';
 
 // Map chapter id (1-10) to its difficulty translation key. Mirrors the table
 // in screens.js so the in-game header label localises the same way the level-
@@ -24,15 +27,6 @@ function localizedDifficulty(chapter) {
     const v = t('difficulty.' + k);
     return v === 'difficulty.' + k ? (chapter?.difficulty || '') : v;
 }
-
-const TIME_CONFIG = {
-    // [baseSec, perPathSec] indexed by chapter
-    1: [60, 3.0], 2: [60, 3.0],
-    3: [45, 2.5], 4: [45, 2.5],
-    5: [35, 2.0], 6: [35, 2.0],
-    7: [25, 1.5], 8: [25, 1.5],
-    9: [20, 1.0], 10: [20, 1.0],
-};
 
 // Combo reward tiers — threshold must be descending, first match wins.
 const COMBO_TIERS = [
@@ -58,11 +52,13 @@ export class Game {
         this.currentLevel = null;
         this.currentChapter = null;
         this.isAnimating = false;
+        this._levelEpoch = 0;
+        this._active = false;
+        this._outcome = null;
+        this._animationRestore = null;
+        this._blockedFeedbackToken = 0;
         this.hintedPath = null;
-        // Onboarding pointer state — set by main.js before startLevel() when
-        // we want to guide the brand-new player through their first taps.
-        // Cleared (null) once they've removed enough arrows that they
-        // clearly understand the mechanic, or once they leave Egypt-1.
+        // The first campaign puzzle guides three successful taps once.
         this.onboardingActive = false;
         this.onboardingTapsLeft = 0;
         this.onLevelComplete = null;
@@ -71,6 +67,7 @@ export class Game {
         this.onScoreChanged = null;
         this._renderLoopId = null;
         this._timerInterval = null;
+        this._visibilityHidden = typeof document !== 'undefined' && document.hidden === true;
 
         // Scoring system
         this.score = 0;
@@ -92,7 +89,7 @@ export class Game {
         // Shape: { type: 'time', multiplier: 0.6 } | { type: 'moves', extraMoves: 2 }
         this.dailyModifier = null;
 
-        // Auto-hint: show a hint automatically after 2 consecutive wrong moves
+        // Track consecutive wrong moves for undo snapshots.
         this._consecutiveWrongs = 0;
         // Undo history: last N successful moves, capped at UNDO_MAX
         this._moveHistory = [];
@@ -105,10 +102,19 @@ export class Game {
     }
 
     startLevel(levelData, chapterData, opts = {}) {
+        this.leaveLevel();
+        this._active = true;
+        this._outcome = null;
         this.currentLevel = levelData;
         this.currentChapter = chapterData;
         this.hintedPath = null;
         this.dailyModifier = opts.dailyModifier || null;
+        let onboardingDone = false;
+        try { onboardingDone = localStorage.getItem('okchu_onboarding_done') === '1'; } catch {}
+        this.onboardingActive = levelData.id === 'egypt_1' && !this.dailyModifier && !opts.isDailyChallenge &&
+            !storage.isLevelCompleted(levelData.id) && !onboardingDone;
+        this.onboardingTapsLeft = this.onboardingActive ? 3 : 0;
+        this._updateGameFeedback();
         this.applyChapterTheme(chapterData);
         // Persist resume point so the Play button on the next launch jumps
         // straight back to this chapter's level list. Skip for daily
@@ -120,14 +126,19 @@ export class Game {
 
         this.grid = new Grid(levelData.gridWidth, levelData.gridHeight);
         this.grid.loadFromData(levelData.paths, levelData.walls || []);
+        assignBalancedArrowColors(this.grid.paths);
 
         this.renderer.setTheme(chapterData.theme, chapterData.id);
+        this.renderer.setBoardShape(levelData.shape, levelData.gridWidth, levelData.gridHeight);
         this.renderer.resize(levelData.gridWidth, levelData.gridHeight);
         this.renderer.drawGrid(this.grid);
 
         this.hintManager.setLevel(levelData.id);
 
-        document.getElementById('level-name').textContent = levelData.name;
+        const shapeKey = `shapes.${levelData.shape}`;
+        const translatedShape = levelData.shape ? t(shapeKey) : '';
+        const levelName = translatedShape && translatedShape !== shapeKey ? translatedShape : levelData.name;
+        document.getElementById('level-name').textContent = `${levelName} · ${((levelData.level || 1) - 1) % 5 + 1}/5`;
         document.getElementById('level-difficulty').textContent = localizedDifficulty(chapterData);
 
         // Reset scoring
@@ -147,19 +158,14 @@ export class Game {
             for (let i = 0; i < invAtStart.extraUndo; i++) storage.usePowerup('extraUndo');
         }
         this._updateUndoButton();
-        this._updatePowerupButtons();
 
         // Countdown timer — mode-aware (classic/timed/zen) + daily modifier overrides.
-        this.gameMode = storage.getGameMode() || 'classic';
-        const chapterId = chapterData.id;
-        const [baseSec, perPathSec] = TIME_CONFIG[chapterId] || [60, 3.0];
-        let limit = baseSec + Math.round(this.totalPaths * perPathSec);
-        if (this.gameMode === 'timed') limit = Math.round(limit * 0.65);
-
-        // Daily 'time' modifier tightens time further (independent of gameMode).
-        if (this.dailyModifier && this.dailyModifier.type === 'time') {
-            limit = Math.max(15, Math.round(limit * this.dailyModifier.multiplier));
-        }
+        // Daily constraints apply equally to everyone; the campaign's Zen
+        // preference must not disable its countdown or attempt limit.
+        this.gameMode = this.dailyModifier || opts.isDailyChallenge ? 'classic' : storage.getGameMode() || 'classic';
+        document.body.dataset.gameMode = this.gameMode;
+        this.zenMode = this.gameMode === 'zen';
+        const limit = getPuzzleTimeLimit(levelData, this.gameMode, this.dailyModifier);
 
         this.timeLimit = limit;
         this.timeRemaining = limit;
@@ -174,6 +180,7 @@ export class Game {
         }
 
         const suppressTimer = this.moveLimit > 0;
+        this._updatePowerupButtons();
         if (this.gameMode !== 'zen' && !suppressTimer) {
             this._startCountdown();
         } else {
@@ -188,7 +195,7 @@ export class Game {
         // Zoom hint for large grids
         const zoomHint = document.getElementById('zoom-hint');
         if (zoomHint) {
-            if (levelData.gridWidth > 20 || levelData.gridHeight > 20) {
+            if (this.renderer.cellSize < 26) {
                 zoomHint.classList.remove('hidden');
                 setTimeout(() => zoomHint.classList.add('hidden'), 3500);
             } else {
@@ -197,11 +204,84 @@ export class Game {
         }
     }
 
+    leaveLevel() {
+        this._stopTimer();
+        this.stopRenderLoop();
+        this._active = false;
+        this._levelEpoch++;
+        this.onboardingActive = false;
+        this.onboardingTapsLeft = 0;
+        this._clearBlockedFeedback();
+        if (this._animationRestore) this._animationRestore();
+        this._animationRestore = null;
+        this.isAnimating = false;
+        this.renderer.previewPath = null;
+        // A low-time warning belongs to this timed attempt, never the next board.
+        this.renderer.setVignetteAlpha(0);
+        if (this._resetInput) this._resetInput();
+    }
+
+    _updateGameFeedback() {
+        const element = document.getElementById('game-feedback');
+        if (!element) return;
+        const key = this.renderer.blockedFeedback ? 'game.blocked_feedback' : this.onboardingActive ? 'game.guided_feedback' : '';
+        const message = key ? t(key) : '';
+        element.textContent = message === key ? '' : message;
+    }
+
+    _clearBlockedFeedback() {
+        this._blockedFeedbackToken++;
+        const source = this.renderer.blockedFeedback?.path;
+        if (source) source._flashColor = null;
+        this.renderer.clearBlockedFeedback();
+        this._updateGameFeedback();
+    }
+
+    _showBlockedFeedback(path, blocker, epoch) {
+        if (!blocker || !this._active || epoch !== this._levelEpoch) return;
+        this.renderer.showBlockedFeedback(path, blocker, 900);
+        const token = ++this._blockedFeedbackToken;
+        this._updateGameFeedback();
+        this.renderer.drawGrid(this.grid);
+        setTimeout(() => {
+            if (epoch !== this._levelEpoch || token !== this._blockedFeedbackToken) return;
+            this._clearBlockedFeedback();
+            if (this._active) this.renderer.drawGrid(this.grid);
+        }, 900);
+    }
+
+    resumeLevel(seconds) {
+        this._active = true;
+        this._outcome = null;
+        this.timeRemaining = seconds;
+        if (!this.zenMode && !this.moveLimit) this._startCountdown();
+        this.startRenderLoop();
+    }
+
+    handleVisibilityChange(hidden) {
+        const wasHidden = this._visibilityHidden;
+        this._visibilityHidden = !!hidden;
+        this._lastTick = Date.now();
+        if (hidden) {
+            this._stopTimer();
+            if (this._resetInput) this._resetInput();
+            return;
+        }
+        if (this._active && !this._outcome && !this.zenMode && !this.moveLimit && (wasHidden || !this._timerInterval)) {
+            this._startCountdown();
+        }
+    }
+
     _startCountdown() {
         this._stopTimer();
         this._lastTick = Date.now();
+        if (!this._active || this._outcome || this.zenMode || this.moveLimit || this._visibilityHidden || document.hidden === true) return;
         this._timerInterval = setInterval(() => {
             const now = Date.now();
+            if (this._visibilityHidden || document.hidden === true) {
+                this._lastTick = now;
+                return;
+            }
             const dt = (now - this._lastTick) / 1000;
             this._lastTick = now;
             this.timeRemaining = Math.max(0, this.timeRemaining - dt);
@@ -231,6 +311,9 @@ export class Game {
     }
 
     _handleTimeUp() {
+        if (!this._active || this._outcome) return;
+        this.leaveLevel();
+        this._outcome = 'time-up';
         this._stopTimer();
         this.stopRenderLoop();
         if (this.onTimeUp) this.onTimeUp();
@@ -242,6 +325,9 @@ export class Game {
     }
 
     _handleMovesUp() {
+        if (!this._active || this._outcome) return;
+        this.leaveLevel();
+        this._outcome = 'moves-up';
         this._stopTimer();
         this.stopRenderLoop();
         if (this.onMovesUp) this.onMovesUp();
@@ -274,6 +360,7 @@ export class Game {
         if (comboEl) {
             comboEl.textContent = this.combo > 1 ? `x${this.combo}` : '';
             comboEl.classList.toggle('active', this.combo > 1);
+            if (comboEl.parentElement) comboEl.parentElement.classList.toggle('combo-stat-active', this.combo > 1);
         }
         const movesEl = document.getElementById('game-moves');
         if (movesEl) {
@@ -312,9 +399,10 @@ export class Game {
     }
 
     calculateStars() {
-        const ratio = this.timeRemaining / this.timeLimit;
-        if (ratio >= 0.7 && this.wrongMoves === 0 && !this.usedHint) return 3;
-        if (ratio >= 0.5 && this.wrongMoves <= 2) return 2;
+        const timed = this.gameMode === 'timed' && !this.dailyModifier;
+        const ratio = this.timeLimit > 0 ? this.timeRemaining / this.timeLimit : 0;
+        if (this.wrongMoves === 0 && !this.usedHint && (!timed || ratio >= 0.3)) return 3;
+        if (this.wrongMoves <= 2) return 2;
         return 1;
     }
 
@@ -336,6 +424,7 @@ export class Game {
         root.style.setProperty('--theme-life-shadow', theme.lifeGlow || 'rgba(180,60,40,0.28)');
         root.style.setProperty('--theme-pattern', theme.patternColor || 'rgba(120,80,40,0.08)');
         document.body.dataset.theme = chapterData.id === 5 ? 'ottoman' : 'default';
+        document.body.dataset.chapter = String(chapterData.id);
     }
 
     setupInput() {
@@ -354,32 +443,9 @@ export class Game {
         const TAP_MAX_MS = 350;
         const DOUBLE_TAP_MS = 300;
         const DOUBLE_TAP_RADIUS = 40;
-        // Finger-tip bias correction DISABLED. Tested 6 px and 3 px; both
-        // values turned out to push the corrected position into the cell ABOVE
-        // the user's actual finger when cell sizes were small (≤ 24 CSS px on
-        // iPhones with wide grids). Net effect was MORE wrong-arrow misfires,
-        // not fewer. Tier-1 EXACT-cell-hit is doing all the heavy lifting now;
-        // no synthetic shift needed. Kept as a constant set to 0 so the
-        // touch-end call site stays readable and we can re-enable easily.
-        const TOUCH_Y_CORRECTION = 0;
-
-        // Tap → path resolution: PURE Voronoi-style distance hit testing.
-        //
-        // We scan a 5x5 cell neighbourhood around the fractional tap position
-        // and for every path that owns ANY cell in that area, compute the true
-        // Hit-testing: pure cell ownership. The arrow's visual cells are its
-        // hit area, exactly. Tap inside one of an arrow's cells → that arrow
-        // fires. Tap on empty space → nothing fires. No distance magnetism,
-        // no slop, no auto-selecting a "nearby" arrow. This gives the player
-        // full control: what they touch is what fires, period.
-        //
-        // Imprecise taps are still recoverable: the drag-to-choose preview
-        // halo (touchmove handler) lets the player slide their finger to the
-        // intended arrow before lifting, with live visual confirmation of
-        // which arrow is currently selected.
-        const findPathAt = (fx, fy) => {
-            return this.grid.getPathAt(Math.floor(fx), Math.floor(fy));
-        };
+        let lastTapWasEmpty = false;
+        let lastTouchEnd = -Infinity;
+        const findPathAt = (clientX, clientY) => hitTestPath(this.grid, this.renderer, clientX, clientY);
 
         // Single-slot tap queue: when an animation is in flight, hold the
         // most recent tap and process it the instant the animation ends.
@@ -392,20 +458,29 @@ export class Game {
             if (!queuedTap) return;
             const t = queuedTap;
             queuedTap = null;
-            if (performance.now() - t.at < 400) {
-                resolveTap(t.x, t.y);
+            if (t.epoch === this._levelEpoch && performance.now() - t.at < 400) {
+                this._clearBlockedFeedback();
+                firePath(t.path);
             }
         };
 
         const resolveTap = (clientX, clientY) => {
-            if (!this.grid) return;
+            if (!this.grid || !this._active) return;
+            this._clearBlockedFeedback();
             if (this.isAnimating) {
-                queuedTap = { x: clientX, y: clientY, at: performance.now() };
+                queuedTap = { path: findPathAt(clientX, clientY), at: performance.now(), epoch: this._levelEpoch };
                 return;
             }
-            const { fx, fy } = this.renderer.getFractionalCellFromPoint(clientX, clientY);
-            const path = findPathAt(fx, fy);
-            if (!path) return;
+            firePath(findPathAt(clientX, clientY));
+        };
+
+        const firePath = (path) => {
+            if (!this._active || !path || !this.grid.paths.includes(path) || path.isRemoved() || path.state === 'removing') return;
+            if (this._isMovesExhausted()) return;
+            if (!this.zenMode && !this.livesManager.hasLives()) {
+                if (this.onNoLives) this.onNoLives();
+                return;
+            }
             this.hintedPath = null;
             this.renderer.touchFeedback = { path, startTime: performance.now() };
             if (this.grid.isPathClear(path)) {
@@ -418,11 +493,12 @@ export class Game {
         // Mouse (desktop) uses click — touch path is handled via touchstart/touchend.
         this.canvas.addEventListener('click', (e) => {
             // Skip synthetic clicks that iOS fires after touchend when we didn't preventDefault.
-            if (e.detail === 0) return;
+            if (e.detail === 0 || performance.now() - lastTouchEnd < 700) return;
             resolveTap(e.clientX, e.clientY);
         });
 
         this.canvas.addEventListener('touchstart', (e) => {
+            if (!this._active || !this.grid) return;
             if (e.touches.length === 2) {
                 // Pinch begins — cancel any pending single-finger tap so the
                 // gesture doesn't accidentally fire a wrong-move on start,
@@ -452,8 +528,7 @@ export class Game {
                 // finger to a different one before lifting. Drag-to-choose
                 // UX, same model as iOS keyboard letter selection.
                 if (!this.isAnimating && this.grid) {
-                    const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY);
-                    this.renderer.previewPath = findPathAt(fx, fy);
+                    this.renderer.previewPath = findPathAt(t.clientX, t.clientY);
                 }
             }
         }, { passive: false });
@@ -501,8 +576,7 @@ export class Game {
                         // arrow is now closest. Lets the player visually
                         // scrub between adjacent arrows; touchend then fires
                         // exactly the one currently haloed.
-                        const { fx, fy } = this.renderer.getFractionalCellFromPoint(t.clientX, t.clientY);
-                        this.renderer.previewPath = findPathAt(fx, fy);
+                        this.renderer.previewPath = findPathAt(t.clientX, t.clientY);
                     }
                 }
                 if (isSinglePanning) {
@@ -516,6 +590,7 @@ export class Game {
         }, { passive: false });
 
         this.canvas.addEventListener('touchend', (e) => {
+            lastTouchEnd = performance.now();
             // Suppress the iOS synthetic click that fires ~300ms after touchend.
             // We resolve the tap ourselves below — letting the click also fire
             // would double-trigger resolveTap on some iOS versions where
@@ -534,59 +609,46 @@ export class Game {
             }
             if (!pendingTapStart) return;
             const now = performance.now();
-            if (now - pendingTapStart.at > TAP_MAX_MS) { pendingTapStart = null; return; }
+            if (now - pendingTapStart.at > TAP_MAX_MS) { pendingTapStart = null; this.renderer.previewPath = null; return; }
 
-            // Double-tap detection — fires before resolveTap so a quick repeat
-            // resets the view instead of acting on an arrow.
-            const isDoubleTap = (now - lastTapAt) < DOUBLE_TAP_MS
-                && Math.hypot(pendingTapStart.x - lastTapPos.x, pendingTapStart.y - lastTapPos.y) < DOUBLE_TAP_RADIUS;
-            lastTapAt = now;
-            lastTapPos = { x: pendingTapStart.x, y: pendingTapStart.y };
-
-            if (isDoubleTap) {
-                lastTapAt = 0; // consume — prevent triple-tap re-trigger
-                this.renderer.resetView(this.grid);
-                this.renderer.drawGrid(this.grid);
-                pendingTapStart = null;
-                return;
-            }
-
-            // Drag-to-choose model: fire whichever arrow is currently shown
-            // by the preview halo. Touchstart sets the halo to the path
-            // under the finger; touchmove updates it as the finger drifts
-            // within tap tolerance; we now fire that exact path on lift —
-            // so what the player saw IS what fires. Falls back to a fresh
-            // resolveTap from touchstart coords if previewPath happened to
-            // be null (e.g. brand-new tap on an empty edge).
+            lastTouchEnd = now;
             const liveTap = e.changedTouches && e.changedTouches[0];
             const fireX = liveTap ? liveTap.clientX : pendingTapStart.x;
             const fireY = liveTap ? liveTap.clientY : pendingTapStart.y;
-            const haloPath = this.renderer.previewPath;
+            if (Math.hypot(fireX - pendingTapStart.x, fireY - pendingTapStart.y) > TAP_MAX_MOVE) {
+                pendingTapStart = null;
+                this.renderer.previewPath = null;
+                return;
+            }
+            // Resolve at lift, including a final movement with no touchmove event.
+            // Blank-space double taps reset the view; arrow taps always play.
+            const path = findPathAt(fireX, fireY);
+            const isDoubleTap = !path && lastTapWasEmpty && (now - lastTapAt) < DOUBLE_TAP_MS
+                && Math.hypot(fireX - lastTapPos.x, fireY - lastTapPos.y) < DOUBLE_TAP_RADIUS;
+            lastTapAt = now;
+            lastTapPos = { x: fireX, y: fireY };
+            lastTapWasEmpty = !path;
             this.renderer.previewPath = null;
-            if (haloPath && !haloPath.isRemoved()) {
-                this.hintedPath = null;
-                this.renderer.touchFeedback = { path: haloPath, startTime: performance.now() };
-                if (this.grid.isPathClear(haloPath)) {
-                    this.removePathWithAnimation(haloPath);
-                } else {
-                    this.handleWrongMove(haloPath);
-                }
+            if (isDoubleTap) {
+                lastTapWasEmpty = false;
+                this.renderer.resetView(this.grid);
+                this.renderer.drawGrid(this.grid);
             } else {
                 resolveTap(fireX, fireY);
             }
             pendingTapStart = null;
         }, { passive: false });
 
-        // iOS sometimes fires touchcancel instead of touchend (incoming call,
-        // system gesture, app switch). Reset the same state we'd reset on
-        // touchend so a stale preview halo doesn't get stuck on screen and
-        // a stranded pendingTapStart doesn't fire when the user comes back.
-        this.canvas.addEventListener('touchcancel', () => {
+        this._resetInput = () => {
             pendingTapStart = null;
             isSinglePanning = false;
             isPinching = false;
+            queuedTap = null;
+            lastTapAt = 0;
+            lastTapWasEmpty = false;
             this.renderer.previewPath = null;
-        });
+        };
+        this.canvas.addEventListener('touchcancel', this._resetInput);
 
         // Mouse wheel zoom — passes client coords; renderer converts to canvas-local.
         this.canvas.addEventListener('wheel', (e) => {
@@ -599,19 +661,23 @@ export class Game {
     }
 
     removePathWithAnimation(path) {
-
+        if (!this._active || this.isAnimating || !this.grid.paths.includes(path)) return;
+        this._clearBlockedFeedback();
+        const epoch = this._levelEpoch;
         this.isAnimating = true;
         // Snapshot BEFORE removing — undo restores path.state to this and re-runs updateRemovableStates.
         // We also snapshot the PREVIOUS removable set so undo doesn't retroactively invalidate hints.
-        this._moveHistory.push({
+        const snapshot = {
             pathRef: path,
             prevState: path.state,
             snakeCells: path.cells.map(c => ({ x: c.x, y: c.y })),
             score: this.score,
             combo: this.combo,
+            maxCombo: this.maxCombo,
             moves: this.moves,
             consecutiveWrongs: this._consecutiveWrongs,
-        });
+        };
+        this._moveHistory.push(snapshot);
         if (this._moveHistory.length > 20) this._moveHistory.shift();
 
         this.grid.removePath(path);
@@ -620,7 +686,7 @@ export class Game {
         this.combo++;
         this.moves++;
         this._consecutiveWrongs = 0;
-        // Successful play dismisses the auto-hint — player doesn't need it anymore.
+        // Successful play dismisses the player's manual hint.
         this.hintedPath = null;
         // Onboarding pointer steps once per correct tap. After ~3 taps the
         // player has clearly internalized the mechanic, so we let them
@@ -631,6 +697,7 @@ export class Game {
                 this.onboardingActive = false;
                 try { localStorage.setItem('okchu_onboarding_done', '1'); } catch {}
             }
+            this._updateGameFeedback();
         }
         if (this.combo > this.maxCombo) this.maxCombo = this.combo;
         // Haptic feedback — scales with combo for reward feel. Uses native
@@ -645,90 +712,51 @@ export class Game {
 
 
 
-        // Particle burst, screen shake, and "MUHTESEM!" combo text removed
-        // per user request — only the snake-slither animation should accompany
-        // a successful tap. The score is still updated and a floating "+N"
-        // briefly drifts up from the arrow as quiet feedback that the move
-        // counted; everything else stays silent so the slither itself is the
-        // headline visual.
-
-        // Snake slither animation — head darts out first, body cells chase
-        // it one-by-one along the same line (like Snake-game where the body
-        // follows the head's old positions). Tuned for satisfying "thwip"
-        // feel: faster than the previous implementation, tighter wave delay
-        // so the body chases the head closely instead of trailing far
-        // behind, and a cubic-ease-in-out velocity curve so the slither
-        // feels organic instead of linear.
-        const cells = path.cells;
-        const totalCells = cells.length;
-        const { dx, dy } = getDirectionVector(path.direction);
-        const origCells = cells.map(c => ({ x: c.x, y: c.y }));
+        // A fixed-length body follows its own bends out through the exit.
+        // Logical cells stay untouched, so resizing, undo, and cancellation
+        // always refer to the original puzzle. Only visual geometry moves.
+        const route = createArrowRoute(path.cells, path.direction);
+        const reducedMotion = this.renderer.reducedMotion;
+        this._animationRestore = () => {
+            path._visualGeometry = null;
+            path.state = snapshot.prevState;
+            this.score = snapshot.score;
+            this.combo = snapshot.combo;
+            this.maxCombo = snapshot.maxCombo;
+            this.moves = snapshot.moves;
+            this._consecutiveWrongs = snapshot.consecutiveWrongs;
+            if (this._moveHistory[this._moveHistory.length - 1] === snapshot) this._moveHistory.pop();
+            this.grid.updateRemovableStates();
+        };
         const startTime = performance.now();
-
-        // Travel ~ path length + 4 cells of run-off so the head fully exits
-        // the grid even on edge plays.
-        const travelDistance = totalCells + 4;
-        // Faster than before (0.008 → 0.014 cells/ms). At cellSize=24 CSS px
-        // this is ~336 px/sec head speed — visually snappy without becoming
-        // unreadable.
-        const speed = 0.014;
-        const totalDuration = travelDistance / speed;
-        // Body cells lag behind the head by a fixed time offset. 35 ms (was
-        // 60 ms) keeps the body close — like a real snake whose body chases
-        // the head along the exact same line.
-        const waveDelay = 35;
-        // Cubic ease-in-out: slow → fast → slow. Gives the snake a natural
-        // "wind up, dart, settle" rhythm instead of a flat linear glide.
-        const easeInOut = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-        const cellStates = cells.map(() => ({ visible: true, offsetX: 0, offsetY: 0, alpha: 1 }));
+        let travelDistance = arrowExitDistance(route, this.renderer.getVisibleGridBounds());
+        let travelled = 0, previousEase = 0;
+        const totalDuration = reducedMotion ? 120 : Math.min(360, 240 + route.length * 7);
+        path._visualGeometry = sampleArrowMotion(route);
 
         const animate = (time) => {
-            const elapsed = time - startTime;
-
-            // Head (last cell in array) starts immediately; each preceding
-            // body cell starts waveDelay ms later. The whole path runs
-            // travelDistance cells then disappears.
-            for (let i = 0; i < totalCells; i++) {
-                const delay = (totalCells - 1 - i) * waveDelay;
-                const cellElapsed = Math.max(0, elapsed - delay);
-                if (cellElapsed <= 0) continue;
-                const progress = Math.min(1, (cellElapsed * speed) / travelDistance);
-                if (progress >= 1) {
-                    cellStates[i].visible = false;
-                } else {
-                    const eased = easeInOut(progress);
-                    const travel = eased * travelDistance;
-                    cellStates[i].offsetX = dx * travel;
-                    cellStates[i].offsetY = dy * travel;
-                    // Fade tail end harder than head — body cells go
-                    // transparent quicker so the head-to-tail gradient
-                    // reads as a slithering snake instead of a uniform
-                    // sliding block.
-                    const fade = i === totalCells - 1 ? progress : Math.min(1, progress * 1.3);
-                    cellStates[i].alpha = Math.max(0, 1 - fade);
-                }
+            if (epoch !== this._levelEpoch || !this._active) return;
+            const elapsed = Math.max(0, time - startTime);
+            const progress = Math.min(1, elapsed / totalDuration);
+            if (!reducedMotion) {
+                // If a fold/resize or zoom reveals more canvas mid-flight,
+                // retarget the remaining travel without jumping the body or
+                // delaying the queued input. Never reverse when it shrinks.
+                travelDistance = Math.max(travelDistance, arrowExitDistance(route, this.renderer.getVisibleGridBounds()));
+                const eased = arrowDepartureEase(progress);
+                const fraction = previousEase >= 1 ? 1 : (eased - previousEase) / (1 - previousEase);
+                travelled += (travelDistance - travelled) * Math.max(0, Math.min(1, fraction));
+                previousEase = eased;
             }
-
-            for (let i = 0; i < totalCells; i++) {
-                if (cellStates[i].visible) {
-                    path.cells[i].x = origCells[i].x + cellStates[i].offsetX;
-                    path.cells[i].y = origCells[i].y + cellStates[i].offsetY;
-                }
-            }
-
-            path._snakeCellStates = cellStates;
+            path._visualGeometry = sampleArrowMotion(route, reducedMotion ? 0 : travelled);
+            if (reducedMotion) path._visualGeometry.alpha = 1 - progress;
             this.renderer.drawGrid(this.grid);
 
-            const allGone = cellStates.every(s => !s.visible);
-            if (!allGone && elapsed < totalDuration) {
+            if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
-                for (let i = 0; i < totalCells; i++) {
-                    path.cells[i].x = origCells[i].x;
-                    path.cells[i].y = origCells[i].y;
-                }
-                path._snakeCellStates = null;
+                path._visualGeometry = null;
+                this._animationRestore = null;
                 this.grid.finalizeRemoval(path);
                 this.isAnimating = false;
                 this._updateUndoButton();
@@ -748,6 +776,25 @@ export class Game {
     }
 
     handleWrongMove(path) {
+        if (!this._active || this.isAnimating || !this.grid.paths.includes(path) || path.isRemoved()) return;
+        this._clearBlockedFeedback();
+        const blocker = this.grid.getFirstBlocker(path);
+        if (this.zenMode) {
+            // Zen still acknowledges a blocked exit, without charging a
+            // life, breaking a streak, or imposing a failed attempt.
+            const epoch = this._levelEpoch;
+            tapLight();
+            path._flashColor = this.renderer.errorColor;
+            this._showBlockedFeedback(path, blocker, epoch);
+            const flashToken = this._blockedFeedbackToken;
+            this.renderer.drawGrid(this.grid);
+            setTimeout(() => {
+                if (epoch !== this._levelEpoch || !this._active || flashToken !== this._blockedFeedbackToken) return;
+                path._flashColor = null;
+            }, 180);
+            return;
+        }
+        const epoch = this._levelEpoch;
         if (!this.livesManager.hasLives()) {
             if (this.onNoLives) this.onNoLives();
             return;
@@ -763,17 +810,6 @@ export class Game {
         this._consecutiveWrongs++;
         this._updateScoreDisplay();
 
-        // Auto-hint after 2 consecutive wrong moves — shows a removable path
-        // as gentle guidance without consuming the player's free hint charge.
-        if (this._consecutiveWrongs >= 2 && !this.hintedPath) {
-            const hintPath = this.hintManager.findHintArrow(this.grid);
-            if (hintPath) {
-                this.hintedPath = hintPath;
-                this.renderer.drawGrid(this.grid);
-                this.renderer.drawHintHighlight(hintPath);
-            }
-        }
-
         // Crack effect
         const wrongHead = path.getHead();
         this.renderer.showCrackEffect(
@@ -781,29 +817,33 @@ export class Game {
             this.renderer.gridOffsetY + (wrongHead.y + 0.5) * this.renderer.cellSize
         );
 
-        // 4-phase wrong move animation:
-        // Phase 1 (0-60ms):    Forward lunge 0.4 cells
-        // Phase 2 (60-160ms):  Hold at 0.4, flash bright red
-        // Phase 3 (160-310ms): Shake — sin oscillation, clear flash
-        // Phase 4 (310-510ms): Elastic bounce back with cubic ease
-        // Screen shake: 2px intensity, 100ms starting at 60ms
+        // A short blocked-exit response, with a stationary color cue when
+        // Reduce Motion is enabled.
         this.isAnimating = true;
         const origState = path.state;
         path.state = 'removing';
         const { dx, dy } = getDirectionVector(path.direction);
-        const origCells = path.cells.map(c => ({ x: c.x, y: c.y }));
+        const idleGeometry = sampleArrowMotion(createArrowRoute(path.cells, path.direction));
 
+        this._animationRestore = () => {
+            path._visualGeometry = null;
+            path._flashColor = null;
+            path.state = origState;
+            this.renderer.shakeX = this.renderer.shakeY = 0;
+            this.grid.updateRemovableStates();
+        };
         const ph1 = 60;
-        const ph2 = 100;  // 60-160ms
-        const ph3 = 150;  // 160-310ms
-        const ph4 = 200;  // 310-510ms
-        const totalDuration = ph1 + ph2 + ph3 + ph4;
+        const ph2 = 60;
+        const ph3 = 80;
+        const ph4 = 120;
+        const totalDuration = this.renderer.reducedMotion ? 120 : ph1 + ph2 + ph3 + ph4;
         const lunge = 0.4;
         const startTime = performance.now();
         const shakeStart = ph1;
         const shakeDuration = 100;
 
         const animate = (time) => {
+            if (epoch !== this._levelEpoch || !this._active) return;
             const elapsed = time - startTime;
 
             let shift;
@@ -815,23 +855,25 @@ export class Game {
             } else if (elapsed < ph1 + ph2) {
                 // Phase 2: hold at lunge, flash red
                 shift = lunge;
-                path._flashColor = '#ff2020';
+                path._flashColor = this.renderer.errorColor;
             } else if (elapsed < ph1 + ph2 + ph3) {
                 // Phase 3: shake oscillation, clear flash
-                path._flashColor = null;
+                path._flashColor = this.renderer.errorColor;
                 const p = (elapsed - ph1 - ph2) / ph3;
                 shift = lunge + Math.sin(p * Math.PI * 6) * 0.12;
             } else {
                 // Phase 4: elastic bounce back using cubic ease
-                path._flashColor = null;
+                path._flashColor = this.renderer.errorColor;
                 const p = (elapsed - ph1 - ph2 - ph3) / ph4;
                 const eased = 1 - Math.pow(1 - Math.min(p, 1), 3);
                 shift = lunge * (1 - eased);
             }
 
+            if (this.renderer.reducedMotion) { shift = 0; path._flashColor = this.renderer.errorColor; }
+
             // Screen shake: sin/cos oscillation for 100ms starting at phase 2
             const shakeElapsed = (time - startTime) - shakeStart;
-            if (shakeElapsed >= 0 && shakeElapsed < shakeDuration) {
+            if (!this.renderer.reducedMotion && shakeElapsed >= 0 && shakeElapsed < shakeDuration) {
                 const sp = shakeElapsed / shakeDuration;
                 this.renderer.shakeX = Math.sin(sp * Math.PI * 8) * 2 * (1 - sp);
                 this.renderer.shakeY = Math.cos(sp * Math.PI * 8) * 2 * (1 - sp);
@@ -840,28 +882,27 @@ export class Game {
                 this.renderer.shakeY = 0;
             }
 
-            for (let i = 0; i < path.cells.length; i++) {
-                path.cells[i].x = origCells[i].x + dx * shift;
-                path.cells[i].y = origCells[i].y + dy * shift;
-            }
+            path._visualGeometry = { ...idleGeometry,
+                points: idleGeometry.points.map(point => ({ x: point.x + dx * shift, y: point.y + dy * shift })),
+                tip: { x: idleGeometry.tip.x + dx * shift, y: idleGeometry.tip.y + dy * shift },
+            };
 
             this.renderer.drawGrid(this.grid);
 
             if (elapsed < totalDuration) {
                 requestAnimationFrame(animate);
             } else {
+                this._animationRestore = null;
                 // Restore everything
-                for (let i = 0; i < path.cells.length; i++) {
-                    path.cells[i].x = origCells[i].x;
-                    path.cells[i].y = origCells[i].y;
-                }
+                path._visualGeometry = null;
                 path._flashColor = null;
                 path.state = origState;
                 this.renderer.shakeX = 0;
                 this.renderer.shakeY = 0;
                 this.grid.updateRemovableStates();
-                this.renderer.drawGrid(this.grid);
                 this.isAnimating = false;
+                this._showBlockedFeedback(path, blocker, epoch);
+                this.renderer.drawGrid(this.grid);
                 if (this._processQueuedTap) this._processQueuedTap();
 
                 if (remaining <= 0) {
@@ -876,17 +917,20 @@ export class Game {
     }
 
     handleLevelComplete() {
+        if (!this._active || this._outcome) return;
+        this._outcome = 'complete';
+        this._active = false;
+        if (this._resetInput) this._resetInput();
         this._stopTimer();
         // Celebratory triple-thump — feels like a "victory" cue on iOS Taptic Engine.
         tapHeavy();
         setTimeout(() => tapHeavy(), 80);
         setTimeout(() => tapMedium(), 180);
         const elapsedTime = Math.round((this.timeLimit - this.timeRemaining) * 1000);
-        storage.completeLevel(this.currentLevel.id, this.currentChapter.id);
 
         // Time bonus: 2 points per second remaining — skipped in moves mode
         // because the timer is frozen and would award a misleading full bonus.
-        const timeBonus = this.moveLimit > 0 ? 0 : Math.round(this.timeRemaining * 2);
+        const timeBonus = this.zenMode || this.moveLimit > 0 ? 0 : Math.round(this.timeRemaining * 2);
         this.score += timeBonus;
 
         // Perfect bonus (no wrong moves)
@@ -912,6 +956,8 @@ export class Game {
             time: elapsedTime,
             bestCombo: this.maxCombo,
         });
+
+        storage.completeLevel(this.currentLevel.id, this.currentChapter.id);
 
         // Grant power-ups on new 3-star completion
         let rewardedPowerup = null;
@@ -956,24 +1002,26 @@ export class Game {
     }
 
     _showFloatingScore(points, path) {
+        if (this.renderer.reducedMotion) return;
         const head = path.getHead();
         const cx = this.renderer.gridOffsetX + (head.x + 0.5) * this.renderer.cellSize;
         const cy = this.renderer.gridOffsetY + (head.y + 0.5) * this.renderer.cellSize;
 
         let color, fontSize;
-        if (this.combo >= 10) { color = '#ff2020'; fontSize = 28; }
-        else if (this.combo >= 6) { color = '#ff8c00'; fontSize = 22; }
-        else if (this.combo >= 3) { color = '#ffd700'; fontSize = 18; }
-        else { color = '#ffffff'; fontSize = 14; }
+        if (this.combo >= 6) { color = BOARD_VISUALS.accent; fontSize = 20; }
+        else { color = this.renderer.theme.arrowIdle; fontSize = 15; }
 
         const text = this.combo > 1 ? `+${points} x${this.combo}` : `+${points}`;
         this._showFloatingText(text, cx, cy, color, fontSize);
     }
 
     _showFloatingText(text, x, y, color, fontSize) {
+        if (this.renderer.reducedMotion) return;
+        const epoch = this._levelEpoch;
         const start = performance.now();
         const duration = 1000;
         const draw = () => {
+            if (epoch !== this._levelEpoch) return;
             const elapsed = performance.now() - start;
             if (elapsed > duration) return;
             const progress = elapsed / duration;
@@ -991,8 +1039,8 @@ export class Game {
             ctx.font = `bold ${Math.round(fontSize * scale)}px Georgia`;
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = 4;
+            ctx.shadowColor = 'rgba(255,255,255,0.8)';
+            ctx.shadowBlur = 2;
             ctx.fillText(text, sx, sy);
             ctx.restore();
 
@@ -1002,6 +1050,7 @@ export class Game {
     }
 
     _doScreenShake(intensity, duration) {
+        if (this.renderer.reducedMotion) return;
         const start = performance.now();
         const shake = () => {
             const elapsed = performance.now() - start;
@@ -1019,26 +1068,30 @@ export class Game {
     }
 
     playCelebration(callback) {
+        const epoch = this._levelEpoch;
+        if (this.renderer.reducedMotion) {
+            if (callback) callback();
+            return;
+        }
 
         const rect = this.canvas.getBoundingClientRect();
         const particles = [];
-        const colors = this.currentChapter?.theme?.particleColors ||
-            ['#d4a843', '#c87030', '#2b6e8a', '#3a8a6e', '#b88a30', '#c0713a', '#8a4a2a', '#e8c870'];
-        const shapes = ['circle', 'square', 'triangle', 'diamond'];
+        const colors = [BOARD_VISUALS.ink, BOARD_VISUALS.accent, '#d3b36e'];
+        const shapes = ['circle', 'diamond'];
 
         const cx = rect.width / 2;
         const cy = rect.height / 2;
 
-        // Create 80 particles with staggered start delays
-        for (let i = 0; i < 80; i++) {
+        // A small finish cue leaves the completed silhouette easy to read.
+        for (let i = 0; i < 20; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const speed = Math.random() * 8 + 3;
+            const speed = Math.random() * 4 + 2;
             particles.push({
                 x: cx + (Math.random() - 0.5) * 60,
                 y: cy,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed - 4,
-                size: Math.random() * 5 + 2,
+                size: Math.random() * 3 + 2,
                 color: colors[Math.floor(Math.random() * colors.length)],
                 alpha: 1,
                 rotation: Math.random() * Math.PI * 2,
@@ -1049,18 +1102,25 @@ export class Game {
         }
 
         const startTime = performance.now();
-        const duration = 1500;
+        const duration = 800;
         const ctx = this.renderer.ctx;
         const dpr = window.devicePixelRatio || 1;
+        let lastFrame = startTime;
 
         const animate = (time) => {
-            const elapsed = time - startTime;
-            if (elapsed > duration) {
+            if (epoch !== this._levelEpoch) return;
+            // RAF timestamps describe the frame start, which can precede
+            // performance.now() when this callback was requested mid-frame.
+            // A negative elapsed value creates an invalid shockwave radius.
+            const elapsed = Math.max(0, time - startTime);
+            if (elapsed >= duration) {
                 if (callback) callback();
                 return;
             }
 
             const progress = elapsed / duration;
+            const frameStep = Math.min(3, Math.max(0, time - lastFrame) / (1000 / 60));
+            lastFrame = time;
 
             // Draw current grid state as background with subtle zoom-out
             this.renderer.drawGrid(this.grid);
@@ -1071,10 +1131,10 @@ export class Game {
             // Shockwave ring expanding from center
             const shockProgress = Math.min(elapsed / 400, 1);
             if (shockProgress < 1) {
-                const shockRadius = shockProgress * Math.max(rect.width, rect.height) * 0.6;
-                const shockAlpha = (1 - shockProgress) * 0.5;
-                ctx.strokeStyle = `rgba(255,220,100,${shockAlpha})`;
-                ctx.lineWidth = 3 * (1 - shockProgress) + 1;
+                const shockRadius = shockProgress * Math.min(rect.width, rect.height) * 0.25;
+                const shockAlpha = (1 - shockProgress) * 0.12;
+                ctx.strokeStyle = `rgba(196,104,61,${shockAlpha})`;
+                ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.arc(cx, cy, shockRadius, 0, Math.PI * 2);
                 ctx.stroke();
@@ -1085,11 +1145,11 @@ export class Game {
                 const particleElapsed = elapsed - p.delay;
                 if (particleElapsed <= 0) continue;
 
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.18;   // gravity
-                p.vx *= 0.995;  // air resistance
-                p.rotation += p.rotSpeed;
+                p.x += p.vx * frameStep;
+                p.y += p.vy * frameStep;
+                p.vy += 0.18 * frameStep;
+                p.vx *= Math.pow(0.995, frameStep);
+                p.rotation += p.rotSpeed * frameStep;
                 p.alpha = Math.max(0, 1 - particleElapsed / (duration - p.delay));
 
                 ctx.save();
@@ -1132,21 +1192,23 @@ export class Game {
     }
 
     undoLastMove() {
-        if (this.isAnimating) return false;
+        if (!this._active || this.isAnimating) return false;
+        this._clearBlockedFeedback();
         if (this.undoCharges <= 0) return false;
         const last = this._moveHistory.pop();
         if (!last) return false;
 
         const path = last.pathRef;
-        // Restore cell positions (in case snake animation offset them)
+        // Restore the snapshot and discard any transient visual geometry.
         for (let i = 0; i < path.cells.length; i++) {
             path.cells[i].x = last.snakeCells[i].x;
             path.cells[i].y = last.snakeCells[i].y;
         }
-        path._snakeCellStates = null;
+        path._visualGeometry = null;
         path.state = last.prevState;
         this.score = last.score;
         this.combo = last.combo;
+        this.maxCombo = last.maxCombo;
         this.moves = last.moves;
         this._consecutiveWrongs = last.consecutiveWrongs;
         this.undoCharges--;
@@ -1168,23 +1230,24 @@ export class Game {
     }
 
     useHint() {
-        if (!this.grid) return;
+        if (!this._active || this.isAnimating || !this.grid || this.hintedPath) return;
 
         const hintPath = this.hintManager.findHintArrow(this.grid);
         if (!hintPath) return;
 
-        // Prefer inventory hint; fall back to free-per-level hint
+        // Use this level's free hint before spending an earned inventory hint.
         const invPowerups = storage.getPowerups();
-        if (invPowerups.hint > 0) {
-            storage.usePowerup('hint');
-        } else if (this.hintManager.hasFreeHint()) {
+        if (this.hintManager.hasFreeHint()) {
             this.hintManager.useFreeHint();
+        } else if (invPowerups.hint > 0) {
+            storage.usePowerup('hint');
         } else {
             return;
         }
 
         this.usedHint = true;
         this.hintedPath = hintPath;
+        this._clearBlockedFeedback();
         this.renderer.drawGrid(this.grid);
         this.renderer.drawHintHighlight(hintPath);
         this.updateHintButton();
@@ -1197,7 +1260,7 @@ export class Game {
     }
 
     useFreezePowerup() {
-        if (!this.grid || this.timeLimit <= 0) return;
+        if (!this._active || !this.grid || this.timeLimit <= 0 || this.zenMode || this.moveLimit > 0) return;
         if (!storage.usePowerup('freeze')) return;
         // +15s to the timer
         this.timeRemaining = Math.min(this.timeLimit, this.timeRemaining + 15);
@@ -1217,15 +1280,16 @@ export class Game {
         const freezeBtn = document.getElementById('btn-powerup-freeze');
         const hintCount = document.getElementById('powerup-hint-count');
         const freezeCount = document.getElementById('powerup-freeze-count');
-        if (hintCount) hintCount.textContent = p.hint;
+        const availableHints = p.hint + Number(!!this.currentLevel && this.hintManager.hasFreeHint());
+        if (hintCount) hintCount.textContent = availableHints;
         if (freezeCount) freezeCount.textContent = p.freeze;
         if (hintBtn) {
-            const canUseHint = p.hint > 0 || (this.currentLevel && this.hintManager.hasFreeHint());
+            const canUseHint = availableHints > 0;
             hintBtn.disabled = !canUseHint || this.hintedPath !== null;
             hintBtn.style.opacity = hintBtn.disabled ? '0.4' : '1';
         }
         if (freezeBtn) {
-            const canUseFreeze = p.freeze > 0 && this.timeLimit > 0;
+            const canUseFreeze = p.freeze > 0 && this.timeLimit > 0 && !this.zenMode && this.moveLimit === 0;
             freezeBtn.disabled = !canUseFreeze;
             freezeBtn.style.opacity = freezeBtn.disabled ? '0.4' : '1';
         }
@@ -1237,6 +1301,7 @@ export class Game {
             this.renderer.tick(time);
             if (!this.isAnimating && this.grid) {
                 this.renderer.drawGrid(this.grid);
+                if (this.hintedPath && !this.hintedPath.isRemoved()) this.renderer.drawHintHighlight(this.hintedPath);
                 // Predictive selection halo: drawn while the player's finger
                 // is down so they can SEE which arrow will fire on lift.
                 // Cleared in touchend / pan-promotion handlers.
@@ -1266,7 +1331,7 @@ export class Game {
 
     handleResize() {
         if (this.grid && this.currentLevel) {
-            this.renderer.resize(this.currentLevel.gridWidth, this.currentLevel.gridHeight);
+            this.renderer.resize(this.currentLevel.gridWidth, this.currentLevel.gridHeight, { preserveView: true });
             this.renderer.drawGrid(this.grid);
         }
     }

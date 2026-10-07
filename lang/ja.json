@@ -13,17 +13,33 @@
     "collection": "コレクション",
     "leaderboard": "週間スコア",
     "settings": "設定",
-    "remove_ads": "✨ 広告を削除"
+    "remove_ads": "✨ 広告を削除",
+    "continue_title": "冒険を続ける",
+    "first_puzzle": "最初のパズルに挑戦",
+    "continue_subtitle": "{chapter} · パズル {level}"
   },
   "chapters": {
     "title": "チャプター",
-    "locked": "ロック"
+    "locked": "ロック",
+    "progress": "パズル {completed}/{total}",
+    "unlock_requirement": "{chapter}でスターを{stars}個集めよう",
+    "chapter_number": "第{number}章"
   },
   "levels": {
     "title": "レベル",
     "mode_classic": "クラシック",
     "mode_timed": "タイム",
-    "mode_zen": "禅"
+    "mode_zen": "禅",
+    "puzzle_number": "パズル {number}",
+    "arrows": "矢 {count}本",
+    "next": "次のパズル",
+    "completed": "クリア済み",
+    "ready": "プレイ可能",
+    "boss": "最後のパズル",
+    "boss_requirement": "最初の4問でスターを{stars}個集めよう",
+    "chapter_progress": "{completed}/{total}クリア",
+    "shape": "形",
+    "star_count": "スター {stars}/3"
   },
   "game": {
     "score": "スコア",
@@ -33,23 +49,41 @@
     "undo": "元に戻す",
     "canvas_label": "矢印パズルのゲームエリア。正しい順番で矢印をタップして取り除きます。",
     "zoom_hint": "2本指で広げてズーム",
-    "banner_label": "広告枠"
+    "banner_label": "広告枠",
+    "blocked_feedback": "出口がふさがれています。先に別の矢印を取り除こう。",
+    "guided_feedback": "印のついた矢印をタップ。出口が空いています。"
   },
   "common": {
-    "close": "閉じる"
+    "close": "閉じる",
+    "back": "戻る"
   },
   "settings": {
     "dark_mode": "ダークモード",
     "reset_label": "進行状況をリセット",
     "reset_button": "リセット",
     "privacy": "プライバシーポリシー",
-    "terms": "利用規約"
+    "terms": "利用規約",
+    "rate_app": "App Storeで評価",
+    "ad_privacy": "広告のプライバシー設定"
   },
   "collection": {
-    "hint": "章で13個以上の星を集めると遺物が解放されます"
+    "hint": "章で13個以上の星を集めると遺物が解放されます",
+    "names": {
+      "1": "ファラオの印章",
+      "2": "ゼウスの杖",
+      "3": "軍団の盾",
+      "4": "バイキングの斧",
+      "5": "オスマンの印章",
+      "6": "中国の龍",
+      "7": "マヤの暦",
+      "8": "蓮の花",
+      "9": "ゴシックの十字架",
+      "10": "知恵の王冠"
+    }
   },
   "leaderboard": {
-    "hint": "過去7日間のデイリーチャレンジスコア"
+    "hint": "過去7日間のデイリーチャレンジスコア",
+    "empty": "まだスコアがありません。毎日のチャレンジに挑戦しよう！"
   },
   "time_up": {
     "continue_ad": "広告を見て続行"
@@ -123,16 +157,16 @@
   "tutorial": {
     "step1_title": "Okchuへようこそ！",
     "step1_text": "グリッド上のすべての矢印を正しい順序で取り除くのが目標です。",
-    "step2_title": "どの矢印をタップ？",
-    "step2_text": "矢印は、先端が指す方向の道が空いている場合に取り除けます。他の矢印がブロックしているとタップできません！",
+    "step2_title": "どの矢印が出られる？",
+    "step2_text": "矢印の先が向く方向に障害物がなければ、外へ出られます。別の矢印がふさいでいるときは、先にそれを取り除こう。",
     "step3_title": "正しい手",
     "step3_text": "空いている矢印をタップすると、蛇のように画面から滑り出ます。ポイント獲得！",
     "step4_title": "間違いの手",
-    "step4_text": "ブロックされた矢印をタップするとライフを5秒失います。ライフは3つ、注意して！",
+    "step4_text": "クラシックとタイムモードでは、塞がれた矢印をタップするとライフが1つ減ります。Zenではペナルティはありません。別の矢印を試そう。",
     "step5_title": "時間との勝負",
-    "step5_text": "各レベルには時間制限があります。正しい手で+3秒。時間を賢く使いましょう！",
+    "step5_text": "クラシックとタイムモードは時間内に解こう。Zenには制限時間がありません。",
     "step6_title": "星を集めよう",
-    "step6_text": "素早くミスなしでクリアして3つ星を獲得！星で新しいチャプターが解放されます。",
+    "step6_text": "ミスやヒントなしで解くと星3つ。タイムモードでは速さも大切です。星を集めて新しい章を開こう。",
     "next": "次へ",
     "start": "スタート！",
     "skip": "スキップ"
@@ -140,15 +174,23 @@
   "civilizations": {
     "1": {
       "name": "エジプト",
-      "title": "古代エジプト",
+      "title": "ナイルの静かな部屋",
       "period": "紀元前3100年 - 紀元前30年",
-      "text": "ファラオの地でピラミッドが空にそびえる。ヒエログリフは千年の謎を秘める。",
-      "mystery": "ピラミッドの秘密の部屋に隠された矢印を解読せよ！",
+      "text": "ナイル川沿いの書庫にある地図は、最後の一片が欠けています。石に刻まれた矢印は、閉ざされた通路を示しています。若い書記が、失われた印章を探す手伝いを求めています。道を開くたびに、地図の新しい部分が現れます。印を落ち着いて読みましょう。印章にたどり着くには、まず部屋の仕組みを理解することが大切です。",
+      "mystery": "出口が空いている矢印を取り除き、失われた印章へ続く通路を開きましょう。",
       "facts": [
         "クフ王のピラミッド146m",
         "ヒエログリフ",
         "ミイラの技術",
         "星図作成"
+      ],
+      "result_title": "地図をたどって",
+      "results": [
+        "最初の通路が開きました。書記は地図の端に印を見つけました。",
+        "印がつながりました。砂の下には、もう一つの部屋があります。",
+        "部屋が開きました。印章への手がかりが、はっきりしてきました。",
+        "最後の通路が見えました。閉ざされた部屋の向こうで、印章が待っています。",
+        "印章が見つかりました。書記は地図を完成させました。旅はギリシャへと続きます。"
       ]
     },
     "2": {
@@ -275,12 +317,6 @@
     "step_share": "共有",
     "step_add": "ホーム画面に追加"
   },
-  "rate": {
-    "title": "Okchuはいかがですか？",
-    "subtitle": "フィードバックが我々を導きます",
-    "later": "後で",
-    "email_body": "こんにちは！Okchu についてのフィードバック：\n\n"
-  },
   "appstore": {
     "title": "Okchu: Arrow Puzzle",
     "subtitle": "矢印パズルゲーム",
@@ -306,8 +342,72 @@
     "classic_title": "クラシック",
     "classic_text": "標準モード：時間とライフで遊ぶ。スターを獲得して章を解放。",
     "timed_title": "タイム",
-    "timed_text": "時間が半分に。反射神経が試される挑戦モード。",
+    "timed_text": "クラシックより制限時間が35%短くなります。正しい順番をより速く見つけよう。",
     "zen_title": "禅",
     "zen_text": "時間なし、ライフなし、プレッシャーなし。自分のペースで解こう。"
+  },
+  "design": {
+    "home_eyebrow": "10の文明 · 50のパズル",
+    "home_title": "次の発見は、きみのもの。",
+    "home_description": "矢印を解いて、古代の世界を探検しよう。",
+    "puzzles": "パズル",
+    "stars": "スター",
+    "civilizations": "文明",
+    "adventure": "冒険",
+    "daily_description": "今日の新しいパズル。",
+    "explore": "文明を探索する",
+    "navigation": "ゲームメニュー",
+    "game_goal": "道を開こう。",
+    "game_description": "進む道が空いている矢をタップ。順番を見つけて、すべて取り除こう。",
+    "fit_board": "盤面を中央に"
+  },
+  "shapes": {
+    "pyramid": "ピラミッド",
+    "sphinx": "スフィンクス",
+    "diamond": "ダイヤ",
+    "steps": "階段",
+    "scarab": "スカラベ",
+    "temple": "神殿",
+    "amphora": "アンフォラ",
+    "laurel": "月桂樹",
+    "acropolis": "アクロポリス",
+    "owl": "フクロウ",
+    "colosseum": "コロッセオ",
+    "eagle": "ワシ",
+    "aqueduct": "水道橋",
+    "arena": "闘技場",
+    "crown": "王冠",
+    "ship": "船",
+    "hammer": "ハンマー",
+    "rune": "ルーン",
+    "mountain": "山",
+    "helmet": "兜",
+    "mosque": "モスク",
+    "tulip": "チューリップ",
+    "dome": "ドーム",
+    "minaret": "ミナレット",
+    "turban": "ターバン",
+    "pagoda": "パゴダ",
+    "dragon": "竜",
+    "silk": "絹",
+    "wall": "城壁",
+    "fan": "扇",
+    "calendar": "暦",
+    "jaguar": "ジャガー",
+    "sun": "太陽",
+    "serpent": "蛇",
+    "palace": "宮殿",
+    "lotus": "蓮",
+    "mandala": "曼荼羅",
+    "river": "川",
+    "castle": "城",
+    "shield": "盾",
+    "cathedral": "大聖堂",
+    "flask": "フラスコ",
+    "rosette": "花飾り",
+    "portal": "門",
+    "trophy": "トロフィー",
+    "jewel": "宝石",
+    "infinity": "無限"
   }
 }

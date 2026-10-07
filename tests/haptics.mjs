@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+const calls = [], vibration = [];
+Object.defineProperty(globalThis,'navigator',{value:{vibrate:pattern=>vibration.push(pattern)},configurable:true});
+globalThis.window = {Capacitor:{isNativePlatform:()=>true, Plugins:{Haptics:{impact:async options=>calls.push(options),notification:async options=>calls.push(options)}}}};
+const haptics=await import('../js/haptics.js');
+haptics.tapLight();haptics.tapMedium();haptics.tapHeavy();haptics.notifySuccess();haptics.notifyWarning();haptics.notifyError();
+assert.deepEqual(calls,[{style:'LIGHT'},{style:'MEDIUM'},{style:'HEAVY'},{type:'SUCCESS'},{type:'WARNING'},{type:'ERROR'}]);
+assert.equal(vibration.length,0);
+window.Capacitor.Plugins.Haptics.impact=async()=>{throw new Error('Unavailable');};
+haptics.tapLight();await Promise.resolve();await Promise.resolve();assert.deepEqual(vibration,[10]);
+window.Capacitor.isNativePlatform=()=>false;haptics.tapHeavy();assert.deepEqual(vibration,[10,40]);
+window.Capacitor.isNativePlatform=()=>true;window.Capacitor.Plugins={};let registered;
+window.Capacitor.registerPlugin=name=>{registered=name;return {impact:async options=>calls.push(options)};};
+haptics.tapMedium();assert.equal(registered,'Haptics');assert.deepEqual(calls.at(-1),{style:'MEDIUM'});
+console.log(JSON.stringify({passed:4,scope:'Injected Capacitor proxy and enum values, failed-native/browser fallback; no physical haptic claim'},null,2));

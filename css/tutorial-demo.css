@@ -1,0 +1,69 @@
+/* A visual rule lesson: remove the crossing path before the blocked arrow. */
+#overlay-tutorial .tutorial-step { width:100%; }
+#overlay-tutorial .tutorial-step.has-demo .tutorial-icon { display:none; }
+#overlay-tutorial .tutorial-demo { width:100%; height:158px; margin:0 0 17px; overflow:hidden; border:1px solid var(--ui-line,#DDCAA2); border-bottom:3px solid var(--ui-line,#DDCAA2); border-radius:20px; background:var(--ui-soft,#F4E5C5); color:var(--ui-teal,#087A75); }
+#overlay-tutorial .tutorial-demo svg { display:block; width:100%; height:100%; overflow:hidden; }
+#overlay-tutorial .tutorial-demo-grid { fill:none; stroke:var(--ui-line,#DDCAA2); stroke-width:1; opacity:.5; }
+#overlay-tutorial .tutorial-demo-path { stroke:#18584F; stroke-width:7; stroke-linecap:round; stroke-linejoin:round; }
+#overlay-tutorial .tutorial-demo-obstacle { stroke:#A44F34; }
+body.dark-mode #overlay-tutorial .tutorial-demo-path { stroke:#77D5C7; }
+body.dark-mode #overlay-tutorial .tutorial-demo-obstacle { stroke:#F3AF69; }
+#overlay-tutorial .tutorial-demo-ray { fill:none; stroke:var(--ui-teal,#087A75); stroke-width:2; stroke-dasharray:4 7; opacity:.48; }
+#overlay-tutorial .tutorial-demo-cross { fill:none; stroke:#A94C37; stroke-width:3; stroke-linecap:round; }
+body.dark-mode #overlay-tutorial .tutorial-demo-cross { stroke:#F5B08B; }
+#overlay-tutorial .tutorial-demo-check { fill:none; stroke:var(--ui-teal,#087A75); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+#overlay-tutorial .tutorial-demo-tap { fill:#F6BE5259; stroke:#D79A32; stroke-width:2; animation:tutorial-show-tap 4.5s ease-out infinite; }
+#overlay-tutorial .tutorial-demo-free { animation:tutorial-clear-path 4.5s ease-in-out infinite; }
+#overlay-tutorial .tutorial-demo-animated { height:100%; }
+#overlay-tutorial .tutorial-demo-blocker { animation:tutorial-open-blocker 5.5s ease-in-out infinite; }
+#overlay-tutorial .tutorial-demo-waiting { animation:tutorial-wait-then-leave 5.5s ease-in-out infinite; }
+#overlay-tutorial .tutorial-demo-blocked-mark { animation:tutorial-blocked-mark 5.5s linear infinite; }
+#overlay-tutorial .tutorial-demo-open-mark { animation:tutorial-open-mark 5.5s linear infinite; }
+#overlay-tutorial .tutorial-demo-static { display:none; height:100%; }
+#overlay-tutorial .tutorial-demo-number { font-family:var(--ui-display,sans-serif); font-size:15px; fill:var(--ui-muted,#62674E); font-weight:800; }
+#overlay-tutorial .tutorial-step h3 { margin:0 0 9px; line-height:1.3; }
+#overlay-tutorial .tutorial-step p { font-size:14px; line-height:1.65; opacity:1; margin:0; }
+#overlay-tutorial .tutorial-dots { gap:7px; }
+#overlay-tutorial .tutorial-dot { width:7px; height:7px; background:var(--ui-line,#DDCAA2); border:0; }
+#overlay-tutorial .tutorial-dot.active { background:var(--ui-teal,#087A75); }
+#overlay-tutorial .tutorial-reward-stars { display:flex; align-items:center; justify-content:center; gap:9px; padding-top:27px; color:#B27B24; font-size:43px; line-height:1; text-shadow:0 2px 0 #FDEBB3; }
+body.dark-mode #overlay-tutorial .tutorial-reward-stars { color:var(--ui-gold,#F5C264); text-shadow:0 2px 0 #473C29; }
+#overlay-tutorial .tutorial-reward-stars span { animation:tutorial-star-arrives 5s ease-out infinite; }
+#overlay-tutorial .tutorial-reward-stars span:nth-child(2) { animation-delay:.14s; font-size:53px; }
+#overlay-tutorial .tutorial-reward-stars span:nth-child(3) { animation-delay:.28s; }
+#overlay-tutorial .tutorial-reward-path { display:flex; align-items:center; justify-content:center; gap:16px; margin-top:20px; font-size:21px; color:var(--ui-teal,#087A75); }
+#overlay-tutorial .tutorial-reward-path span:nth-child(2) { color:var(--ui-accent,#DA652E); }
+
+@keyframes tutorial-show-tap { 0%,10% { opacity:0; transform:scale(.82); transform-origin:108px 78px; } 20%,31% { opacity:1; transform:scale(1); } 40%,100% { opacity:0; transform:scale(1.3); transform-origin:108px 78px; } }
+@keyframes tutorial-clear-path { 0%,31% { transform:translateX(0); opacity:1; } 74%,90% { transform:translateX(310px); opacity:0; } 91%,95% { transform:translateX(0); opacity:0; } 100% { transform:translateX(0); opacity:1; } }
+@keyframes tutorial-open-blocker { 0%,28% { transform:translateY(0); opacity:1; } 52%,90% { transform:translateY(-165px); opacity:0; } 91%,95% { transform:translateY(0); opacity:0; } 100% { transform:translateY(0); opacity:1; } }
+@keyframes tutorial-wait-then-leave { 0%,54% { transform:translateX(0); opacity:1; } 81%,90% { transform:translateX(310px); opacity:0; } 91%,95% { transform:translateX(0); opacity:0; } 100% { transform:translateX(0); opacity:1; } }
+@keyframes tutorial-blocked-mark { 0%,38% { opacity:1; } 49%,95% { opacity:0; } 100% { opacity:1; } }
+@keyframes tutorial-open-mark { 0%,48% { opacity:0; } 53%,80% { opacity:1; } 89%,100% { opacity:0; } }
+@keyframes tutorial-star-arrives { 0% { transform:translateY(8px) scale(.8); opacity:0; } 9%,100% { transform:translateY(0) scale(1); opacity:1; } }
+
+@media (max-width:350px) {
+    #overlay-tutorial .tutorial-demo { height:140px; margin-bottom:14px; border-radius:17px; }
+    #overlay-tutorial .tutorial-step p { font-size:13px; line-height:1.6; }
+    #overlay-tutorial .tutorial-reward-stars { padding-top:22px; }
+    #overlay-tutorial .tutorial-reward-path { margin-top:16px; }
+}
+@media (orientation:landscape) and (max-height:549px) {
+    #overlay-tutorial .tutorial-card { max-width:520px; padding:17px 22px; gap:10px; }
+    #overlay-tutorial .tutorial-demo { height:96px; margin-bottom:8px; }
+    #overlay-tutorial .tutorial-step h3 { font-size:21px; margin-bottom:5px; }
+    #overlay-tutorial .tutorial-step p { font-size:12px; line-height:1.5; }
+    #overlay-tutorial .tutorial-reward-stars { padding-top:10px; font-size:28px; }
+    #overlay-tutorial .tutorial-reward-stars span:nth-child(2) { font-size:35px; }
+    #overlay-tutorial .tutorial-reward-path { margin-top:9px; font-size:17px; }
+    #overlay-tutorial .tutorial-card .btn-primary { min-height:44px; padding:9px 18px; }
+    #overlay-tutorial .tutorial-card .tutorial-skip { min-height:44px; padding:6px 10px; }
+}
+@media (prefers-reduced-motion:reduce) {
+    #overlay-tutorial .tutorial-demo *,#overlay-tutorial .tutorial-demo *:before,#overlay-tutorial .tutorial-demo *:after { animation:none!important; transition:none!important; }
+    #overlay-tutorial .tutorial-demo-tap { opacity:0; }
+    #overlay-tutorial .tutorial-demo-animated { display:none; }
+    #overlay-tutorial .tutorial-demo-static { display:grid; grid-template-rows:1fr 1fr; }
+    #overlay-tutorial .tutorial-demo-static svg { min-height:0; }
+    #overlay-tutorial .tutorial-demo-static svg+svg { border-top:1px dashed var(--ui-line,#DDCAA2); }
+}

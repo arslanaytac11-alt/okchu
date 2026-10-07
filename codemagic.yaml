@@ -1,298 +1,74 @@
 workflows:
   ios-capacitor-workflow:
-    name: Okchu iOS Build
+    name: Okchu 1.1.0 — manual release candidate
     max_build_duration: 60
     instance_type: mac_mini_m2
-    # Auto-build on every push to main so fixes reach TestFlight without
-    # needing a manual "Start new build" click. (Codemagic webhook must also
-    # be enabled in the app's Repository settings for this to activate.)
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-          source: true
-    integrations:
-      app_store_connect: Okchu App Store Connect
+    # Start explicitly in Codemagic. A push never builds or publishes a release.
+    # This workflow produces a signed artifact; uploading/review/release are separate.
     environment:
       groups:
         - okchu
+      ios_signing:
+        # Reuse signing identities already uploaded to Codemagic.
+        # Missing/expired identities must be resolved deliberately by the account owner.
+        distribution_type: app_store
+        bundle_identifier: com.arslanaytac.okchu
       vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
-        XCODE_SCHEME: "App"
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
         APP_STORE_APP_ID: 6762461650
-        BUNDLE_ID: "com.arslanaytac.okchu"
+        BUNDLE_ID: com.arslanaytac.okchu
+        # Set OKCHU_BUILD_NUMBER when manually starting the workflow, to an integer
+        # greater than every build already uploaded to App Store Connect.
       node: 20
-      xcode: latest
+      xcode: "27.1"
       cocoapods: default
     scripts:
-      - name: Install npm dependencies
+      - name: Check release toolchain and explicit build number
         script: |
+          set -euo pipefail
+          xcodebuild -version
+          xcodebuild -version | /usr/bin/grep -q '^Xcode 27\.1$' || {
+            echo "This release requires Xcode 27.1 for iPhone Duo."; exit 1;
+          }
+          case "${OKCHU_BUILD_NUMBER:-}" in
+            ''|*[!0-9]*) echo "Set OKCHU_BUILD_NUMBER to the next unused positive build number."; exit 1 ;;
+          esac
+          [ "$OKCHU_BUILD_NUMBER" -gt 0 ] || exit 1
+      - name: Install locked npm dependencies
+        script: |
+          set -euo pipefail
           npm ci
-      - name: Rewrite admob ConsentExecutor for UMP 3.x API
+          node ios/scripts/prepare-capacitor-cli.cjs
+      - name: Build web assets and sync Capacitor
         script: |
-          FILE="node_modules/@capacitor-community/admob/ios/Sources/AdMobPlugin/Consent/ConsentExecutor.swift"
-          # UMP 3.x dropped the UMP prefix on all types and renamed several
-          # members. Rather than chase renames one-by-one via sed, replace the
-          # entire file with a UMP 3.x compatible implementation.
-          cat > "$FILE" <<'SWIFT_EOF'
-          import Foundation
-          import Capacitor
-          import GoogleMobileAds
-          import UserMessagingPlatform
-
-          class ConsentExecutor: NSObject {
-              weak var plugin: AdMobPlugin?
-
-              func requestConsentInfo(_ call: CAPPluginCall, _ debugGeography: Int, _ testDeviceIdentifiers: [String], _ tagForUnderAgeOfConsent: Bool) {
-                  let parameters = RequestParameters()
-                  let debugSettings = DebugSettings()
-
-                  debugSettings.geography = DebugGeography(rawValue: debugGeography) ?? DebugGeography.disabled
-                  debugSettings.testDeviceIdentifiers = testDeviceIdentifiers
-
-                  parameters.debugSettings = debugSettings
-                  parameters.isTaggedForUnderAgeOfConsent = tagForUnderAgeOfConsent
-
-                  ConsentInformation.shared.requestConsentInfoUpdate(
-                      with: parameters,
-                      completionHandler: { error in
-                          if error != nil {
-                              call.reject("Request consent info failed")
-                          } else {
-                              call.resolve([
-                                  "status": self.getConsentStatusString(ConsentInformation.shared.consentStatus),
-                                  "isConsentFormAvailable": ConsentInformation.shared.formStatus == FormStatus.available
-                              ])
-                          }
-                      })
-              }
-
-              func showConsentForm(_ call: CAPPluginCall) {
-                  if let rootViewController = plugin?.getRootVC() {
-                      let formStatus = ConsentInformation.shared.formStatus
-
-                      if formStatus == FormStatus.available {
-                          ConsentForm.load(with: {form, loadError in
-                              if loadError != nil {
-                                  call.reject(loadError?.localizedDescription ?? "Load consent form error")
-                                  return
-                              }
-
-                              if ConsentInformation.shared.consentStatus == ConsentStatus.required {
-                                  form?.present(from: rootViewController, completionHandler: { dismissError in
-                                      if dismissError != nil {
-                                          call.reject(dismissError?.localizedDescription ?? "Consent dismiss error")
-                                          return
-                                      }
-
-                                      call.resolve([
-                                          "status": self.getConsentStatusString(ConsentInformation.shared.consentStatus)
-                                      ])
-                                  })
-                              } else {
-                                  call.resolve([
-                                      "status": self.getConsentStatusString(ConsentInformation.shared.consentStatus)
-                                  ])
-                              }
-                          })
-                      } else {
-                          call.reject("Consent Form not available")
-                      }
-                  } else {
-                      call.reject("No ViewController")
-                  }
-              }
-
-              func resetConsentInfo(_ call: CAPPluginCall) {
-                  ConsentInformation.shared.reset()
-                  call.resolve()
-              }
-
-              func getConsentStatusString(_ consentStatus: ConsentStatus) -> String {
-                  switch consentStatus {
-                  case ConsentStatus.required:
-                      return "REQUIRED"
-                  case ConsentStatus.notRequired:
-                      return "NOT_REQUIRED"
-                  case ConsentStatus.obtained:
-                      return "OBTAINED"
-                  default:
-                      return "UNKNOWN"
-                  }
-              }
-          }
-          SWIFT_EOF
-          echo "=== Rewrote $FILE ==="
-          cat "$FILE"
-      - name: Build web assets & sync Capacitor
-        script: |
+          set -euo pipefail
           npm run cap:sync
-      - name: Generate all iOS app icon sizes
+      - name: Check source and synced release assets
         script: |
-          # AppIcon.appiconset only has the 1024x1024 marketing icon.
-          # iOS app icons need iPhone-specific sizes (60pt/40pt/29pt/20pt)
-          # for asset catalog compilation + CFBundleIconName auto-injection
-          # to work. Generate all required sizes from the 1024 source.
-          ICONSET="ios/App/App/Assets.xcassets/AppIcon.appiconset"
-          SOURCE="$ICONSET/AppIcon-512@2x.png"
-          if [ ! -f "$SOURCE" ]; then
-            echo "ERROR: source icon missing at $SOURCE"; exit 1
-          fi
-          cd "$ICONSET"
-          # Strip alpha channel just in case (marketing icon must be RGB)
-          sips -s format png --deleteColorManagementProperties AppIcon-512@2x.png --out AppIcon-512@2x.png >/dev/null
-          # iPhone icon sizes
-          sips -z 120 120 AppIcon-512@2x.png --out Icon-60@2x.png >/dev/null
-          sips -z 180 180 AppIcon-512@2x.png --out Icon-60@3x.png >/dev/null
-          sips -z 80  80  AppIcon-512@2x.png --out Icon-40@2x.png >/dev/null
-          sips -z 120 120 AppIcon-512@2x.png --out Icon-40@3x.png >/dev/null
-          sips -z 58  58  AppIcon-512@2x.png --out Icon-29@2x.png >/dev/null
-          sips -z 87  87  AppIcon-512@2x.png --out Icon-29@3x.png >/dev/null
-          sips -z 40  40  AppIcon-512@2x.png --out Icon-20@2x.png >/dev/null
-          sips -z 60  60  AppIcon-512@2x.png --out Icon-20@3x.png >/dev/null
-          cat > Contents.json <<'JSON'
-          {
-            "images" : [
-              { "size" : "20x20", "idiom" : "iphone", "filename" : "Icon-20@2x.png", "scale" : "2x" },
-              { "size" : "20x20", "idiom" : "iphone", "filename" : "Icon-20@3x.png", "scale" : "3x" },
-              { "size" : "29x29", "idiom" : "iphone", "filename" : "Icon-29@2x.png", "scale" : "2x" },
-              { "size" : "29x29", "idiom" : "iphone", "filename" : "Icon-29@3x.png", "scale" : "3x" },
-              { "size" : "40x40", "idiom" : "iphone", "filename" : "Icon-40@2x.png", "scale" : "2x" },
-              { "size" : "40x40", "idiom" : "iphone", "filename" : "Icon-40@3x.png", "scale" : "3x" },
-              { "size" : "60x60", "idiom" : "iphone", "filename" : "Icon-60@2x.png", "scale" : "2x" },
-              { "size" : "60x60", "idiom" : "iphone", "filename" : "Icon-60@3x.png", "scale" : "3x" },
-              { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "AppIcon-512@2x.png", "scale" : "1x" }
-            ],
-            "info" : { "version" : 1, "author" : "xcode" }
-          }
-          JSON
-          echo "=== AppIcon.appiconset contents ==="
-          ls -la
-          cd - >/dev/null
-      - name: Ensure CFBundleIconName in Info.plist
+          set -euo pipefail
+          python3 ios/scripts/verify-release.py
+      - name: Use existing uploaded signing identities
         script: |
-          # Belt and suspenders: also force CFBundleIconName into source
-          # Info.plist so it's present even if Xcode auto-injection fails.
-          PLIST="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$PLIST" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string AppIcon" "$PLIST"
-          echo "=== Info.plist CFBundleIconName ==="
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$PLIST"
-      - name: Install CocoaPods
-        script: |
-          cd ios/App && pod install
-      - name: Initialize keychain
-        script: |
-          keychain initialize
-      - name: Revoke stale Distribution certs
-        script: |
-          # Apple enforces a hard limit of 2 Distribution certs per team.
-          # Every build generates a fresh RSA key, so existing certs never
-          # match and we hit 409 once 2 certs exist. Revoke them up front
-          # so fetch-signing-files --create always has room.
-          # Safe because we only ship through Codemagic (no local Xcode).
-          set +e
-          echo "=== app-store-connect cert-related commands ==="
-          app-store-connect --help 2>&1 | grep -iE "cert" | head -20 || true
-          echo ""
-          echo "=== list-certificates --type IOS_DISTRIBUTION (json) ==="
-          app-store-connect list-certificates --type IOS_DISTRIBUTION --json > /tmp/certs.json 2>&1
-          echo "Exit: $?"
-          cat /tmp/certs.json
-          echo ""
-          echo "=== Parsing IDs ==="
-          python3 <<'PYEOF' > /tmp/cert_ids.txt
-          import json, sys
-          ids = []
-          try:
-              with open('/tmp/certs.json') as f:
-                  raw = f.read()
-              data = json.loads(raw)
-              if isinstance(data, list):
-                  for c in data:
-                      if isinstance(c, dict):
-                          cid = c.get('id') or c.get('certificateId') or (c.get('attributes') or {}).get('id')
-                          if cid:
-                              ids.append(cid)
-              elif isinstance(data, dict):
-                  for c in data.get('data', []):
-                      cid = c.get('id')
-                      if cid:
-                          ids.append(cid)
-          except Exception as e:
-              print(f"parse error: {e}", file=sys.stderr)
-          for i in ids:
-              print(i)
-          PYEOF
-          cat /tmp/cert_ids.txt
-          echo ""
-          echo "=== Revoking ==="
-          while IFS= read -r id; do
-            [ -z "$id" ] && continue
-            echo "--> Revoking $id"
-            yes | app-store-connect delete-certificate "$id" 2>&1 | head -10
-            echo "(exit $?)"
-          done < /tmp/cert_ids.txt
-          set -e
-      - name: Fetch signing files
-        script: |
-          openssl genrsa -out /tmp/cert_key.pem 2048
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --certificate-key=@file:/tmp/cert_key.pem \
-            --create
-      - name: Add certificates to keychain
-        script: |
-          keychain add-certificates
-      - name: Set up code signing
-        script: |
+          set -euo pipefail
           xcode-project use-profiles
-      - name: Set build number
+      - name: Set explicitly selected build number
         script: |
+          set -euo pipefail
           cd ios/App
-          agvtool new-version -all $(($BUILD_NUMBER + 100))
-      - name: Build ipa for App Store
+          agvtool new-version -all "$OKCHU_BUILD_NUMBER"
+      - name: Build signed IPA artifact
         script: |
+          set -euo pipefail
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
-      - name: Verify bundle Info.plist & assets
+      - name: Verify exported application identity and assets
         script: |
-          IPA=$(ls build/ios/ipa/*.ipa 2>/dev/null | head -1)
-          [ -z "$IPA" ] && { echo "No IPA produced"; exit 1; }
-          echo "IPA: $IPA"
-          rm -rf /tmp/verify_ipa
-          mkdir /tmp/verify_ipa
-          cd /tmp/verify_ipa
-          unzip -q "$CM_BUILD_DIR/$IPA"
-          APP_PLIST=$(ls Payload/*.app/Info.plist | head -1)
-          echo "=== Bundle Info.plist CFBundleIconName ==="
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIconName" "$APP_PLIST" 2>&1 || echo "KEY MISSING"
-          echo "=== Bundle Info.plist CFBundleIcons ==="
-          /usr/libexec/PlistBuddy -c "Print :CFBundleIcons" "$APP_PLIST" 2>&1 || echo "(no CFBundleIcons struct)"
-          echo "=== Assets.car in bundle? ==="
-          ls -la Payload/*.app/Assets.car 2>&1 | head -5 || echo "NO Assets.car"
-          echo "=== All PNGs in bundle root ==="
-          ls Payload/*.app/*.png 2>&1 | head -20 || true
+          set -euo pipefail
+          python3 ios/scripts/verify-release.py --ipa-dir build/ios/ipa --build-number "$OKCHU_BUILD_NUMBER"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-    publishing:
-      app_store_connect:
-        auth: integration
-        # Upload to App Store Connect (build becomes available to internal
-        # testers, including the developer's own Apple ID, once Apple finishes
-        # processing). External beta review submission is OFF — that would
-        # require Beta App Information (feedback email, reviewer contact) to
-        # be filled in App Store Connect, and we only test internally for now.
-        submit_to_testflight: false
-      email:
-        recipients:
-          - arslan.aytac11@gmail.com
-        notify:
-          success: true
-          failure: true
+    # Deliberately no publishing block. Review the artifact and completed device
+    # checks before a separate App Store Connect upload and manual release.

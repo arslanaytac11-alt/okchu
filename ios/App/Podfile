@@ -1,6 +1,6 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-platform :ios, '13.0'
+platform :ios, '15.0'
 use_frameworks!
 
 # workaround to avoid Xcode caching of Pods that requires
@@ -25,4 +25,27 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+
+  # Xcode 27 supports iOS 15 and later. Raise dependency targets too, without
+  # reducing any dependency that independently requires a newer system.
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0' if current > 0 && current < 15.0
+    end
+  end
+
+  # AdMob 6 uses UMP 2 Swift names. UMP 3 renamed the same API via
+  # NS_SWIFT_NAME; apply the narrow compatibility patch locally and in CI.
+  ump = installer.pod_targets.find { |target| target.name == 'GoogleUserMessagingPlatform' }
+  if ump && Gem::Version.new(ump.root_spec.version.to_s) >= Gem::Version.new('3.0')
+    patch = File.expand_path('../scripts/patch-admob-consent.py', __dir__)
+    raise 'AdMob consent compatibility patch failed' unless system('python3', patch, ump.root_spec.version.to_s)
+  end
+
+  # Banner sizing/anchors must follow the bridged WKWebView's safe pane on Duo.
+  banner_patch = File.expand_path('../scripts/patch-admob-banner.py', __dir__)
+  raise 'AdMob banner viewport patch failed' unless system('python3', banner_patch)
+  banner_check = File.expand_path('../scripts/verify-admob-banner.py', __dir__)
+  raise 'AdMob banner viewport contract failed' unless system('python3', banner_check)
 end

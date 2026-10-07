@@ -30,6 +30,10 @@ let initialized = false;
 let initInFlight = null; // Promise — set by initAds, awaited by ad-show calls
 let bannerVisible = false;
 let bannerWantedVisible = false; // last requested state — used by retries
+let bannerRequestEpoch = 0;
+let bannerSyncInFlight = null;
+let bannerMeasuredHeight = 50;
+let bannerSizeListenerBound = false;
 let levelsSinceInterstitial = 0;
 // Persisted across app launches so the 90s gate can't be reset by killing and
 // reopening the app — matches AdMob policy spirit ("don't surprise the user
@@ -39,6 +43,62 @@ let lastInterstitialAt = (() => {
     catch { return 0; }
 })();
 let useTestAds = false;
+let adsAllowed = false;
+let privacyOptionsRequired = false;
+let sdkInitInFlight = null;
+
+function getConsentPlugin() {
+    if (!isNative()) return null;
+    try {
+        return window.Capacitor?.Plugins?.AdsConsent || window.Capacitor?.registerPlugin?.('AdsConsent') || null;
+    } catch { return null; }
+}
+
+function applyConsentStatus(status) {
+    adsAllowed = status?.canRequestAds === true;
+    privacyOptionsRequired = status?.privacyOptionsRequired === true;
+    if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') {
+        document.dispatchEvent(new CustomEvent('okchu:ad-privacy', { detail: { privacyOptionsRequired } }));
+    }
+    if (!adsAllowed) reserveBannerHeight(0);
+}
+
+export function isAdPrivacyOptionsRequired() { return privacyOptionsRequired; }
+
+async function initializeAdSdk(A) {
+    if (initialized || !adsAllowed || isPremium()) return;
+    if (sdkInitInFlight) return sdkInitInFlight;
+    sdkInitInFlight = (async () => {
+        await A.initialize({
+            initializeForTesting: useTestAds,
+            testingDevices: [],
+            tagForChildDirectedTreatment: false,
+            tagForUnderAgeOfConsent: false,
+            maxAdContentRating: 'G',
+        });
+        try {
+            const status = await A.trackingAuthorizationStatus();
+            if (status?.status === 'notDetermined') await A.requestTrackingAuthorization();
+        } catch {}
+        initialized = true;
+    })().finally(() => { sdkInitInFlight = null; });
+    return sdkInitInFlight;
+}
+
+export async function showAdPrivacyOptions() {
+    const consent = getConsentPlugin();
+    if (!consent || !privacyOptionsRequired) return false;
+    try {
+        applyConsentStatus(await consent.showPrivacyOptions());
+        const A = getPlugin();
+        if (A && adsAllowed) await initializeAdSdk(A);
+        await synchronizeBanner();
+        return true;
+    } catch {
+        // Keep the last SDK permission if the options UI cannot load.
+        return false;
+    }
+}
 
 // Rewarded-ad event tracking. The @capacitor-community/admob v6 plugin has
 // two known iOS bugs that strand the show promise: (1) showRewardVideoAd's
@@ -82,6 +142,23 @@ function unitId(kind) {
     return useTestAds ? TEST_UNITS[kind] : AD_UNITS[kind];
 }
 
+function reserveBannerHeight(height) {
+    if (typeof document !== 'undefined') {
+        document.documentElement?.style?.setProperty('--banner-height', `${height}px`);
+    }
+}
+
+function bindBannerSize(A) {
+    if (bannerSizeListenerBound || typeof A.addListener !== 'function') return;
+    bannerSizeListenerBound = true;
+    Promise.resolve(A.addListener('bannerAdSizeChanged', info => {
+        const height = Number(info?.height);
+        if (!Number.isFinite(height) || height < 0) return;
+        if (height > 0) bannerMeasuredHeight = height;
+        reserveBannerHeight(bannerWantedVisible && adsAllowed && !isPremium() ? height : 0);
+    })).catch(() => { bannerSizeListenerBound = false; });
+}
+
 export async function initAds({ testMode = false } = {}) {
     if (initialized) return;
     if (initInFlight) return initInFlight;
@@ -89,28 +166,19 @@ export async function initAds({ testMode = false } = {}) {
     useTestAds = testMode;
     const A = getPlugin();
     if (!A) return;
+    bindBannerSize(A);
 
     initInFlight = (async () => {
         try {
-            await A.initialize({
-                initializeForTesting: testMode,
-                testingDevices: [],
-                tagForChildDirectedTreatment: false,
-                tagForUnderAgeOfConsent: false,
-                maxAdContentRating: 'G',
-            });
-
-            try {
-                const status = await A.trackingAuthorizationStatus();
-                if (status?.status === 'notDetermined') {
-                    await A.requestTrackingAuthorization();
-                }
-            } catch {}
-
-            initialized = true;
+            // UMP owns the current permission, including any previously
+            // collected choice. Never infer it from ATT or a cached JS flag.
+            const consent = getConsentPlugin();
+            if (!consent) { applyConsentStatus(null); return; }
+            applyConsentStatus(await consent.gatherConsent());
+            await initializeAdSdk(A);
             // Replay any pending banner request that came in before init finished.
             if (bannerWantedVisible) {
-                showBanner().catch(() => {});
+                synchronizeBanner().catch(() => {});
             }
         } catch (e) {
             console.warn('[ads] init failed', e);
@@ -121,38 +189,72 @@ export async function initAds({ testMode = false } = {}) {
 
 export async function showBanner() {
     bannerWantedVisible = true;
-    if (isPremium()) return;
-    const A = getPlugin();
-    if (!A) return;
-    // If init is still in-flight, wait for it instead of dropping the call.
-    if (!initialized && initInFlight) {
-        try { await initInFlight; } catch {}
-    }
-    if (!initialized || bannerVisible) return;
-    try {
-        await A.showBanner({
-            adId: unitId('banner'),
-            adSize: 'ADAPTIVE_BANNER',
-            position: 'BOTTOM_CENTER',
-            margin: 0,
-            isTesting: useTestAds,
-        });
-        bannerVisible = true;
-    } catch (e) {
-        console.warn('[ads] showBanner failed', e);
-        // Retry once after 3 s — most failures here are transient
-        // network or no-fill that resolves shortly.
-        setTimeout(() => {
-            if (bannerWantedVisible && !bannerVisible) showBanner().catch(() => {});
-        }, 3000);
-    }
+    bannerRequestEpoch++;
+    reserveBannerHeight(getPlugin() && adsAllowed && !isPremium() ? bannerMeasuredHeight : 0);
+    return synchronizeBanner();
 }
 
 export async function hideBanner() {
     bannerWantedVisible = false;
-    const A = getPlugin();
-    if (!A || !bannerVisible) return;
-    try { await A.hideBanner(); bannerVisible = false; } catch {}
+    bannerRequestEpoch++;
+    reserveBannerHeight(0);
+    return synchronizeBanner();
+}
+
+function synchronizeBanner() {
+    if (bannerSyncInFlight) return bannerSyncInFlight;
+    let settledEpoch = bannerRequestEpoch;
+    const operation = (async () => {
+        if (!initialized && initInFlight) {
+            try { await initInFlight; } catch {}
+        }
+        const A = getPlugin();
+        if (!A || !initialized) {
+            settledEpoch = bannerRequestEpoch;
+            return;
+        }
+        // Serialize native operations. A screen may change while show/hide
+        // is pending, so reconcile the latest request after every response.
+        while (true) {
+            const epoch = bannerRequestEpoch;
+            const wanted = bannerWantedVisible && adsAllowed && !isPremium();
+            if (wanted === bannerVisible) {
+                settledEpoch = epoch;
+                return;
+            }
+            try {
+                if (wanted) {
+                    reserveBannerHeight(bannerMeasuredHeight);
+                    await A.showBanner({
+                        adId: unitId('banner'),
+                        adSize: 'ADAPTIVE_BANNER',
+                        position: 'BOTTOM_CENTER',
+                        margin: 0,
+                        isTesting: useTestAds,
+                    });
+                } else {
+                    await A.hideBanner();
+                }
+                bannerVisible = wanted;
+            } catch (error) {
+                settledEpoch = epoch;
+                console.warn(`[ads] ${wanted ? 'showBanner' : 'hideBanner'} failed`, error);
+                // A retry belongs to the screen request that failed. It
+                // must not revive a banner after navigation or a purchase.
+                setTimeout(() => {
+                    if (bannerRequestEpoch === epoch && (bannerWantedVisible && adsAllowed && !isPremium()) !== bannerVisible) {
+                        synchronizeBanner().catch(() => {});
+                    }
+                }, 3000);
+                return;
+            }
+        }
+    })();
+    bannerSyncInFlight = operation.finally(() => {
+        bannerSyncInFlight = null;
+        if (bannerRequestEpoch !== settledEpoch) return synchronizeBanner();
+    });
+    return bannerSyncInFlight;
 }
 
 export function noteLevelCompleted() {
@@ -160,7 +262,7 @@ export function noteLevelCompleted() {
 }
 
 export async function maybeShowInterstitial() {
-    if (isPremium()) return false;
+    if (isPremium() || !adsAllowed) return false;
     if (levelsSinceInterstitial < INTERSTITIAL_EVERY_N_LEVELS) return false;
     // Time-gate: even if level count hit, don't show if last ad was too recent.
     const now = Date.now();
@@ -169,6 +271,7 @@ export async function maybeShowInterstitial() {
     if (!A || !initialized) return false;
     try {
         await A.prepareInterstitial({ adId: unitId('interstitial'), isTesting: useTestAds });
+        if (!adsAllowed || isPremium()) return false;
         await A.showInterstitial();
         levelsSinceInterstitial = 0;
         lastInterstitialAt = now;
@@ -182,10 +285,10 @@ export async function maybeShowInterstitial() {
 
 export async function showRewarded() {
     const A = getPlugin();
-    if (!A || !initialized) {
-        // Web dev: grant reward immediately so the button still works.
-        return true;
-    }
+    // An unavailable native ad never earns a reward. The browser preview
+    // supplies it without an SDK, and Premium owners need no ad to continue.
+    if (!isNative() || isPremium()) return true;
+    if (!A || !initialized || !adsAllowed) return false;
     if (pendingReward) return false; // a request is already in flight
     bindRewardListeners(A);
 
@@ -203,7 +306,7 @@ export async function showRewarded() {
             .catch(() => finish(false));
         setTimeout(() => finish(false), 10000);
     });
-    if (!loaded) return false;
+    if (!loaded || !adsAllowed || isPremium()) return isPremium();
 
     // Phase 2: show. Resolve when Rewarded fires (success), or Dismissed /
     // FailedToShow / timeout (failure). We do not await showRewardVideoAd —

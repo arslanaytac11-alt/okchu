@@ -182,7 +182,9 @@ export const storage = {
         const existing = data.levelScores[levelId];
         // Keep best score
         if (!existing || scoreData.score > existing.score) {
-            data.levelScores[levelId] = scoreData;
+            data.levelScores[levelId] = { ...scoreData, stars: Math.max(existing?.stars || 0, scoreData.stars || 0) };
+        } else if (scoreData.stars > (existing.stars || 0)) {
+            data.levelScores[levelId] = { ...existing, stars: scoreData.stars };
         }
         saveData(data);
     },
@@ -214,7 +216,9 @@ export const storage = {
     },
 
     resetAll() {
-        localStorage.removeItem(STORAGE_KEY);
+        // Reset the adventure without erasing a paid non-consumable purchase.
+        const premium = loadData().premium === true;
+        saveData({ ...getDefaultData(), premium });
     },
 
     // === Power-ups ===

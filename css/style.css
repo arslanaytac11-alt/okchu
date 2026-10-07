@@ -1374,6 +1374,61 @@ body[data-theme='ottoman'] .level-card.current {
     scrollbar-width: none;
 }
 .game-stats::-webkit-scrollbar { display: none; }
+/* Egypt pilot: preserve the board geometry, give controls their own row. */
+body[data-chapter="1"] .game-stats {
+    width: calc(100% - 20px);
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 8px 6px;
+    margin: 0 10px 8px;
+    padding: 10px 8px;
+    border: 1px solid var(--theme-border);
+    border-radius: 14px;
+    background: var(--theme-surface-strong);
+    overflow: visible;
+}
+body[data-chapter="1"] .game-stats .lives-display { grid-column: span 3; justify-content: center; }
+body[data-chapter="1"] .game-stats .stat-item { grid-column: span 3; }
+body[data-chapter="1"] .game-stats .stat-item:nth-child(3) { display: none; }
+body[data-chapter="1"] .game-stats .stat-item.combo-stat-active { display: flex; grid-column: 1 / -1; grid-row: 3; }
+body[data-chapter="1"] .game-stats .stat-undo,
+body[data-chapter="1"] .game-stats .stat-powerup {
+    grid-column: span 4;
+    justify-self: center;
+    width: 44px;
+    height: 44px;
+}
+body[data-chapter="1"] .game-stats .stat-label { color: var(--theme-ink); font-size: .72rem; letter-spacing: .3px; }
+body[data-chapter="1"] .game-header { padding-bottom: 10px; }
+body[data-chapter="1"] .story-body { padding: 22px 24px 28px; gap: 14px; }
+body[data-chapter="1"] .story-title { font-size: 1.7rem; line-height: 1.2; }
+body[data-chapter="1"] .story-period { color: var(--theme-ink); font-size: .85rem; }
+body[data-chapter="1"] .story-text { color: var(--theme-ink); font-size: 1rem; line-height: 1.65; }
+body[data-chapter="1"] .story-mystery { color: var(--theme-ink); font-style: normal; line-height: 1.55; }
+body[data-chapter="1"] .story-play-btn { min-height: 48px; position: static; }
+body[data-chapter="1"] #overlay-complete .overlay-content {
+    max-width: 360px;
+    max-height: calc(100vh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    padding: 24px;
+    gap: 14px;
+}
+.complete-story {
+    padding: 14px 16px;
+    border: 1px solid var(--theme-border);
+    border-radius: 12px;
+    background: var(--theme-surface-strong);
+    text-align: left;
+}
+.complete-story h3 { font-size: .9rem; color: var(--theme-ink); margin-bottom: 6px; }
+.overlay-content .complete-story p { font-size: .92rem; line-height: 1.55; color: var(--theme-ink); }
+@media (max-height: 720px) {
+    body[data-chapter="1"] .story-body { padding: 16px 20px 22px; gap: 12px; }
+    body[data-chapter="1"] .story-title { font-size: 1.5rem; }
+    body[data-chapter="1"] .story-text { font-size: .95rem; line-height: 1.55; }
+    body[data-chapter="1"] .game-stats { gap: 6px; padding: 6px; margin-bottom: 4px; }
+}
 @media (max-width: 480px) {
     .game-stats { gap: 8px; padding: 4px 8px 6px; }
     .game-stats .stat-item { gap: 2px; }

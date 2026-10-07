@@ -8,20 +8,22 @@
     <meta name="apple-mobile-web-app-title" content="Okchu">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-    <meta name="theme-color" content="#f0e4c8" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#F4F7F4" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#102C2A" media="(prefers-color-scheme: dark)">
     <meta name="color-scheme" content="light dark">
     <title>Okchu: Arrow Puzzle</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-192.png">
-    <link rel="icon" type="image/png" href="assets/icons/icon-192.png">
-    <link rel="stylesheet" href="css/style.css?v=12">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192-expedition.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-192-expedition.png">
+    <link rel="icon" type="image/png" href="assets/icons/icon-192-expedition.png">
+    <link rel="stylesheet" href="css/style.css?v=14">
+    <link rel="stylesheet" href="css/redesign.css?v=4">
+    <link rel="stylesheet" href="css/tutorial-demo.css?v=1">
 </head>
 <body>
     <!-- Splash Screen -->
     <div id="splash-screen">
-        <img src="assets/icons/icon-192.png" class="splash-icon" alt="">
+        <img src="assets/icons/icon-192-expedition.png" class="splash-icon" alt="">
         <h1 class="splash-title">Okchu</h1>
         <p class="splash-subtitle">Arrow Puzzle</p>
         <div class="splash-loader"><div class="splash-loader-bar"></div></div>
@@ -30,27 +32,40 @@
     <div id="app" class="app-hidden">
         <!-- Menu Screen -->
         <div id="screen-menu" class="screen active">
-            <h1 class="game-title">Okchu</h1>
-            <p class="game-subtitle">Arrow Puzzle</p>
-            <button id="btn-play" class="btn btn-primary" data-i18n="menu.play">Oyna</button>
-            <button id="btn-daily" class="btn btn-menu-secondary" data-i18n="menu.daily">Günlük Meydan Okuma</button>
-            <button id="btn-remove-ads" class="btn btn-menu-secondary btn-remove-ads" data-i18n="menu.remove_ads">✨ Reklamları Kaldır</button>
-            <div class="menu-bottom-buttons">
-                <button id="btn-achievements" class="btn-menu-icon" data-i18n="menu.achievements">Başarımlar</button>
-                <button id="btn-collection" class="btn-menu-icon" data-i18n="menu.collection">Koleksiyon</button>
-                <button id="btn-leaderboard" class="btn-menu-icon" data-i18n="menu.leaderboard">Haftalık Skorlarım</button>
-                <button id="btn-settings" class="btn-menu-icon" data-i18n="menu.settings">Ayarlar</button>
-            </div>
-            <div class="menu-top-buttons">
-                <button id="btn-dark-mode" class="btn-dark-toggle" data-i18n-aria="settings.dark_mode" aria-label="Gece modu"></button>
-                <button id="btn-language" class="btn-lang-toggle" data-i18n-aria="menu.language" aria-label="Dil">TR</button>
+            <div class="home-shell">
+                <header class="home-header">
+                    <a class="brand" href="#" aria-label="Okchu"><span class="brand-symbol" aria-hidden="true"><img src="assets/icons/icon-192-expedition.png" alt=""></span><h1>okchu<span>.</span></h1></a>
+                    <div class="menu-top-buttons">
+                        <button id="btn-dark-mode" class="btn-dark-toggle" data-i18n-aria="settings.dark_mode" aria-label="Gece modu"></button>
+                        <button id="btn-language" class="btn-lang-toggle" data-i18n-aria="menu.language" aria-label="Dil">TR</button>
+                    </div>
+                </header>
+                <div class="home-intro"><p class="eyebrow" data-i18n="design.home_eyebrow">10 MEDENİYET · 50 BULMACA</p><h2 data-i18n="design.home_title">Bir sonraki sır senin.</h2><p data-i18n="design.home_description">Okları çöz, kayıp medeniyetleri keşfet.</p></div>
+                <div class="home-progress" aria-label="İlerleme">
+                    <span><strong id="menu-progress-value">0/50</strong><span data-i18n="design.puzzles">bulmaca</span></span>
+                    <span><strong id="menu-stars-value">0</strong><span data-i18n="design.stars">yıldız</span></span>
+                    <span><strong>10</strong><span data-i18n="design.civilizations">medeniyet</span></span>
+                </div>
+                <section class="adventure-card">
+                    <div class="adventure-art"><img id="menu-chapter-image" src="assets/backgrounds/expedition-egypt.png" alt="" decoding="async"><span class="adventure-tag" data-i18n="design.adventure">MACERA</span><div class="adventure-heading"><span id="menu-continue-subtitle">Mısır · Bulmaca 1</span><h3 id="menu-continue-title" data-i18n="menu.first_puzzle">İlk bulmacanı çöz</h3></div><img class="explorer-mascot" src="assets/characters/explorer-v1.png" alt="" decoding="async"><span class="adventure-compass" aria-hidden="true">✧</span></div>
+                    <button id="btn-play" class="btn btn-primary adventure-play"><span data-i18n="menu.play">Oyna</span><span aria-hidden="true">→</span></button>
+                </section>
+                <button id="btn-daily" class="daily-card"><span class="daily-symbol" aria-hidden="true">☀</span><span class="daily-copy"><strong data-i18n="menu.daily">Günlük Meydan Okuma</strong><span data-i18n="design.daily_description">Bugün için yeni bir bulmaca.</span></span><span class="row-arrow" aria-hidden="true">↗</span></button>
+                <button id="btn-explore" class="explore-link"><span data-i18n="design.explore">Medeniyetleri keşfet</span><span aria-hidden="true">→</span></button>
+                <button id="btn-remove-ads" class="btn-remove-ads premium-link" data-i18n="menu.remove_ads">Reklamları Kaldır</button>
+                <nav class="menu-bottom-buttons" data-i18n-aria="design.navigation" aria-label="Oyun menüsü">
+                    <button id="btn-achievements" class="btn-menu-icon"><span class="nav-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v4c0 5-2 6-4 6S8 12 8 7V3Z"/><path d="M8 5H4v2c0 3 2 4 5 4m7-6h4v2c0 3-2 4-5 4M12 13v5m-4 3h8m-6-3h4v3"/></svg></span><span data-i18n="menu.achievements">Başarımlar</span></button>
+                    <button id="btn-collection" class="btn-menu-icon"><span class="nav-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 5v8l-8 5-8-5V8l8-5Zm0 9 8-4m-8 4L4 8m8 4v9"/></svg></span><span data-i18n="menu.collection">Koleksiyon</span></button>
+                    <button id="btn-leaderboard" class="btn-menu-icon"><span class="nav-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10h4v10m2 0V4h4v16m2 0V7h4v13M2 20h20"/></svg></span><span data-i18n="menu.leaderboard">Haftalık Skorlarım</span></button>
+                    <button id="btn-settings" class="btn-menu-icon"><span class="nav-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m9 3-.6 2-2 .9L4.5 5 3 7.5l1.5 1.5-.2 2-1.8 1 1 2.8 2.2-.1 1.5 1.5-.1 2.2 2.8 1 1-1.8 2-.2 1.5 1.5 2.5-1.5-.9-1.9.9-2 2-.6v-3l-2-.6-.9-2 .9-1.9L16.5 3 15 4.5l-2-.2-1-1.8H9Z"/><circle cx="11.5" cy="10.5" r="3"/></svg></span><span data-i18n="menu.settings">Ayarlar</span></button>
+                </nav>
             </div>
         </div>
 
         <!-- Chapter Select Screen -->
         <div id="screen-chapters" class="screen">
             <div class="screen-header">
-                <button class="btn-back" id="btn-chapters-back">&larr;</button>
+                <button class="btn-back" id="btn-chapters-back" data-i18n-aria="common.back" aria-label="Geri"><span aria-hidden="true">&larr;</span></button>
                 <h2 data-i18n="chapters.title">Bölümler</h2>
             </div>
             <div id="chapter-list" class="chapter-list"></div>
@@ -62,7 +77,7 @@
                 <div class="story-image-container">
                     <img id="story-image" class="story-image" src="" alt="">
                     <div class="story-image-overlay"></div>
-                    <button class="btn-back story-back" id="btn-story-back">&larr;</button>
+                    <button class="btn-back story-back" id="btn-story-back" data-i18n-aria="common.back" aria-label="Geri"><span aria-hidden="true">&larr;</span></button>
                 </div>
                 <div class="story-body">
                     <div class="story-period" id="story-period"></div>
@@ -79,7 +94,7 @@
         <!-- Level Select Screen -->
         <div id="screen-levels" class="screen">
             <div class="screen-header">
-                <button class="btn-back" id="btn-levels-back">&larr;</button>
+                <button class="btn-back" id="btn-levels-back" data-i18n-aria="common.back" aria-label="Geri"><span aria-hidden="true">&larr;</span></button>
                 <h2 id="level-screen-title">Seviyeler</h2>
             </div>
             <div id="level-list" class="level-list"></div>
@@ -88,44 +103,55 @@
         <!-- Game Screen -->
         <div id="screen-game" class="screen">
             <div class="game-header">
-                <button class="btn-back" id="btn-game-back">&larr;</button>
+                <button class="btn-back" id="btn-game-back" data-i18n-aria="common.back" aria-label="Geri"><span aria-hidden="true">&larr;</span></button>
                 <div class="level-info">
                     <span id="level-name">Seviye 1</span>
                     <span id="level-difficulty" class="difficulty-badge">Kolay</span>
                 </div>
-                <span></span>
+                <span class="chapter-emblem" aria-hidden="true"><img id="game-chapter-emblem" src="assets/backgrounds/expedition-egypt.png" alt=""></span>
             </div>
             <div id="daily-modifier-badge" class="daily-modifier-badge hidden"></div>
-            <div class="game-stats">
-                <div id="lives-display" class="lives-display"></div>
-                <div class="stat-item"><span class="stat-label" data-i18n="game.score">Skor</span><span id="game-score" class="stat-value">0</span></div>
-                <div class="stat-item"><span id="game-combo" class="combo-badge"></span></div>
-                <div class="stat-item"><span class="stat-label" data-i18n="game.moves">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
-                <div class="stat-item"><span class="stat-label" data-i18n="game.time">Süre</span><span id="game-timer" class="stat-value">0:00</span></div>
-                <button id="btn-undo" class="stat-undo" data-i18n-aria="game.undo" data-i18n-title="game.undo" aria-label="Geri Al" title="Geri Al">↶<span id="undo-count" class="stat-undo-count">3</span></button>
-                <button id="btn-powerup-hint" class="stat-powerup" data-i18n-aria="powerup.hint" data-i18n-title="powerup.hint_use" aria-label="İpucu" title="İpucu Kullan">💡<span id="powerup-hint-count" class="stat-undo-count">0</span></button>
-                <button id="btn-powerup-freeze" class="stat-powerup" data-i18n-aria="powerup.freeze" data-i18n-title="powerup.freeze_use" aria-label="Zamanı Dondur" title="Zamanı Dondur (+15sn)">❄<span id="powerup-freeze-count" class="stat-undo-count">0</span></button>
+            <div class="game-workspace">
+                <aside class="game-rail">
+                    <div class="game-stats">
+                        <div id="lives-display" class="lives-display"></div>
+                        <div class="stat-item"><span class="stat-label" data-i18n="game.score">Skor</span><span id="game-score" class="stat-value">0</span></div>
+                        <div class="stat-item stat-combo"><span id="game-combo" class="combo-badge"></span></div>
+                        <div class="stat-item"><span class="stat-label" data-i18n="game.moves">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
+                        <div class="stat-item"><span class="stat-label" data-i18n="game.time">Süre</span><span id="game-timer" class="stat-value">0:00</span></div>
+                    </div>
+                    <div class="game-guidance"><span class="guidance-mark" aria-hidden="true">↗</span><h3 data-i18n="design.game_goal">Yolları aç.</h3><p data-i18n="design.game_description">Önü boş olan bir oka dokun. Doğru sırayla tüm okları çıkar.</p></div>
+                    <div class="game-tools">
+                        <button id="btn-undo" class="stat-undo" data-i18n-aria="game.undo" data-i18n-title="game.undo" aria-label="Geri Al" title="Geri Al"><span aria-hidden="true">↶</span><span class="tool-label" data-i18n="game.undo">Geri Al</span><span id="undo-count" class="stat-undo-count">3</span></button>
+                        <button id="btn-powerup-hint" class="stat-undo stat-powerup" data-i18n-aria="powerup.hint" data-i18n-title="powerup.hint_use" aria-label="İpucu" title="İpucu"><span aria-hidden="true">✧</span><span class="tool-label" data-i18n="powerup.hint">İpucu</span><span id="powerup-hint-count" class="stat-undo-count">0</span></button>
+                        <button id="btn-powerup-freeze" class="stat-undo stat-powerup" data-i18n-aria="powerup.freeze" data-i18n-title="powerup.freeze_use" aria-label="Zamanı Dondur" title="Zamanı Dondur"><span aria-hidden="true">❄</span><span class="tool-label" data-i18n="powerup.freeze">Dondur</span><span id="powerup-freeze-count" class="stat-undo-count">0</span></button>
+                    </div>
+                </aside>
+                <div class="board-frame"><div class="board-caption"><span id="board-chapter-label">Mısır</span><span class="board-progress" id="board-progress-label">0/5</span></div><div class="board-area"><canvas id="game-canvas" role="img" data-i18n-aria="game.canvas_label" aria-label="Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun." tabindex="0"></canvas></div></div>
             </div>
-            <canvas id="game-canvas" role="img" data-i18n-aria="game.canvas_label" aria-label="Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun." tabindex="0"></canvas>
-            <div id="zoom-hint" class="zoom-hint hidden" data-i18n="game.zoom_hint">Yakınlaştırmak için iki parmakla aç</div>
+            <div class="board-toolbar"><span class="board-notices"><span id="game-feedback" class="game-feedback" role="status" aria-live="polite" aria-atomic="true"></span><span id="zoom-hint" class="zoom-hint" data-i18n="game.zoom_hint">Yakınlaştırmak için iki parmakla aç</span></span><button id="btn-fit-board" class="fit-button" data-i18n="design.fit_board">Görünümü ortala</button></div>
             <div id="banner-ad" class="banner-ad">
                 <span class="banner-ad-label" data-i18n="game.banner_label">Reklam Alanı</span>
             </div>
         </div>
 
         <!-- Level Complete Overlay -->
-        <div id="overlay-complete" class="overlay hidden">
+        <div id="overlay-complete" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content">
                 <h2 data-i18n="overlay.complete_title">Tebrikler!</h2>
                 <div id="complete-stars" class="stars-display"></div>
                 <p id="complete-score" class="complete-score"></p>
                 <p id="complete-stats" class="complete-stats"></p>
+                <section id="complete-story" class="complete-story hidden" aria-labelledby="complete-story-title">
+                    <h3 id="complete-story-title"></h3>
+                    <p id="complete-story-text"></p>
+                </section>
                 <button id="btn-next-level" class="btn btn-primary" data-i18n="overlay.next_level">Sonraki Seviye</button>
             </div>
         </div>
 
         <!-- Lives Empty Overlay -->
-        <div id="overlay-no-lives" class="overlay hidden">
+        <div id="overlay-no-lives" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content">
                 <h2 data-i18n="overlay.no_lives_title">Canın Bitti!</h2>
                 <p id="lives-timer-text">--:--</p>
@@ -135,7 +161,7 @@
         </div>
 
         <!-- Tutorial Overlay -->
-        <div id="overlay-tutorial" class="overlay hidden">
+        <div id="overlay-tutorial" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="tutorial-card">
                 <div class="tutorial-step" id="tutorial-step">
                     <div class="tutorial-icon" id="tutorial-icon"></div>
@@ -150,7 +176,7 @@
 
         <!-- Achievements Overlay -->
         <!-- Game Modes Info Overlay -->
-        <div id="overlay-modes-info" class="overlay hidden">
+        <div id="overlay-modes-info" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content">
                 <h2 data-i18n="modes.title">Oyun Modları</h2>
                 <div class="modes-info-list">
@@ -165,7 +191,7 @@
                         <div class="mode-info-icon">⚡</div>
                         <div class="mode-info-body">
                             <div class="mode-info-title" data-i18n="modes.timed_title">Hızlı</div>
-                            <div class="mode-info-text" data-i18n="modes.timed_text">Süre yarı yarıya düşer. En hızlı çözeni ödüllendiren zorlu mod.</div>
+                            <div class="mode-info-text" data-i18n="modes.timed_text">Klasik moda göre %35 daha kısa süre. Doğru sırayı daha hızlı bul.</div>
                         </div>
                     </div>
                     <div class="mode-info-row">
@@ -180,7 +206,7 @@
             </div>
         </div>
 
-        <div id="overlay-achievements" class="overlay hidden">
+        <div id="overlay-achievements" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content overlay-large">
                 <h2 data-i18n="menu.achievements">Başarımlar</h2>
                 <div id="achievements-list" class="achievements-list"></div>
@@ -189,7 +215,7 @@
         </div>
 
         <!-- Collection Overlay -->
-        <div id="overlay-collection" class="overlay hidden">
+        <div id="overlay-collection" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content overlay-large">
                 <h2 data-i18n="menu.collection">Koleksiyon</h2>
                 <p class="collection-hint" data-i18n="collection.hint">Bölümde 13+ yıldız toplayınca eser açılır</p>
@@ -199,7 +225,7 @@
         </div>
 
         <!-- Weekly scores overlay (local-only personal daily-challenge scores) -->
-        <div id="overlay-leaderboard" class="overlay hidden">
+        <div id="overlay-leaderboard" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content overlay-large">
                 <h2 data-i18n="menu.leaderboard">Haftalık Skorlarım</h2>
                 <p class="leaderboard-hint" data-i18n="leaderboard.hint">Son 7 günün günlük meydan okuma skorları</p>
@@ -209,7 +235,7 @@
         </div>
 
         <!-- Settings Overlay -->
-        <div id="overlay-settings" class="overlay hidden">
+        <div id="overlay-settings" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content">
                 <h2 data-i18n="menu.settings">Ayarlar</h2>
                 <div class="settings-list">
@@ -230,18 +256,20 @@
                         <button id="setting-reset" class="btn btn-secondary setting-danger" data-i18n="settings.reset_button">Sıfırla</button>
                     </div>
                 </div>
+                <button id="btn-ad-privacy" class="btn btn-secondary hidden" data-i18n="settings.ad_privacy">Reklam gizliliği tercihleri</button>
                 <div class="settings-legal">
                     <a href="https://arslanaytac11-alt.github.io/okchu-legal/privacy.html" target="_blank" rel="noopener" data-i18n="settings.privacy">Gizlilik Politikası</a>
                     <span class="settings-legal-sep">·</span>
                     <a href="https://arslanaytac11-alt.github.io/okchu-legal/terms.html" target="_blank" rel="noopener" data-i18n="settings.terms">Kullanım Şartları</a>
                 </div>
-                <p class="settings-version">Okchu v1.0.4</p>
+                <a class="settings-review" href="https://apps.apple.com/app/id6762461650?action=write-review" target="_blank" rel="noopener" data-i18n="settings.rate_app">App Store’da değerlendir</a>
+                <p class="settings-version">Okchu v1.1.0</p>
                 <button id="btn-settings-close" class="btn btn-secondary" data-i18n="common.close">Kapat</button>
             </div>
         </div>
 
         <!-- Premium Paywall Overlay -->
-        <div id="overlay-premium" class="overlay hidden">
+        <div id="overlay-premium" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content">
                 <h2 data-i18n="premium.title">Reklamsız Premium</h2>
                 <p class="premium-subtitle" data-i18n="premium.subtitle">Tek seferlik ödeme. Tüm reklamlar kaldırılır.</p>
@@ -273,14 +301,14 @@
         </div>
 
         <!-- Language Select Overlay -->
-        <div id="overlay-language" class="overlay hidden">
+        <div id="overlay-language" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content lang-picker">
                 <h2 id="lang-picker-title">Dil / Language</h2>
                 <div class="lang-list">
-                    <button class="lang-option" data-lang="tr">Turkce</button>
+                    <button class="lang-option" data-lang="tr">Türkçe</button>
                     <button class="lang-option" data-lang="en">English</button>
-                    <button class="lang-option" data-lang="es">Espanol</button>
-                    <button class="lang-option" data-lang="fr">Francais</button>
+                    <button class="lang-option" data-lang="es">Español</button>
+                    <button class="lang-option" data-lang="fr">Français</button>
                     <button class="lang-option" data-lang="ja">日本語</button>
                 </div>
             </div>
@@ -288,7 +316,7 @@
 
         <!-- iOS Install Banner -->
         <div id="ios-install-banner" class="ios-install-banner hidden">
-            <img src="assets/icons/icon-192.png" class="ios-install-icon" alt="">
+            <img src="assets/icons/icon-192-expedition.png" class="ios-install-icon" alt="">
             <div class="ios-install-text">
                 <strong data-i18n="install.title">Okchu'yu Ana Ekrana Ekle</strong>
                 <p data-i18n="install.body">Tam ekran oyna, offline çalışır!</p>
@@ -302,18 +330,8 @@
             <button id="btn-install-close" class="ios-install-close" data-i18n-aria="common.close" aria-label="Kapat">&times;</button>
         </div>
 
-        <!-- Rate Us Overlay -->
-        <div id="overlay-rate" class="overlay hidden">
-            <div class="overlay-content">
-                <h2 data-i18n="rate.title">Okchu'yu beğeniyor musun?</h2>
-                <p class="rate-subtitle" data-i18n="rate.subtitle">Geri bildirimin bize yol gösterir</p>
-                <div id="rate-stars" class="rate-stars" role="group" aria-label="Rating"></div>
-                <button id="btn-rate-later" class="btn btn-secondary" data-i18n="rate.later">Sonra</button>
-            </div>
-        </div>
-
         <!-- Time Up Overlay -->
-        <div id="overlay-time-up" class="overlay hidden">
+        <div id="overlay-time-up" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content">
                 <h2 data-i18n="overlay.time_up_title">Süre Doldu!</h2>
                 <p class="time-up-message" data-i18n="overlay.time_up_text">Zamanı yetiştiremedin</p>
@@ -324,7 +342,7 @@
         </div>
 
         <!-- Daily Challenge Failure Overlay — streak preserved, no retry today -->
-        <div id="overlay-daily-fail" class="overlay hidden">
+        <div id="overlay-daily-fail" class="overlay hidden" role="dialog" aria-modal="true">
             <div class="overlay-content">
                 <h2 id="daily-fail-title" data-i18n="overlay.daily_fail_moves_title">Hamle Bitti!</h2>
                 <p id="daily-fail-message" class="time-up-message" data-i18n="overlay.daily_fail_message">Günlük meydan okumayı başaramadın. Yarın yeni bir level ile geri gel!</p>
@@ -334,6 +352,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=42"></script>
+    <script type="module" src="js/main.js?v=49"></script>
 </body>
 </html>

@@ -13,17 +13,33 @@
     "collection": "Colección",
     "leaderboard": "Mis Puntuaciones",
     "settings": "Ajustes",
-    "remove_ads": "✨ Quitar anuncios"
+    "remove_ads": "✨ Quitar anuncios",
+    "continue_title": "Continúa tu aventura",
+    "first_puzzle": "Resuelve tu primer puzle",
+    "continue_subtitle": "{chapter} · Puzle {level}"
   },
   "chapters": {
     "title": "Capitulos",
-    "locked": "Bloqueado"
+    "locked": "Bloqueado",
+    "progress": "{completed}/{total} puzles",
+    "unlock_requirement": "Consigue {stars} estrellas en {chapter}",
+    "chapter_number": "Capítulo {number}"
   },
   "levels": {
     "title": "Niveles",
     "mode_classic": "Clásico",
     "mode_timed": "Rápido",
-    "mode_zen": "Zen"
+    "mode_zen": "Zen",
+    "puzzle_number": "Puzle {number}",
+    "arrows": "{count} flechas",
+    "next": "Siguiente",
+    "completed": "Completado",
+    "ready": "Listo para jugar",
+    "boss": "Puzle final",
+    "boss_requirement": "Consigue {stars} estrellas en los primeros cuatro puzles",
+    "chapter_progress": "{completed}/{total} completados",
+    "shape": "Forma",
+    "star_count": "{stars}/3 estrellas"
   },
   "game": {
     "score": "Puntos",
@@ -33,23 +49,41 @@
     "undo": "Deshacer",
     "canvas_label": "Área del puzle de flechas. Toca las flechas para quitarlas en el orden correcto.",
     "zoom_hint": "Pellizca con dos dedos para acercar",
-    "banner_label": "Espacio de Anuncio"
+    "banner_label": "Espacio de Anuncio",
+    "blocked_feedback": "Salida bloqueada. Retira primero la otra flecha.",
+    "guided_feedback": "Toca la flecha marcada; su salida está libre."
   },
   "common": {
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "back": "Volver"
   },
   "settings": {
     "dark_mode": "Modo Oscuro",
     "reset_label": "Restablecer Progreso",
     "reset_button": "Restablecer",
     "privacy": "Política de Privacidad",
-    "terms": "Términos de Uso"
+    "terms": "Términos de Uso",
+    "rate_app": "Valorar en el App Store",
+    "ad_privacy": "Opciones de privacidad de anuncios"
   },
   "collection": {
-    "hint": "Reúne 13+ estrellas en un capítulo para desbloquear la reliquia"
+    "hint": "Reúne 13+ estrellas en un capítulo para desbloquear la reliquia",
+    "names": {
+      "1": "Sello del faraón",
+      "2": "Bastón de Zeus",
+      "3": "Escudo de la legión",
+      "4": "Hacha vikinga",
+      "5": "Sello otomano",
+      "6": "Dragón chino",
+      "7": "Calendario maya",
+      "8": "Flor de loto",
+      "9": "Cruz gótica",
+      "10": "Corona de la sabiduría"
+    }
   },
   "leaderboard": {
-    "hint": "Tus puntuaciones del desafío diario de los últimos 7 días"
+    "hint": "Tus puntuaciones del desafío diario de los últimos 7 días",
+    "empty": "Aún no hay puntuaciones. ¡Prueba el desafío diario!"
   },
   "time_up": {
     "continue_ad": "Ver Anuncio + Continuar"
@@ -123,16 +157,16 @@
   "tutorial": {
     "step1_title": "Bienvenido a Okchu!",
     "step1_text": "Tu objetivo es eliminar todas las flechas del tablero en el orden correcto.",
-    "step2_title": "Que Flecha Tocar?",
-    "step2_text": "Una flecha se puede eliminar si el camino en la direccion que apunta esta libre. Si otra flecha la bloquea, no puedes tocarla!",
+    "step2_title": "¿Qué flecha puede salir?",
+    "step2_text": "Una flecha puede salir si no hay otra en la dirección de su punta. Si el camino está bloqueado, retira primero la otra flecha.",
     "step3_title": "Movimiento Correcto",
     "step3_text": "Toca una flecha libre y se desliza fuera de la pantalla como una serpiente. Ganas puntos!",
     "step4_title": "Movimiento Incorrecto",
-    "step4_text": "Toca una flecha bloqueada y pierdes una vida mas 5 segundos. Tienes 3 vidas, ten cuidado!",
+    "step4_text": "Tocar una flecha bloqueada cuesta una vida en Clásico y Rápido. En Zen no hay penalización; prueba otra flecha.",
     "step5_title": "Carrera Contra el Tiempo",
-    "step5_text": "Cada nivel tiene un limite de tiempo. Los movimientos correctos agregan +3 segundos. Usa tu tiempo sabiamente!",
+    "step5_text": "Termina antes de que se agote el tiempo en Clásico y Rápido. Zen no tiene límite de tiempo.",
     "step6_title": "Colecciona Estrellas",
-    "step6_text": "Termina rapido sin errores para ganar 3 estrellas! Las estrellas desbloquean nuevos capitulos.",
+    "step6_text": "Resuelve sin errores ni pistas para conseguir 3 estrellas. La velocidad también cuenta en Rápido. Las estrellas abren capítulos.",
     "next": "Siguiente",
     "start": "Empezar!",
     "skip": "Saltar"
@@ -140,15 +174,23 @@
   "civilizations": {
     "1": {
       "name": "Egipto",
-      "title": "Antiguo Egipto",
+      "title": "La sala silenciosa del Nilo",
       "period": "3100 a.C. - 30 a.C.",
-      "text": "En la tierra de los faraones, las piramides se elevan hacia el cielo. Los jeroglificos guardan misterios sin resolver durante milenios.",
-      "mystery": "Descifra las senales de flechas ocultas en las camaras secretas de las piramides!",
+      "text": "Al mapa del archivo junto al Nilo le falta su última pieza. Las flechas talladas en piedra señalan los pasadizos cerrados. Un joven escriba te pide ayuda para encontrar un sello perdido. Cada camino que abres revela otra parte del mapa. Lee las señales con calma; para llegar al sello, primero comprende la disposición de la sala.",
+      "mystery": "Retira las flechas con una salida libre para abrir el paso al sello perdido.",
       "facts": [
         "Piramide de Keops 146m",
         "Escritura jeroglifica",
         "Arte de momificacion",
         "Cartografia estelar"
+      ],
+      "result_title": "Tras el mapa",
+      "results": [
+        "Se abre el primer pasadizo. El escriba encuentra una marca en el borde del mapa.",
+        "Las marcas se unen. Hay otra sala bajo la arena.",
+        "La sala se abre. El rastro del sello se vuelve más claro.",
+        "Aparece el último pasadizo. El sello espera al otro lado de la sala cerrada.",
+        "Has encontrado el sello. El escriba completa el mapa; tu viaje continúa hacia Grecia."
       ]
     },
     "2": {
@@ -275,12 +317,6 @@
     "step_share": "Compartir",
     "step_add": "Añadir a pantalla de inicio"
   },
-  "rate": {
-    "title": "¿Te gusta Okchu?",
-    "subtitle": "Tus comentarios nos ayudan",
-    "later": "Más tarde",
-    "email_body": "¡Hola! Mis comentarios sobre Okchu:\n\n"
-  },
   "appstore": {
     "title": "Okchu: Arrow Puzzle - Viaje Antiguo",
     "subtitle": "Juego de Puzzle de Flechas",
@@ -306,8 +342,72 @@
     "classic_title": "Clásico",
     "classic_text": "Modo estándar: juega con tiempo y vidas. Gana estrellas y desbloquea capítulos.",
     "timed_title": "Rápido",
-    "timed_text": "La mitad de tiempo — un modo exigente para reflejos rápidos.",
+    "timed_text": "35 % menos de tiempo que en Clásico. Encuentra el orden correcto más rápido.",
     "zen_title": "Zen",
     "zen_text": "Sin tiempo, sin vidas, sin presión. Solo resuelve el puzle a tu ritmo."
+  },
+  "design": {
+    "home_eyebrow": "10 CIVILIZACIONES · 50 PUZLES",
+    "home_title": "Tu próximo hallazgo.",
+    "home_description": "Resuelve las flechas. Descubre mundos antiguos.",
+    "puzzles": "puzles",
+    "stars": "estrellas",
+    "civilizations": "civilizaciones",
+    "adventure": "AVENTURA",
+    "daily_description": "Un nuevo puzle para hoy.",
+    "explore": "Explora civilizaciones",
+    "navigation": "Menú del juego",
+    "game_goal": "Abre los caminos.",
+    "game_description": "Toca una flecha con el camino libre. Encuentra el orden y retíralas todas.",
+    "fit_board": "Centrar tablero"
+  },
+  "shapes": {
+    "pyramid": "Pirámide",
+    "sphinx": "Esfinge",
+    "diamond": "Diamante",
+    "steps": "Escalones",
+    "scarab": "Escarabajo",
+    "temple": "Templo",
+    "amphora": "Ánfora",
+    "laurel": "Laurel",
+    "acropolis": "Acrópolis",
+    "owl": "Búho",
+    "colosseum": "Coliseo",
+    "eagle": "Águila",
+    "aqueduct": "Acueducto",
+    "arena": "Arena",
+    "crown": "Corona",
+    "ship": "Barco",
+    "hammer": "Martillo",
+    "rune": "Runa",
+    "mountain": "Montaña",
+    "helmet": "Casco",
+    "mosque": "Mezquita",
+    "tulip": "Tulipán",
+    "dome": "Cúpula",
+    "minaret": "Minarete",
+    "turban": "Turbante",
+    "pagoda": "Pagoda",
+    "dragon": "Dragón",
+    "silk": "Seda",
+    "wall": "Muralla",
+    "fan": "Abanico",
+    "calendar": "Calendario",
+    "jaguar": "Jaguar",
+    "sun": "Sol",
+    "serpent": "Serpiente",
+    "palace": "Palacio",
+    "lotus": "Loto",
+    "mandala": "Mandala",
+    "river": "Río",
+    "castle": "Castillo",
+    "shield": "Escudo",
+    "cathedral": "Catedral",
+    "flask": "Frasco",
+    "rosette": "Roseta",
+    "portal": "Portal",
+    "trophy": "Trofeo",
+    "jewel": "Joya",
+    "infinity": "Infinito"
   }
 }

@@ -13,17 +13,33 @@
     "collection": "Collection",
     "leaderboard": "Mes Scores",
     "settings": "Paramètres",
-    "remove_ads": "✨ Supprimer les pubs"
+    "remove_ads": "✨ Supprimer les pubs",
+    "continue_title": "Poursuivez votre aventure",
+    "first_puzzle": "Résolvez votre première énigme",
+    "continue_subtitle": "{chapter} · Énigme {level}"
   },
   "chapters": {
     "title": "Chapitres",
-    "locked": "Verrouille"
+    "locked": "Verrouille",
+    "progress": "{completed}/{total} énigmes",
+    "unlock_requirement": "Gagnez {stars} étoiles dans {chapter}",
+    "chapter_number": "Chapitre {number}"
   },
   "levels": {
     "title": "Niveaux",
     "mode_classic": "Classique",
     "mode_timed": "Rapide",
-    "mode_zen": "Zen"
+    "mode_zen": "Zen",
+    "puzzle_number": "Énigme {number}",
+    "arrows": "{count} flèches",
+    "next": "À suivre",
+    "completed": "Terminée",
+    "ready": "Prête à jouer",
+    "boss": "Énigme finale",
+    "boss_requirement": "Gagnez {stars} étoiles dans les quatre premières énigmes",
+    "chapter_progress": "{completed}/{total} terminées",
+    "shape": "Forme",
+    "star_count": "{stars}/3 étoiles"
   },
   "game": {
     "score": "Score",
@@ -33,23 +49,41 @@
     "undo": "Annuler",
     "canvas_label": "Zone du puzzle de flèches. Touchez les flèches pour les retirer dans le bon ordre.",
     "zoom_hint": "Pincez avec deux doigts pour zoomer",
-    "banner_label": "Espace Publicitaire"
+    "banner_label": "Espace Publicitaire",
+    "blocked_feedback": "Sortie bloquée. Retire d’abord l’autre flèche.",
+    "guided_feedback": "Touche la flèche indiquée : sa sortie est libre."
   },
   "common": {
-    "close": "Fermer"
+    "close": "Fermer",
+    "back": "Retour"
   },
   "settings": {
     "dark_mode": "Mode Sombre",
     "reset_label": "Réinitialiser la Progression",
     "reset_button": "Réinitialiser",
     "privacy": "Politique de Confidentialité",
-    "terms": "Conditions d'Utilisation"
+    "terms": "Conditions d'Utilisation",
+    "rate_app": "Évaluer sur l’App Store",
+    "ad_privacy": "Choix de confidentialité des annonces"
   },
   "collection": {
-    "hint": "Collectez 13+ étoiles dans un chapitre pour débloquer la relique"
+    "hint": "Collectez 13+ étoiles dans un chapitre pour débloquer la relique",
+    "names": {
+      "1": "Sceau du pharaon",
+      "2": "Bâton de Zeus",
+      "3": "Bouclier de la légion",
+      "4": "Hache viking",
+      "5": "Sceau ottoman",
+      "6": "Dragon chinois",
+      "7": "Calendrier maya",
+      "8": "Fleur de lotus",
+      "9": "Croix gothique",
+      "10": "Couronne de sagesse"
+    }
   },
   "leaderboard": {
-    "hint": "Vos scores de défi quotidien des 7 derniers jours"
+    "hint": "Vos scores de défi quotidien des 7 derniers jours",
+    "empty": "Aucun score pour le moment. Essayez le défi quotidien !"
   },
   "time_up": {
     "continue_ad": "Regarder Pub + Continuer"
@@ -123,16 +157,16 @@
   "tutorial": {
     "step1_title": "Bienvenue dans Okchu!",
     "step1_text": "Votre objectif est de retirer toutes les fleches de la grille dans le bon ordre.",
-    "step2_title": "Quelle Fleche Toucher?",
-    "step2_text": "Une fleche peut etre retiree si le chemin dans la direction qu'elle pointe est libre. Si une autre fleche la bloque, vous ne pouvez pas la toucher!",
+    "step2_title": "Quelle flèche peut sortir ?",
+    "step2_text": "Une flèche peut sortir si rien ne bloque la direction de sa pointe. Retire d’abord la flèche qui lui barre le passage.",
     "step3_title": "Bon Mouvement",
     "step3_text": "Touchez une fleche libre et elle glisse hors de l'ecran comme un serpent. Vous gagnez des points!",
     "step4_title": "Mauvais Mouvement",
-    "step4_text": "Touchez une fleche bloquee et vous perdez une vie plus 5 secondes. Vous avez 3 vies, soyez prudent!",
+    "step4_text": "Une flèche bloquée coûte une vie en Classique et Chrono. Zen ne pénalise pas les erreurs ; essayez une autre flèche.",
     "step5_title": "Course Contre le Temps",
-    "step5_text": "Chaque niveau a une limite de temps. Les bons mouvements ajoutent +3 secondes. Utilisez votre temps judicieusement!",
+    "step5_text": "Terminez avant la fin du temps en Classique et Chrono. Zen ne limite pas le temps.",
     "step6_title": "Collectez les Etoiles",
-    "step6_text": "Finissez vite sans erreurs pour gagner 3 etoiles! Les etoiles debloquent de nouveaux chapitres.",
+    "step6_text": "Résolvez sans erreur ni indice pour gagner 3 étoiles. La vitesse compte aussi en Chrono. Les étoiles ouvrent les chapitres.",
     "next": "Suivant",
     "start": "Commencer!",
     "skip": "Passer"
@@ -140,15 +174,23 @@
   "civilizations": {
     "1": {
       "name": "Egypte",
-      "title": "Egypte Ancienne",
+      "title": "La salle silencieuse du Nil",
       "period": "3100 av. J.-C. - 30 av. J.-C.",
-      "text": "Au pays des pharaons, les pyramides s'elevent vers le ciel. Les hieroglyphes gardent des mysteres irresous depuis des millenaires.",
-      "mystery": "Dechiffrez les signes de fleches caches dans les chambres secretes des pyramides!",
+      "text": "Il manque la dernière pièce d'une carte conservée dans les archives au bord du Nil. Des flèches gravées dans la pierre indiquent les passages fermés. Un jeune scribe te demande de retrouver un sceau perdu. Chaque chemin ouvert révèle une partie de la carte. Lis les signes avec patience ; pour atteindre le sceau, comprends d'abord l'agencement de la salle.",
+      "mystery": "Retire les flèches dont la sortie est libre pour ouvrir le passage vers le sceau perdu.",
       "facts": [
         "Pyramide de Kheops 146m",
         "Ecriture hieroglyphique",
         "Art de la momification",
         "Cartographie stellaire"
+      ],
+      "result_title": "Sur la piste de la carte",
+      "results": [
+        "Le premier passage s'ouvre. Le scribe trouve une marque au bord de la carte.",
+        "Les marques se rejoignent. Une autre salle se cache sous le sable.",
+        "La salle s'ouvre. La piste du sceau devient plus claire.",
+        "Le dernier passage apparaît. Le sceau attend derrière la salle fermée.",
+        "Le sceau est retrouvé. Le scribe complète la carte ; ton voyage se poursuit vers la Grèce."
       ]
     },
     "2": {
@@ -275,12 +317,6 @@
     "step_share": "Partager",
     "step_add": "Sur l'écran d'accueil"
   },
-  "rate": {
-    "title": "Vous aimez Okchu?",
-    "subtitle": "Vos retours nous guident",
-    "later": "Plus tard",
-    "email_body": "Bonjour! Mes retours sur Okchu:\n\n"
-  },
   "appstore": {
     "title": "Okchu: Arrow Puzzle - Voyage Antique",
     "subtitle": "Jeu de Puzzle de Fleches",
@@ -306,8 +342,72 @@
     "classic_title": "Classique",
     "classic_text": "Mode standard : joue avec un chrono et des vies. Gagne des étoiles.",
     "timed_title": "Rapide",
-    "timed_text": "Temps réduit de moitié — un mode exigeant pour les réflexes.",
+    "timed_text": "35 % de temps en moins que le mode Classique. Trouvez le bon ordre plus vite.",
     "zen_title": "Zen",
     "zen_text": "Pas de chrono, pas de vies, pas de pression. Résous simplement le puzzle."
+  },
+  "design": {
+    "home_eyebrow": "10 CIVILISATIONS · 50 PUZZLES",
+    "home_title": "À toi la découverte.",
+    "home_description": "Suis les flèches. Explore les mondes anciens.",
+    "puzzles": "énigmes",
+    "stars": "étoiles",
+    "civilizations": "civilisations",
+    "adventure": "AVENTURE",
+    "daily_description": "Une nouvelle énigme pour aujourd’hui.",
+    "explore": "Explorez les civilisations",
+    "navigation": "Menu du jeu",
+    "game_goal": "Libérez les chemins.",
+    "game_description": "Touchez une flèche dont le chemin est libre. Trouvez le bon ordre et retirez-les toutes.",
+    "fit_board": "Centrer le plateau"
+  },
+  "shapes": {
+    "pyramid": "Pyramide",
+    "sphinx": "Sphinx",
+    "diamond": "Diamant",
+    "steps": "Marches",
+    "scarab": "Scarabée",
+    "temple": "Temple",
+    "amphora": "Amphore",
+    "laurel": "Laurier",
+    "acropolis": "Acropole",
+    "owl": "Hibou",
+    "colosseum": "Colisée",
+    "eagle": "Aigle",
+    "aqueduct": "Aqueduc",
+    "arena": "Arène",
+    "crown": "Couronne",
+    "ship": "Navire",
+    "hammer": "Marteau",
+    "rune": "Rune",
+    "mountain": "Montagne",
+    "helmet": "Casque",
+    "mosque": "Mosquée",
+    "tulip": "Tulipe",
+    "dome": "Dôme",
+    "minaret": "Minaret",
+    "turban": "Turban",
+    "pagoda": "Pagode",
+    "dragon": "Dragon",
+    "silk": "Soie",
+    "wall": "Muraille",
+    "fan": "Éventail",
+    "calendar": "Calendrier",
+    "jaguar": "Jaguar",
+    "sun": "Soleil",
+    "serpent": "Serpent",
+    "palace": "Palais",
+    "lotus": "Lotus",
+    "mandala": "Mandala",
+    "river": "Rivière",
+    "castle": "Château",
+    "shield": "Bouclier",
+    "cathedral": "Cathédrale",
+    "flask": "Fiole",
+    "rosette": "Rosace",
+    "portal": "Portail",
+    "trophy": "Trophée",
+    "jewel": "Joyau",
+    "infinity": "Infini"
   }
 }

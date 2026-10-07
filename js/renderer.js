@@ -1,10 +1,17 @@
 // js/renderer.js
-// Clean arrow renderer with variable-width arrows (5 sizes based on path length)
-// Supports L-shaped, U-shaped multi-cell arrow paths
+// Clean, legible arrow paths over a quiet board.
+// Connected silhouettes, anchored zoom, and Reduce Motion support.
 
 import { ArrowState, getDirectionVector } from './arrow.js';
 import { ParticleSystem } from './particles.js';
-import { AMBIENT_PARTICLES, SILHOUETTES, getArrowStyle, getGridStyle } from './themes.js';
+import { getArrowStyle, getGridStyle } from './themes.js';
+import { BOARD_VISUALS } from './balance.js?v=2';
+import { silhouetteCells } from './puzzle-catalog.js';
+import { createArrowRoute, sampleArrowMotion, arrowShaftPoints, arrowColorVariant, ARROW_COLORS, ARROW_DARK_COLORS, ARROW_ERROR_COLOR, ARROW_DARK_ERROR_COLOR } from './arrow-motion.js?v=3';
+import { buildBoardOutline } from './board-outline.js';
+
+const boardShapeCache = new Map();
+const boardOutlineCache = new Map();
 
 export class Renderer {
     constructor(canvas) {
@@ -27,6 +34,10 @@ export class Renderer {
         // arrow will fire BEFORE they lift their finger so they can correct
         // aim if it landed on the wrong one. Cleared by game.js on touchend.
         this.previewPath = null;
+        this.blockedFeedback = null;
+        this._boardShapeRuns = [];
+        this._boardOutlines = [];
+        this._boardShapeBounds = null;
         this.ambientParticles = new ParticleSystem();
         this.burstParticles = new ParticleSystem();
         this.chapterId = 1;
@@ -39,6 +50,7 @@ export class Renderer {
         this._bgImage = null;
         this._bgImageLoaded = false;
         this._preloadedBgs = {};
+        this._motionQuery = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
         this.theme = {
             background: '#e8dcc0',
             backgroundGradient: ['#f0e4c8', '#e0d0a8'],
@@ -54,44 +66,189 @@ export class Renderer {
         };
     }
 
-    // Fixed thin arrow metrics - all arrows same width, only length varies
+    // A slimmer carved shaft keeps a readable floor on the smallest boards.
     _getArrowMetrics() {
         const cs = this.cellSize;
-        return { width: cs * 0.07, headSize: cs * 0.25, headSpread: 0.50 };
+        const width = Math.min(cs * BOARD_VISUALS.maximumStrokeRatio, Math.max(cs * BOARD_VISUALS.idealStrokeRatio, BOARD_VISUALS.minimumStroke / this.scale));
+        return { width, headSize: cs * BOARD_VISUALS.headRatio, headSpread: 0.62 };
     }
 
-    resize(gridWidth, gridHeight) {
+    get reducedMotion() { return this._motionQuery?.matches || false; }
+    get errorColor() { return this.theme.background === BOARD_VISUALS.darkBackground ? ARROW_DARK_ERROR_COLOR : ARROW_ERROR_COLOR; }
+
+    showBlockedFeedback(path, blocker, duration = 900) {
+        this.blockedFeedback = blocker ? { path, blocker, expiresAt: performance.now() + duration } : null;
+    }
+
+    clearBlockedFeedback() { this.blockedFeedback = null; }
+
+    getBlockedFeedbackGeometry(now = performance.now()) {
+        const cue = this.blockedFeedback;
+        if (!cue || now >= cue.expiresAt || cue.path.isRemoved() || cue.path.state === ArrowState.REMOVING ||
+            cue.blocker.path?.isRemoved() || cue.blocker.path?.state === ArrowState.REMOVING) return null;
+        const head = cue.path.getHead(), { dx, dy } = getDirectionVector(cue.path.direction);
+        // Both endpoints stay in grid units. Zoom/resize only projects them;
+        // the ray stops at the first occupied cell, before entering its body.
+        return {
+            start: { x: head.x + 0.5 + dx * 0.44, y: head.y + 0.5 + dy * 0.44 },
+            end: { x: cue.blocker.x + 0.5 - dx * 0.44, y: cue.blocker.y + 0.5 - dy * 0.44 },
+            cell: { x: cue.blocker.x, y: cue.blocker.y },
+            type: cue.blocker.type,
+        };
+    }
+
+    drawBlockedFeedback() {
+        const geometry = this.getBlockedFeedbackGeometry();
+        if (!geometry) return;
+        const ctx = this.ctx, cs = this.cellSize;
+        const project = point => ({ x: this.gridOffsetX + point.x * cs, y: this.gridOffsetY + point.y * cs });
+        const start = project(geometry.start), end = project(geometry.end);
+        ctx.save();
+        ctx.strokeStyle = this.errorColor;
+        ctx.lineWidth = 1.6 / this.scale;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 0.9;
+        ctx.setLineDash([3 / this.scale, 4 / this.scale]);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Outline the exact colliding cell without recoloring its arrow or
+        // highlighting an unrelated solution. No pulse, shake, or particles.
+        const padding = cs * 0.07;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.roundRect(this.gridOffsetX + geometry.cell.x * cs + padding,
+            this.gridOffsetY + geometry.cell.y * cs + padding, cs - padding * 2,
+            cs - padding * 2, cs * 0.18);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    setBoardShape(shape, width, height) {
+        this._boardShapeRuns = [];
+        this._boardOutlines = [];
+        this._boardShapeBounds = null;
+        if (!shape) return;
+        const cacheKey = `${shape}:${width}:${height}`;
+        if (!boardShapeCache.has(cacheKey)) {
+            try {
+                const rows = new Map();
+                const cells = silhouetteCells(shape, width, height);
+                boardOutlineCache.set(cacheKey, buildBoardOutline(cells));
+                for (const [x, y] of cells) {
+                    if (!rows.has(y)) rows.set(y, []);
+                    rows.get(y).push(x);
+                }
+                const runs = [];
+                for (const [y, xs] of rows) {
+                    let start = xs[0], last = start;
+                    for (const x of xs.slice(1)) {
+                        if (x !== last + 1) { runs.push([start,y,last-start+1]); start = x; }
+                        last = x;
+                    }
+                    runs.push([start,y,last-start+1]);
+                }
+                boardShapeCache.set(cacheKey, runs);
+            } catch { return; } // Decoration never blocks a custom level.
+        }
+        this._boardShapeRuns = boardShapeCache.get(cacheKey);
+        this._boardOutlines = boardOutlineCache.get(cacheKey) || [];
+        if (this._boardShapeRuns.length) {
+            this._boardShapeBounds = {
+                left: Math.min(...this._boardShapeRuns.map(([x]) => x)),
+                top: Math.min(...this._boardShapeRuns.map(([,y]) => y)),
+                right: Math.max(...this._boardShapeRuns.map(([x,,length]) => x + length)),
+                bottom: Math.max(...this._boardShapeRuns.map(([,y]) => y + 1)),
+            };
+        }
+    }
+
+    drawBoardShape() {
+        if (!this._boardOutlines.length) return;
+        const ctx = this.ctx, cs = this.cellSize;
+        const dark = this.theme.background === BOARD_VISUALS.darkBackground;
+        ctx.save();
+        const bounds = this._boardShapeBounds;
+        const surface = ctx.createLinearGradient(0, this.gridOffsetY + bounds.top * cs, 0, this.gridOffsetY + bounds.bottom * cs);
+        surface.addColorStop(0, dark ? '#24483F' : '#F6F0DE');
+        surface.addColorStop(1, dark ? '#1D3D34' : '#EAE0C9');
+        ctx.fillStyle = surface;
+        ctx.shadowColor = dark ? 'rgba(0,0,0,0.25)' : 'rgba(108,81,40,0.15)';
+        ctx.shadowBlur = 5 / this.scale;
+        ctx.shadowOffsetY = 2.5 / this.scale;
+        ctx.beginPath();
+        for (const closedLoop of this._boardOutlines) {
+            const loop = closedLoop.slice(0,-1).map(p => ({x:this.gridOffsetX+p.x*cs,y:this.gridOffsetY+p.y*cs}));
+            const corners = loop.map((corner,i) => {
+                const previous = loop[(i+loop.length-1)%loop.length], next=loop[(i+1)%loop.length];
+                const before = Math.hypot(corner.x-previous.x,corner.y-previous.y);
+                const after = Math.hypot(next.x-corner.x,next.y-corner.y);
+                const r = Math.min(cs*0.14,before*0.25,after*0.25);
+                return {corner,enter:{x:corner.x-(corner.x-previous.x)/before*r,y:corner.y-(corner.y-previous.y)/before*r},exit:{x:corner.x+(next.x-corner.x)/after*r,y:corner.y+(next.y-corner.y)/after*r}};
+            });
+            if (!corners.length) continue;
+            ctx.moveTo(corners[0].enter.x,corners[0].enter.y);
+            for (const {corner,enter,exit} of corners) {
+                ctx.lineTo(enter.x,enter.y);
+                ctx.quadraticCurveTo(corner.x,corner.y,exit.x,exit.y);
+            }
+            ctx.closePath();
+        }
+        ctx.fill('evenodd');
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.lineWidth = 1.1 / this.scale;
+        ctx.strokeStyle = dark ? '#456052' : '#D8C5A3';
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    resize(gridWidth, gridHeight, { preserveView = false } = {}) {
+        const old = preserveView && this._gridWidth === gridWidth && this._gridHeight === gridHeight && this._cssWidth && this._cssHeight ? {
+            scale: this.scale,
+            fx: ((this._cssWidth / 2 - this.panX) / this.scale - this.gridOffsetX) / this.cellSize,
+            fy: ((this._cssHeight / 2 - this.panY) / this.scale - this.gridOffsetY) / this.cellSize,
+        } : null;
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.getBoundingClientRect();
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
+        const parentRect = this.canvas.parentElement?.classList?.contains('board-area') ? this.canvas.parentElement.getBoundingClientRect() : null;
+        this._cssWidth = Math.max(1, parentRect?.width || this.canvas.clientWidth || rect.width);
+        this._cssHeight = Math.max(1, parentRect?.height || this.canvas.clientHeight || rect.height);
+        this._gridWidth = gridWidth;
+        this._gridHeight = gridHeight;
+        this.canvas.width = Math.round(this._cssWidth * dpr);
+        this.canvas.height = Math.round(this._cssHeight * dpr);
         this.ctx.scale(dpr, dpr);
 
-        const padding = 8;
-        const maxCellW = (rect.width - padding * 2) / gridWidth;
-        const maxCellH = (rect.height - padding * 2) / gridHeight;
-        this.cellSize = Math.floor(Math.min(maxCellW, maxCellH));
+        // Fit the complete original silhouette, not empty outer grid rows.
+        // Keep this footprint fixed as arrows leave to avoid a jumping board.
+        const bounds = this._boardShapeBounds || { left:0, top:0, right:gridWidth, bottom:gridHeight };
+        const fitWidth = bounds.right - bounds.left;
+        const fitHeight = bounds.bottom - bounds.top;
+        const padding = Math.max(20, BOARD_VISUALS.boardPadding);
+        const maxCellW = (this._cssWidth - padding * 2) / fitWidth;
+        const maxCellH = (this._cssHeight - padding * 2) / fitHeight;
+        this.cellSize = Math.max(1, Math.floor(Math.min(maxCellW, maxCellH)));
 
-        const totalW = this.cellSize * gridWidth;
-        const totalH = this.cellSize * gridHeight;
-        this.gridOffsetX = (rect.width - totalW) / 2;
-        this.gridOffsetY = (rect.height - totalH) / 2;
+        this.gridOffsetX = this._cssWidth / 2 - (bounds.left + bounds.right) / 2 * this.cellSize;
+        this.gridOffsetY = this._cssHeight / 2 - (bounds.top + bounds.bottom) / 2 * this.cellSize;
 
-        if (gridWidth > 16 || gridHeight > 16) {
-            this.scale = Math.min(rect.width / (totalW + 30), rect.height / (totalH + 30));
-            if (this.scale > 1) this.scale = 1;
-        } else {
-            this.scale = 1;
-        }
-        this.panX = 0;
-        this.panY = 0;
+        this.scale = old?.scale || 1;
+        this.panX = old ? this._cssWidth / 2 - (this.gridOffsetX + old.fx * this.cellSize) * this.scale : 0;
+        this.panY = old ? this._cssHeight / 2 - (this.gridOffsetY + old.fy * this.cellSize) * this.scale : 0;
+        this._clampPan();
     }
 
     // Convert a client (viewport) point to canvas-local (CSS pixel) coords.
     // Use this for anchoring zoom so the point under the fingers stays put.
     _clientToCanvas(clientX, clientY) {
         const rect = this.canvas.getBoundingClientRect();
-        return { x: clientX - rect.left, y: clientY - rect.top };
+        return {
+            x: (clientX - rect.left) * (this._cssWidth || rect.width) / rect.width,
+            y: (clientY - rect.top) * (this._cssHeight || rect.height) / rect.height
+        };
     }
 
     setZoom(scale, clientX, clientY) {
@@ -105,18 +262,30 @@ export class Renderer {
     }
 
     setPan(dx, dy) {
-        this.panX += dx;
-        this.panY += dy;
+        const rect = this.canvas.getBoundingClientRect();
+        this.panX += dx * (this._cssWidth || rect.width) / rect.width;
+        this.panY += dy * (this._cssHeight || rect.height) / rect.height;
         this._clampPan();
+    }
+
+    getVisibleGridBounds() {
+        return {
+            left: (-this.panX / this.scale - this.gridOffsetX) / this.cellSize,
+            top: (-this.panY / this.scale - this.gridOffsetY) / this.cellSize,
+            right: ((this._cssWidth - this.panX) / this.scale - this.gridOffsetX) / this.cellSize,
+            bottom: ((this._cssHeight - this.panY) / this.scale - this.gridOffsetY) / this.cellSize,
+        };
     }
 
     // Keep the grid on-screen: at least half the canvas worth of grid must
     // remain visible so users can never lose the board off the edge.
     _clampPan() {
         const rect = this.canvas.getBoundingClientRect();
-        const margin = Math.min(rect.width, rect.height) / 3;
-        const maxPan = rect.width - margin;
-        const maxPanY = rect.height - margin;
+        const width = this._cssWidth || rect.width;
+        const height = this._cssHeight || rect.height;
+        const margin = Math.min(width, height) / 3;
+        const maxPan = width - margin;
+        const maxPanY = height - margin;
         if (this.panX > maxPan) this.panX = maxPan;
         if (this.panX < -maxPan) this.panX = -maxPan;
         if (this.panY > maxPanY) this.panY = maxPanY;
@@ -153,7 +322,7 @@ export class Renderer {
         ctx.translate(this.panX + this.shakeX, this.panY + this.shakeY);
         ctx.scale(this.scale, this.scale);
 
-        this.drawGridDots(grid);
+        this.drawBoardShape();
         this.drawWalls(grid);
 
         // Viewport culling bounds for performance
@@ -188,9 +357,10 @@ export class Renderer {
             if (path.state === ArrowState.REMOVING) this.drawPath(path, false, true);
         }
 
+        this.drawBlockedFeedback();
+
         // Particles in world space
-        this.ambientParticles.draw(ctx);
-        this.burstParticles.draw(ctx);
+        if (!this.reducedMotion) this.burstParticles.draw(ctx);
 
         ctx.restore();
 
@@ -308,203 +478,135 @@ export class Renderer {
     }
 
     _buildPathPoints(path, metrics) {
-        const cells = path.cells;
-        if (cells.length === 0) return { points: [], tipX: 0, tipY: 0 };
-
-        const points = [];
-        const cs = this.cellSize;
-        const headSize = metrics.headSize;
-
-        if (cells.length === 1) {
-            const c = this._cellCenter(cells[0]);
-            const { dx, dy } = getDirectionVector(path.direction);
-            const halfLen = cs * 0.35;
-            points.push({ x: c.x - dx * halfLen, y: c.y - dy * halfLen });
-            const tipX = c.x + dx * halfLen;
-            const tipY = c.y + dy * halfLen;
-            points.push({ x: tipX - dx * headSize * 0.6, y: tipY - dy * headSize * 0.6 });
-            return { points, tipX, tipY };
-        }
-
-        // Tail extension
-        const first = this._cellCenter(cells[0]);
-        const second = this._cellCenter(cells[1]);
-        const dx0 = Math.sign(second.x - first.x);
-        const dy0 = Math.sign(second.y - first.y);
-        points.push({ x: first.x - dx0 * cs * 0.42, y: first.y - dy0 * cs * 0.42 });
-
-        // Cell centers
-        for (const cell of cells) points.push(this._cellCenter(cell));
-
-        // Head extension
-        const last = this._cellCenter(cells[cells.length - 1]);
-        const { dx: adx, dy: ady } = getDirectionVector(path.direction);
-        const tipX = last.x + adx * cs * 0.42;
-        const tipY = last.y + ady * cs * 0.42;
-        points.push({ x: tipX - adx * headSize * 0.55, y: tipY - ady * headSize * 0.55 });
-
-        return { points, tipX, tipY };
+        if (!path.cells.length) return { points: [], tipX: 0, tipY: 0 };
+        const geometry = path._visualGeometry || sampleArrowMotion(createArrowRoute(path.cells, path.direction));
+        const shaft = arrowShaftPoints(geometry, metrics.headSize * 0.70 / this.cellSize);
+        const project = point => ({
+            x: this.gridOffsetX + point.x * this.cellSize,
+            y: this.gridOffsetY + point.y * this.cellSize,
+        });
+        const tip = project(geometry.tip);
+        return { points: shaft.map(project), tipX: tip.x, tipY: tip.y };
     }
 
-    drawPath(path, isRemovable = false, isRemoving = false) {
+    _getPathColor(path) {
+        const colors = this.theme.background === BOARD_VISUALS.darkBackground ? ARROW_DARK_COLORS : ARROW_COLORS;
+        return path._flashColor || colors[arrowColorVariant(path)];
+    }
+
+    drawPath(path) {
         const ctx = this.ctx;
-        if (path.cells.length === 0) return;
-
-        // Snake animation: only draw visible cells
-        if (path._snakeCellStates) {
-            this._drawSnakePath(path);
-            return;
-        }
-
+        if (!path.cells.length) return;
         const metrics = this._getArrowMetrics();
-        const color = isRemoving ? (path._flashColor || this.theme.arrowRemoving) : this.theme.arrowIdle;
+        const color = this._getPathColor(path);
         const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
         if (points.length < 2) return;
 
-        // Touch press scale effect
-        let touchScale = 1;
-        let touchCx = 0, touchCy = 0;
-        if (this.touchFeedback && this.touchFeedback.path === path) {
-            const touchElapsed = performance.now() - this.touchFeedback.startTime;
-            if (touchElapsed < 100) {
-                const tp = touchElapsed / 100;
-                touchScale = 1 + 0.05 * Math.sin(tp * Math.PI);
-                // Compute centroid of path points for scale origin
-                for (const pt of points) { touchCx += pt.x; touchCy += pt.y; }
-                touchCx /= points.length;
-                touchCy /= points.length;
-            } else {
-                this.touchFeedback = null;
-            }
-        }
-
-        if (touchScale !== 1) {
-            ctx.save();
-            ctx.translate(touchCx, touchCy);
-            ctx.scale(touchScale, touchScale);
-            ctx.translate(-touchCx, -touchCy);
-        }
-
-        // Removable glow
-        if (isRemovable) {
-            ctx.strokeStyle = this.theme.removableGlow;
-            ctx.lineWidth = metrics.width + 8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            this._strokePoints(ctx, points);
-
-            // Subtle pulse glow for removable arrows
-            if (this.animTime > 0) {
-                const pulse = 0.5 + 0.5 * Math.sin(this.animTime / 800);
-                const glowAlpha = 0.04 + pulse * 0.06;
-                ctx.strokeStyle = `rgba(100,70,30,${glowAlpha})`;
-                ctx.lineWidth = metrics.width + 6;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                this._strokePoints(ctx, points);
-            }
-        }
-
-        // Main line with chapter-based style
-        // Main line - clean solid style
-        const style = this.arrowStyle;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = style.lineWidth * this.cellSize;
+        ctx.save();
+        ctx.globalAlpha = path._visualGeometry?.alpha ?? 1;
+        // One under-stroke gives the whole arrow depth, including its bends.
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        ctx.save();
+        ctx.translate(0, 0.8 / this.scale);
+        ctx.strokeStyle = this.theme.background === BOARD_VISUALS.darkBackground ? 'rgba(0,0,0,0.22)' : 'rgba(45,40,25,0.15)';
+        ctx.lineWidth = metrics.width + 1.4 / this.scale;
         this._strokePoints(ctx, points);
+        this._drawArrowHead(ctx, tipX, tipY, path.direction, ctx.strokeStyle, metrics);
+        ctx.restore();
 
-        // Arrow head
+        ctx.strokeStyle = color;
+        ctx.lineWidth = metrics.width;
+        this._strokePoints(ctx, points);
         this._drawArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
-
-        // Tail rounded cap
-        const tail = points[0];
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(tail.x, tail.y, (style.lineWidth * this.cellSize) * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (touchScale !== 1) {
+        // A carved center ridge and two facets give the paths a material
+        // surface. The solid body stays dominant, including on tiny boards.
+        if (!path._flashColor) {
+            ctx.save();
+            ctx.translate(0, -metrics.width * 0.17);
+            ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+            ctx.lineWidth = Math.max(0.65 / this.scale, metrics.width * 0.22);
+            this._strokePoints(ctx, points);
             ctx.restore();
+            this._drawArrowFacets(ctx, tipX, tipY, path.direction, metrics);
+            this._drawTailBands(ctx, points, metrics);
+        }
+        ctx.restore();
+    }
+
+    _drawArrowFacets(ctx, tipX, tipY, direction, metrics) {
+        const {dx,dy} = getDirectionVector(direction);
+        const baseX = tipX - dx * metrics.headSize;
+        const baseY = tipY - dy * metrics.headSize;
+        const spread = metrics.headSize * metrics.headSpread;
+        for (const [side, color] of [[1,'rgba(255,255,255,0.24)'],[-1,'rgba(0,0,0,0.13)']]) {
+            ctx.beginPath();
+            ctx.moveTo(tipX,tipY);
+            ctx.lineTo(baseX - dy * spread * side,baseY + dx * spread * side);
+            ctx.lineTo(baseX,baseY);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
         }
     }
 
-    _drawSnakePath(path) {
-        const ctx = this.ctx;
-        const metrics = this._getArrowMetrics();
-        const states = path._snakeCellStates;
-        const color = this.theme.arrowRemoving || '#c04030';
-
-        // Collect visible cells with their alpha
-        const visibleCells = [];
-        for (let i = 0; i < path.cells.length; i++) {
-            if (!states[i].visible) continue;
-            visibleCells.push({ cell: path.cells[i], alpha: states[i].alpha, idx: i });
-        }
-        if (visibleCells.length === 0) return;
-
-        // Use min alpha of all visible cells for consistent look
-        const minAlpha = Math.min(...visibleCells.map(v => v.alpha));
-        ctx.globalAlpha = minAlpha;
-
-        // Build a temporary path object with only visible cells for normal drawing
-        const tempPath = {
-            cells: visibleCells.map(v => v.cell),
-            direction: path.direction,
-            colorIndex: path.colorIndex,
-            _flashColor: null,
-        };
-
-        // Draw using normal path rendering
-        const { points, tipX, tipY } = this._buildPathPoints(tempPath, metrics);
-        if (points.length >= 2) {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = metrics.width;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            this._strokePoints(ctx, points);
-            this._drawArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
-
-            // Tail cap
-            const tail = points[0];
-            ctx.fillStyle = color;
+    _drawTailBands(ctx, points, metrics) {
+        if (this.cellSize * this.scale < 24 || points.length < 2) return;
+        const tail = points[0], next = points[1];
+        const length = Math.hypot(next.x-tail.x,next.y-tail.y);
+        if (length < metrics.width * 3) return;
+        const dx=(next.x-tail.x)/length,dy=(next.y-tail.y)/length;
+        ctx.strokeStyle='rgba(255,255,255,0.44)';
+        ctx.lineWidth=Math.max(0.65/this.scale,metrics.width*0.15);
+        for (const distance of [metrics.width*0.8,metrics.width*1.5]) {
+            const x=tail.x+dx*distance,y=tail.y+dy*distance;
             ctx.beginPath();
-            ctx.arc(tail.x, tail.y, metrics.width * 0.5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.moveTo(x-dy*metrics.width*0.36,y+dx*metrics.width*0.36);
+            ctx.lineTo(x+dy*metrics.width*0.36,y-dx*metrics.width*0.36);
+            ctx.stroke();
         }
-
-        ctx.globalAlpha = 1;
     }
 
     _strokePoints(ctx, points) {
+        if (points.length < 2) return;
+        // Ignore collinear cell centers so each elbow gets one smooth curve.
+        const bends = points.filter((point, i) => {
+            if (i === 0 || i === points.length - 1) return true;
+            const previous = points[i - 1], next = points[i + 1];
+            const ax = point.x - previous.x, ay = point.y - previous.y;
+            const bx = next.x - point.x, by = next.y - point.y;
+            return Math.abs(ax * by - ay * bx) > 1e-7 || ax * bx + ay * by < 0;
+        });
+        const radius = this.cellSize * 0.20;
         ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.moveTo(bends[0].x, bends[0].y);
+        for (let i = 1; i < bends.length - 1; i++) {
+            const before = bends[i - 1], corner = bends[i], after = bends[i + 1];
+            const inLength = Math.hypot(corner.x - before.x, corner.y - before.y);
+            const outLength = Math.hypot(after.x - corner.x, after.y - corner.y);
+            const r = Math.min(radius, inLength / 2, outLength / 2);
+            const enter = { x: corner.x - (corner.x - before.x) / inLength * r, y: corner.y - (corner.y - before.y) / inLength * r };
+            const leave = { x: corner.x + (after.x - corner.x) / outLength * r, y: corner.y + (after.y - corner.y) / outLength * r };
+            ctx.lineTo(enter.x, enter.y);
+            ctx.quadraticCurveTo(corner.x, corner.y, leave.x, leave.y);
+        }
+        const end = bends[bends.length - 1];
+        ctx.lineTo(end.x, end.y);
         ctx.stroke();
     }
 
-    _drawArrowHead(ctx, tipX, tipY, direction, color, metrics) {
+    _drawArrowHead(ctx, tipX, tipY, direction, color, metrics, outline = null) {
         const size = metrics.headSize;
         const spread = size * metrics.headSpread;
         const { dx, dy } = getDirectionVector(direction);
-
-        let p1, p2, p3;
-        if (dx !== 0) {
-            p1 = { x: tipX + dx * 1, y: tipY };
-            p2 = { x: tipX - dx * size, y: tipY - spread };
-            p3 = { x: tipX - dx * size, y: tipY + spread };
-        } else {
-            p1 = { x: tipX, y: tipY + dy * 1 };
-            p2 = { x: tipX - spread, y: tipY - dy * size };
-            p3 = { x: tipX + spread, y: tipY - dy * size };
-        }
-
+        const baseX = tipX - dx * size, baseY = tipY - dy * size;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(baseX - dy * spread, baseY + dx * spread);
+        ctx.lineTo(baseX + dy * spread, baseY - dx * spread);
         ctx.closePath();
+        if (outline) { ctx.strokeStyle = outline; ctx.lineWidth = 2.4 / this.scale; ctx.lineJoin = 'round'; ctx.stroke(); }
         ctx.fill();
     }
 
@@ -535,59 +637,40 @@ export class Renderer {
     }
 
     drawHintHighlight(path) {
-        const ctx = this.ctx;
-        ctx.save();
-        ctx.translate(this.panX, this.panY);
-        ctx.scale(this.scale, this.scale);
-
-        for (const cell of path.cells) {
-            const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
-            const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
-            ctx.strokeStyle = this.theme.hintColor;
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([4, 3]);
-            ctx.beginPath();
-            ctx.arc(cx, cy, this.cellSize * 0.35, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-
-        ctx.setLineDash([]);
-        ctx.restore();
+        this.drawPreviewHalo(path);
     }
 
     // Predictive selection halo. Drawn under the player's finger from
     // touchstart until touchend so they can SEE the arrow that will fire
     // and slide their finger to a different one if it landed wrong.
-    // Bright pulsing yellow ring around every cell of the path; the ring
-    // is wider than the cell so it stays visible even with thick arrows.
+    // A white edge and orange center follow the complete arrow continuously.
     drawPreviewHalo(path) {
         if (!path || !path.cells || path.cells.length === 0) return;
         const ctx = this.ctx;
         ctx.save();
-        ctx.translate(this.panX, this.panY);
+        ctx.translate(this.panX + this.shakeX, this.panY + this.shakeY);
         ctx.scale(this.scale, this.scale);
-        const phase = (performance.now() % 800) / 800;
-        const pulse = 0.7 + 0.3 * (0.5 - 0.5 * Math.cos(phase * Math.PI * 2));
-        ctx.strokeStyle = `rgba(255,210,80,${0.55 * pulse + 0.35})`;
-        ctx.lineWidth = Math.max(2, this.cellSize * 0.06);
-        ctx.shadowColor = 'rgba(255,210,80,0.85)';
-        ctx.shadowBlur = 14 * pulse;
-        for (const cell of path.cells) {
-            const cx = this.gridOffsetX + cell.x * this.cellSize + this.cellSize / 2;
-            const cy = this.gridOffsetY + cell.y * this.cellSize + this.cellSize / 2;
-            ctx.beginPath();
-            ctx.arc(cx, cy, this.cellSize * 0.45, 0, Math.PI * 2);
-            ctx.stroke();
+        {
+            // One continuous mark follows the selected arrow. Its head ring
+            // stays within its cell; no glow spills over adjacent arrows.
+            const metrics = this._getArrowMetrics();
+            const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = BOARD_VISUALS.selectedEdge;
+            ctx.lineWidth = Math.min(this.cellSize * 0.40, metrics.width + 4 / this.scale);
+            this._strokePoints(ctx, points);
+            ctx.strokeStyle = BOARD_VISUALS.selected;
+            ctx.lineWidth = Math.min(this.cellSize * 0.28, metrics.width + 1 / this.scale);
+            this._strokePoints(ctx, points);
+            this._drawArrowHead(ctx, tipX, tipY, path.direction, BOARD_VISUALS.selected, metrics, BOARD_VISUALS.selectedEdge);
+            ctx.restore();
+            return;
         }
-        ctx.restore();
     }
 
-    // Onboarding pointer: pulsing finger emoji centred on the head cell of
-    // the path the new player should tap next. Stronger visual than the
-    // dashed hint circle (which is meant for "stuck on a level" rescue),
-    // because we want the player to immediately understand "tap this
-    // arrow". Drawn on top of all other elements; positioned in grid
-    // coords so pinch-zoom + pan keep it locked to the right arrow.
+    // A quiet ring guides the first taps without hiding the arrow head.
+    // Board coordinates keep it anchored through pinch zoom and panning.
     drawOnboardingPointer(path) {
         if (!path || !path.cells || path.cells.length === 0) return;
         const ctx = this.ctx;
@@ -599,69 +682,56 @@ export class Renderer {
         const cy = this.gridOffsetY + head.y * this.cellSize + this.cellSize / 2;
         // Pulse: 600 ms cycle, 0.85x..1.15x scale.
         const phase = (performance.now() % 600) / 600;
-        const pulse = 0.85 + 0.30 * (0.5 - 0.5 * Math.cos(phase * Math.PI * 2));
+        const pulse = this.reducedMotion ? 1 : 0.92 + 0.16 * (0.5 - 0.5 * Math.cos(phase * Math.PI * 2));
         const ring = this.cellSize * 0.55 * pulse;
-        // Glowing halo behind the emoji so it pops on busy backgrounds.
-        ctx.shadowColor = 'rgba(255,210,80,0.95)';
-        ctx.shadowBlur = 18 * pulse;
-        ctx.fillStyle = 'rgba(255,210,80,0.20)';
+        // Keep the arrow head visible: a quiet ring carries the cue.
+        ctx.strokeStyle = BOARD_VISUALS.accent;
+        ctx.lineWidth = Math.min(this.cellSize * 0.06, 2 / this.scale);
         ctx.beginPath();
         ctx.arc(cx, cy, ring, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        // Pointing finger emoji centred above the cell. Slightly larger
-        // than the cell so it's visible even at small cell sizes.
-        const fontPx = Math.max(28, this.cellSize * 1.1);
-        ctx.font = `${fontPx}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('👆', cx, cy + this.cellSize * 0.15 * pulse);
+        ctx.stroke();
         ctx.restore();
     }
 
     getCellFromPoint(clientX, clientY) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = (clientX - rect.left - this.panX) / this.scale;
-        const y = (clientY - rect.top - this.panY) / this.scale;
-        return {
-            gridX: Math.floor((x - this.gridOffsetX) / this.cellSize),
-            gridY: Math.floor((y - this.gridOffsetY) / this.cellSize)
-        };
+        const { fx, fy } = this.getFractionalCellFromPoint(clientX, clientY);
+        return { gridX: Math.floor(fx), gridY: Math.floor(fy) };
     }
 
-    // Fractional grid coords for tap resolution. Integer Math.floor buckets
-    // the tap by cell boundary, which loses sub-cell offset — the caller uses
-    // (fx, fy) to measure true Euclidean distance to candidate path cells and
-    // pick the closest, so a tap near the edge of cell N goes to the arrow
-    // in cell N+1 instead of whichever arrow happens to own cell N.
+    // Invert the same CSS-pixel translation/zoom used by drawGrid; DPR is
+    // already handled by the backing store and must not be applied twice.
     getFractionalCellFromPoint(clientX, clientY) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = (clientX - rect.left - this.panX) / this.scale;
-        const y = (clientY - rect.top - this.panY) / this.scale;
-        return {
-            fx: (x - this.gridOffsetX) / this.cellSize,
-            fy: (y - this.gridOffsetY) / this.cellSize
-        };
+        const point = this._clientToCanvas(clientX, clientY);
+        const x = (point.x - this.panX - this.shakeX) / this.scale;
+        const y = (point.y - this.panY - this.shakeY) / this.scale;
+        return { fx: (x - this.gridOffsetX) / this.cellSize, fy: (y - this.gridOffsetY) / this.cellSize };
     }
 
     setTheme(theme, chapterId) {
         Object.assign(this.theme, theme);
+        Object.assign(this.theme, {
+            background: BOARD_VISUALS.background,
+            backgroundGradient: BOARD_VISUALS.gradient,
+            arrowIdle: BOARD_VISUALS.ink,
+            arrowRemoving: BOARD_VISUALS.accent,
+            arrowRemoved: 'rgba(35,77,72,0.08)',
+            hintColor: BOARD_VISUALS.accent,
+        });
         this.chapterId = chapterId || 1;
         this.arrowStyle = getArrowStyle(this.chapterId);
         this.gridStyle = getGridStyle();
         this.ambientParticles.clear();
         this.burstParticles.clear();
-        this._loadBgImage(this.chapterId);
         this._applyDarkMode();
     }
 
     _applyDarkMode() {
         if (!document.body.classList.contains('dark-mode')) return;
-        this.theme.backgroundGradient = ['#1a1a2e', '#0e0e1a'];
-        this.theme.background = '#121220';
+        this.theme.backgroundGradient = BOARD_VISUALS.darkGradient;
+        this.theme.background = BOARD_VISUALS.darkBackground;
         this.theme.gridDot = 'rgba(180,160,120,0.08)';
-        this.theme.arrowIdle = '#c4b896';
-        this.theme.arrowRemovable = '#c4b896';
+        this.theme.arrowIdle = BOARD_VISUALS.darkInk;
+        this.theme.arrowRemovable = BOARD_VISUALS.darkInk;
         this.theme.arrowRemoving = '#e06050';
         this.theme.arrowRemoved = 'rgba(180,160,120,0.06)';
         this.theme.removableGlow = 'rgba(200,180,120,0.1)';
@@ -699,50 +769,8 @@ export class Renderer {
         this._lastTime = time;
         this.animTime = time;
 
-        this.ambientParticles.update(dt);
-        this.burstParticles.update(dt);
-
-        this._ambientTimer -= dt;
-        if (this._ambientTimer <= 0) {
-            this._spawnAmbientParticle();
-            this._ambientTimer = 0.3 + Math.random() * 0.4;
-        }
-    }
-
-    _spawnAmbientParticle() {
-        let config = AMBIENT_PARTICLES[this.chapterId];
-        if (!config) return;
-
-        if (config.mixed) {
-            const idx = config.cycle[Math.floor(Math.random() * config.cycle.length)];
-            config = AMBIENT_PARTICLES[idx];
-        }
-
-        if (this.ambientParticles.count >= (config.count || 15)) return;
-
-        const w = this.canvas.width / (window.devicePixelRatio || 1);
-        const h = this.canvas.height / (window.devicePixelRatio || 1);
-        let x, y;
-
-        switch (config.spawnArea) {
-            case 'top':    x = Math.random() * w; y = -10; break;
-            case 'bottom': x = Math.random() * w; y = h + 10; break;
-            case 'left':   x = -10; y = Math.random() * h; break;
-            case 'random': x = Math.random() * w; y = Math.random() * h; break;
-            default:       x = Math.random() * w; y = -10;
-        }
-
-        const vx = (Math.random() - 0.3) * (config.vx || 10);
-        const vy = config.vy || 10;
-
-        this.ambientParticles.spawn(x, y, vx, vy, {
-            life: config.life || 4,
-            size: config.size || 2,
-            color: config.color || '#ffffff',
-            gravity: config.gravity || 0,
-            rotationSpeed: 1,
-            shape: config.shape || 'circle',
-        });
+        if (this.reducedMotion) this.burstParticles.clear();
+        else this.burstParticles.update(dt);
     }
 
     setVignetteAlpha(alpha) {
@@ -762,6 +790,7 @@ export class Renderer {
     }
 
     showCrackEffect(cx, cy) {
+        if (this.reducedMotion) return;
         this._crackEffect = { cx, cy, start: performance.now(), duration: 300 };
     }
 

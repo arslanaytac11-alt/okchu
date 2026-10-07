@@ -1,6 +1,6 @@
 // js/main.js
 
-import { Game } from './game.js?v=4';
+import { Game } from './game.js?v=6';
 import { ScreenManager } from './screens.js?v=3';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
@@ -11,9 +11,12 @@ import { checkAchievements, getAllAchievements, getAchievementStats } from './ac
 import { allLevels } from './levels.js';
 import { maybeShowIosInstall } from './pwa-install.js';
 import { shouldShowRatePrompt, showRatePrompt } from './rate-us.js';
-import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded } from './ads.js';
+import { initAds, showBanner, hideBanner, noteLevelCompleted, maybeShowInterstitial, showRewarded, showAdPrivacyOptions, isAdPrivacyOptionsRequired } from './ads.js';
 import { initIAP, buyPremium, restorePurchases, onPremiumOwned, isPremiumOwned } from './iap.js';
 import { notifySuccess, tapLight } from './haptics.js';
+import { renderEgyptResult } from './egypt-story.js';
+import { installDialogFocus } from './dialog-focus.js';
+import { createLaunchScheduler } from './launch-scheduler.js';
 
 // Fire-and-forget AdMob init. Safe on web (no-op) and iOS (native plugin).
 // CRITICAL: location.hostname is "localhost" inside the Capacitor iOS shell
@@ -23,20 +26,22 @@ import { notifySuccess, tapLight } from './haptics.js';
 // revenue + AdMob risk). Detect the native platform first; only fall back
 // to test mode in real browser dev (localhost / file:// / http://).
 const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+document.body.dataset.webPreview = String(!isNativeApp);
 const isWebDev = !isNativeApp && (
     location.hostname === 'localhost' ||
     location.hostname === '127.0.0.1' ||
     location.protocol === 'file:' ||
     location.protocol === 'http:'
 );
-initAds({ testMode: isWebDev });
+const isNativeDebug = isNativeApp && window.Capacitor.DEBUG === true;
+initAds({ testMode: isWebDev || isNativeDebug });
 
 // Silence non-critical console output in production. Keeps the iOS device-log
 // clean during App Review (Apple looks at it) and prevents accidental data
 // leakage if any future log statement includes user state. console.error is
 // preserved so genuine crashes still surface to anyone debugging via Safari
 // remote inspector.
-if (isNativeApp || (!isWebDev && location.protocol === 'https:')) {
+if ((isNativeApp && !isNativeDebug) || (!isNativeApp && !isWebDev && location.protocol === 'https:')) {
     const noop = () => {};
     console.log = noop;
     console.warn = noop;
@@ -48,7 +53,9 @@ if (isNativeApp || (!isWebDev && location.protocol === 'https:')) {
 // Also wires the entitlement callback: on successful purchase/restore we hide
 // the active banner immediately so the user sees the ad removal instantly.
 onPremiumOwned(() => {
+    document.body.dataset.premium = 'true';
     hideBanner();
+    requestAnimationFrame(() => game.handleResize());
     const overlay = document.getElementById('overlay-premium');
     if (overlay) overlay.classList.add('hidden');
     // The main-menu "Remove Ads" CTA has no purpose once the purchase
@@ -57,12 +64,24 @@ onPremiumOwned(() => {
     if (cta) cta.classList.add('hidden');
 });
 initIAP();
+document.body.dataset.premium = String(isPremiumOwned());
+
+// Keep native status icons readable when the player changes the in-game theme.
+function syncNativeStatusBar() {
+    if (!isNativeApp) return;
+    try {
+        const plugin = window.Capacitor.Plugins?.StatusBar || window.Capacitor.registerPlugin?.('StatusBar');
+        Promise.resolve(plugin?.setStyle({style:document.body.classList.contains('dark-mode') ? 'DARK' : 'LIGHT'})).catch(() => {});
+    } catch {}
+}
 
 // Dark mode
 if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
+syncNativeStatusBar();
 document.getElementById('btn-dark-mode').addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    syncNativeStatusBar();
     // Re-apply theme to canvas if in game
     if (game.currentChapter) {
         game.renderer.setTheme(game.currentChapter.theme, game.currentChapter.id);
@@ -103,7 +122,7 @@ function applyTranslations() {
     if (langBtn) langBtn.textContent = getLang().toUpperCase();
 }
 
-initLanguage().then(() => applyTranslations());
+initLanguage().then(() => { applyTranslations(); screenManager.updateMenuDashboard(); });
 
 // Language picker
 document.getElementById('btn-language').addEventListener('click', () => {
@@ -123,6 +142,7 @@ document.querySelectorAll('.lang-option').forEach(btn => {
     btn.addEventListener('click', async () => {
         await loadLanguage(btn.dataset.lang);
         applyTranslations();
+        screenManager.updateMenuDashboard();
         const overlay = document.getElementById('overlay-language');
         overlay.classList.add('hidden');
         overlay.classList.remove('first-launch');
@@ -130,6 +150,8 @@ document.querySelectorAll('.lang-option').forEach(btn => {
         if (document.getElementById('screen-chapters').classList.contains('active')) {
             screenManager.showChapters();
         }
+        if (document.getElementById('screen-levels').classList.contains('active') && screenManager.currentChapter) screenManager.showLevels(screenManager.currentChapter);
+        if (document.getElementById('screen-story').classList.contains('active') && screenManager.currentChapter) screenManager.showStory(screenManager.currentChapter);
         if (postLangPickCallback) {
             const cb = postLangPickCallback;
             postLangPickCallback = null;
@@ -153,7 +175,7 @@ setTimeout(() => {
     if (!hasSavedLanguage()) {
         showFirstLaunchLanguagePicker();
     }
-}, 2300);
+}, 650);
 
 function showFirstLaunchLanguagePicker() {
     const overlay = document.getElementById('overlay-language');
@@ -165,13 +187,58 @@ function showFirstLaunchLanguagePicker() {
     postLangPickCallback = () => {
         // After language chosen, immediately run the onboarding tutorial
         // so the rules are taught in the picked language.
-        if (tutorial.shouldShow()) tutorial.show(() => {});
+        if (tutorial.shouldShow()) tutorial.show(() => {
+            const firstLevel = allLevels.find(level => level.id === 'egypt_1');
+            if (firstLevel && !storage.isLevelCompleted(firstLevel.id)) {
+                screenManager.currentChapter = chapters[0];
+                screenManager.onStartLevel?.(firstLevel, chapters[0]);
+            }
+        });
     };
 }
 
 const canvas = document.getElementById('game-canvas');
 const game = new Game(canvas);
 const screenManager = new ScreenManager();
+const launchScheduler = createLaunchScheduler({
+    isActive: () => document.getElementById('screen-game').classList.contains('active'),
+    start: (level, chapter, options) => {
+        game.startLevel(level, chapter, options);
+        const emblem = document.getElementById('game-chapter-emblem');
+        if (emblem) {
+            emblem.src = chapter?.artwork?.image || chapter?.backgroundImage || `assets/backgrounds/bg-${storage.getChapterPrefix(chapter?.id)}.jpg`;
+            emblem.style.objectPosition = chapter?.artwork?.focal || 'center';
+        }
+        const label = document.getElementById('board-chapter-label');
+        const chapterNameKey = `civilizations.${chapter?.id}.name`;
+        const chapterName = t(chapterNameKey);
+        if (label) label.textContent = chapterName === chapterNameKey ? chapter?.name || '' : chapterName;
+    },
+});
+const originalShowScreen = screenManager.showScreen.bind(screenManager);
+screenManager.showScreen = name => {
+    if (name !== 'game') launchScheduler.cancel();
+    return originalShowScreen(name);
+};
+installDialogFocus();
+const movesObserver = new MutationObserver(() => {
+    const progress = document.getElementById('board-progress-label');
+    if (progress) progress.textContent = document.getElementById('game-moves').textContent;
+});
+movesObserver.observe(document.getElementById('game-moves'), {childList:true, subtree:true, characterData:true});
+document.getElementById('btn-fit-board')?.addEventListener('click', () => {
+    game.renderer.resetView(game.grid);
+    if (game.grid) game.renderer.drawGrid(game.grid);
+});
+// A fold, rotation, split view, or toolbar change can resize the stage without a window resize.
+if (typeof ResizeObserver !== 'undefined') {
+    let resizeFrame = 0;
+    const observer = new ResizeObserver(() => {
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(() => game.handleResize());
+    });
+    observer.observe(canvas.parentElement);
+}
 
 // Back-from-game routing — daily challenges are launched straight from the
 // main menu, so hitting Back on a daily puzzle must return to the menu.
@@ -180,11 +247,12 @@ screenManager.getGameBackTarget = () => {
     if (game._isDailyChallenge) {
         game._isDailyChallenge = false;
         game._dailyModifier = null;
-        game._stopTimer?.();
+        game.leaveLevel();
         const badge = document.getElementById('daily-modifier-badge');
         if (badge) { badge.classList.add('hidden'); badge.textContent = ''; }
         return 'menu';
     }
+    game.leaveLevel();
     return 'levels';
 };
 
@@ -210,16 +278,21 @@ if (freezePowerBtn) {
     });
 }
 // Dev-only console shortcut. Skip on the iOS Capacitor shell (capacitor:// scheme)
-// and on the live PWA — both are "production". Only expose on localhost / file://
-// where it actually helps debugging.
-if (typeof window !== 'undefined') {
-    const host = location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1' || host === '') {
-        window.__DEBUG__ = { game, screenManager, chapters, storage };
-    }
+// and on the live PWA — both are "production". Only expose in an actual web preview or native Debug build.
+if (isWebDev || isNativeDebug) {
+    window.__DEBUG__ = { game, screenManager, chapters, storage };
 }
 const livesDisplay = document.getElementById('lives-display');
 const tutorial = new Tutorial();
+
+const adPrivacyButton = document.getElementById('btn-ad-privacy');
+const updateAdPrivacyButton = () => adPrivacyButton?.classList.toggle('hidden', !isAdPrivacyOptionsRequired());
+document.addEventListener('okchu:ad-privacy', updateAdPrivacyButton);
+updateAdPrivacyButton();
+adPrivacyButton?.addEventListener('click', async () => {
+    adPrivacyButton.disabled = true;
+    try { await showAdPrivacyOptions(); } finally { adPrivacyButton.disabled = false; }
+});
 
 let noLivesTimerInterval = null;
 
@@ -233,6 +306,7 @@ game.livesManager.renderLives(livesDisplay);
 // so users see the correct life count + remaining time the instant they
 // return from the home screen / multitasker.
 document.addEventListener('visibilitychange', () => {
+    game.handleVisibilityChange(document.visibilityState !== 'visible');
     if (document.visibilityState !== 'visible') return;
     try {
         game.livesManager.renderLives(livesDisplay);
@@ -253,34 +327,15 @@ document.addEventListener('visibilitychange', () => {
             // overlay so the user can play immediately.
             if (game.livesManager.getCurrentLives() > 0) {
                 noLivesOverlay.classList.add('hidden');
+                if (document.getElementById('screen-game').classList.contains('active')) game.resumeLevel(game.timeRemaining);
             }
         }
     } catch {}
 });
 
-// Activate the in-game onboarding pointer for the player's very first
-// session. We light up the next removable arrow with a pulsing 👆 emoji
-// for the first 3 correct taps on Egypt level 1, then it auto-dismisses
-// permanently (flag persisted to localStorage). The tutorial overlay
-// teaches the concept; the in-game pointer locks it in by guiding the
-// hand through actual taps. Style cribbed from Royal Match / Arrows
-// Puzzle, which use the same "show me where to tap" technique to lower
-// onboarding drop-off.
-function maybeActivateOnboarding(levelData, chapterData) {
-    try {
-        if (localStorage.getItem('okchu_onboarding_done') === '1') return;
-        // levelData.id is a STRING ("egypt_1"), so compare via level number
-        // within chapter. Previously compared `levelData.id !== 1` (number)
-        // which was always true and silently disabled onboarding.
-        if (chapterData?.id !== 1 || levelData?.level !== 1) return;
-        game.onboardingActive = true;
-        game.onboardingTapsLeft = 3;
-    } catch {}
-}
-
 // When a level is selected from the menu
 screenManager.onStartLevel = (levelData, chapterData) => {
-    if (!game.livesManager.hasLives()) {
+    if (storage.getGameMode() !== 'zen' && !game.livesManager.hasLives()) {
         showNoLivesOverlay();
         return;
     }
@@ -295,22 +350,23 @@ screenManager.onStartLevel = (levelData, chapterData) => {
         tutorial.show(() => {
             screenManager.showScreen('game');
             game.livesManager.renderLives(livesDisplay);
-            maybeActivateOnboarding(levelData, chapterData);
-            setTimeout(() => game.startLevel(levelData, chapterData), 50);
+            launchScheduler.schedule(levelData, chapterData);
         });
         return;
     }
     screenManager.showScreen('game');
     game.livesManager.renderLives(livesDisplay);
-    maybeActivateOnboarding(levelData, chapterData);
-    setTimeout(() => game.startLevel(levelData, chapterData), 50);
+    launchScheduler.schedule(levelData, chapterData);
 };
 
 // When a level is completed
 game.onLevelComplete = (completedLevel, nextLevel, stats) => {
+    const completedEpoch = game._levelEpoch;
+    const isStillCompleted = () => game._levelEpoch === completedEpoch && game._outcome === 'complete' && !game._active;
+    renderEgyptResult(completedLevel, !!game._isDailyChallenge);
     const overlay = document.getElementById('overlay-complete');
     overlay.classList.remove('hidden');
-    showConfetti();
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) showConfetti();
 
     // Daily + achievements
     if (game._isDailyChallenge) {
@@ -320,17 +376,18 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
         game._dailyModifier = null;
         renderDailyBadge(null);
     }
-    setTimeout(() => checkAndShowAchievements(), 1500);
+    setTimeout(() => { if (isStillCompleted()) checkAndShowAchievements(); }, 1500);
 
     // iOS install banner + rate-us prompt — both gated behind progression
     // so new users aren't spammed. Staggered after the completion overlay so
     // the celebration lands first.
     setTimeout(() => {
+        if (!isStillCompleted()) return;
         const progress = storage.getProgress();
         maybeShowIosInstall((progress.completedLevels || []).length);
     }, 2500);
     setTimeout(() => {
-        if (shouldShowRatePrompt(getPlayerStats())) showRatePrompt();
+        if (isStillCompleted() && shouldShowRatePrompt(getPlayerStats())) showRatePrompt();
     }, 3500);
 
     // Animated stars
@@ -394,11 +451,19 @@ game.onLevelComplete = (completedLevel, nextLevel, stats) => {
     oldBtn.parentNode.replaceChild(nextBtn, oldBtn);
     noteLevelCompleted();
     nextBtn.addEventListener('click', async () => {
+        const completedEpoch = game._levelEpoch;
         overlay.classList.add('hidden');
         await maybeShowInterstitial();
+        // A slow native ad must not launch a puzzle after the player went
+        // back, retried, or opened another level while it was loading.
+        if (game._levelEpoch !== completedEpoch || !document.getElementById('screen-game').classList.contains('active')) return;
         if (nextLevel && nextLevel.chapter === completedLevel.chapter) {
             const chapter = chapters.find(c => c.id === nextLevel.chapter);
-            game.startLevel(nextLevel, chapter);
+            if (storage.isBossLocked(chapter.id, (nextLevel.level - 1) % 5 + 1)) {
+                screenManager.showLevels(chapter);
+            } else {
+                screenManager.onStartLevel?.(nextLevel, chapter);
+            }
         } else {
             screenManager.showChapters();
         }
@@ -449,9 +514,7 @@ game.onTimeUp = () => {
         try { earned = await showRewarded(); } catch { earned = false; }
         if (earned || adFailCount >= 2) {
             close();
-            game.timeRemaining = 60;
-            game._startCountdown();
-            game.startRenderLoop();
+            game.resumeLevel(60);
             return;
         }
         adFailCount++;
@@ -527,6 +590,7 @@ function showNoLivesOverlay() {
     const adBtn = freshen('btn-watch-ad');
     const waitBtn = freshen('btn-wait');
 
+    game.leaveLevel();
     overlay.classList.remove('hidden');
 
     if (noLivesTimerInterval) clearInterval(noLivesTimerInterval);
@@ -575,6 +639,7 @@ function showNoLivesOverlay() {
             game.livesManager.addLife();
             game.livesManager.renderLives(livesDisplay);
             closeOverlay();
+            if (document.getElementById('screen-game').classList.contains('active')) game.resumeLevel(game.timeRemaining);
             return;
         }
         adFailCount++;
@@ -585,6 +650,7 @@ function showNoLivesOverlay() {
             game.livesManager.addLife();
             game.livesManager.renderLives(livesDisplay);
             closeOverlay();
+            if (document.getElementById('screen-game').classList.contains('active')) game.resumeLevel(game.timeRemaining);
             return;
         }
         adBtn.disabled = false;
@@ -608,7 +674,7 @@ if (hintBtn) hintBtn.addEventListener('click', () => game.useHint());
 window.addEventListener('resize', () => game.handleResize());
 
 // Register service worker for PWA
-if ('serviceWorker' in navigator) {
+if (!isNativeApp && 'serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
@@ -618,6 +684,7 @@ document.getElementById('btn-daily').addEventListener('click', () => {
         alert(t('daily.already_done') || 'Bugunun meydan okumasini zaten tamamladin! Yarin tekrar gel.');
         return;
     }
+    if (!game.livesManager.hasLives()) { showNoLivesOverlay(); return; }
     const daily = getDailyChallenge(allLevels);
     const chapter = chapters.find(c => c.id === daily.level.chapter);
     screenManager.showScreen('game');
@@ -625,7 +692,7 @@ document.getElementById('btn-daily').addEventListener('click', () => {
     game._isDailyChallenge = true;
     game._dailyModifier = daily.modifier;
     renderDailyBadge(daily.modifier);
-    setTimeout(() => game.startLevel(daily.level, chapter, { dailyModifier: daily.modifier }), 50);
+    launchScheduler.schedule(daily.level, chapter, { dailyModifier: daily.modifier, gameMode: 'classic' });
 });
 
 // Render the daily modifier badge on the game screen. Clears on non-daily.
@@ -737,12 +804,6 @@ const COLLECTION_ICONS = {
     1: '\u{1F3DB}', 2: '\u{1F3DB}', 3: '\u{2694}', 4: '\u{26F5}', 5: '\u{1F319}',
     6: '\u{1F409}', 7: '\u{1F4C5}', 8: '\u{1F54C}', 9: '\u{1F3F0}', 10: '\u{1F451}'
 };
-const COLLECTION_NAMES = {
-    1: 'Firavun Mührü', 2: 'Zeus Asası', 3: 'Lejyon Kalkanı', 4: 'Viking Baltası',
-    5: 'Osmanlı Tuğrası', 6: 'Çin Ejderi', 7: 'Maya Takvimi', 8: 'Lotus Çiçeği',
-    9: 'Gotik Haç', 10: 'Bilgelik Tacı'
-};
-
 document.getElementById('btn-collection').addEventListener('click', () => {
     const list = document.getElementById('collection-list');
     list.innerHTML = '';
@@ -752,11 +813,11 @@ document.getElementById('btn-collection').addEventListener('click', () => {
         const item = document.createElement('div');
         item.className = 'collection-item' + (collected ? ' collected' : ' locked');
         const icon = COLLECTION_ICONS[chapter.id] || '\u{1F3FA}';
-        const name = COLLECTION_NAMES[chapter.id] || chapter.name;
+        const name = t(`collection.names.${chapter.id}`);
         item.innerHTML = `
             <div class="collection-icon">${collected ? icon : '\u{1F512}'}</div>
             <div class="collection-name">${name}</div>
-            <div class="collection-chapter">${chapter.name}</div>
+            <div class="collection-chapter">${t(`civilizations.${chapter.id}.name`)}</div>
             <div class="collection-progress">\u2605 ${Math.min(stars, 13)}/13</div>
         `;
         list.appendChild(item);
@@ -774,7 +835,10 @@ document.getElementById('btn-leaderboard').addEventListener('click', () => {
     list.innerHTML = '';
     const entries = storage.getWeeklyLeaderboard();
     if (entries.length === 0) {
-        list.innerHTML = '<p class="leaderboard-empty">Henüz skor yok. Günlük meydan okumayı oyna!</p>';
+        const empty = document.createElement('p');
+        empty.className = 'leaderboard-empty';
+        empty.textContent = t('leaderboard.empty');
+        list.appendChild(empty);
     } else {
         for (let i = 0; i < entries.length; i++) {
             const e = entries[i];
@@ -814,6 +878,7 @@ document.getElementById('btn-settings-close').addEventListener('click', () => {
 document.getElementById('setting-dark').addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    syncNativeStatusBar();
     document.getElementById('setting-dark').classList.toggle('active', document.body.classList.contains('dark-mode'));
 });
 

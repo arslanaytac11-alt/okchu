@@ -13,17 +13,33 @@
     "collection": "Collection",
     "leaderboard": "My Weekly Scores",
     "settings": "Settings",
-    "remove_ads": "✨ Remove Ads"
+    "remove_ads": "✨ Remove Ads",
+    "continue_title": "Continue your adventure",
+    "first_puzzle": "Solve your first puzzle",
+    "continue_subtitle": "{chapter} · Puzzle {level}"
   },
   "chapters": {
     "title": "Chapters",
-    "locked": "Locked"
+    "locked": "Locked",
+    "progress": "{completed}/{total} puzzles",
+    "unlock_requirement": "Earn {stars} stars in {chapter}",
+    "chapter_number": "Chapter {number}"
   },
   "levels": {
     "title": "Levels",
     "mode_classic": "Classic",
     "mode_timed": "Timed",
-    "mode_zen": "Zen"
+    "mode_zen": "Zen",
+    "puzzle_number": "Puzzle {number}",
+    "arrows": "{count} arrows",
+    "next": "Up next",
+    "completed": "Completed",
+    "ready": "Ready to play",
+    "boss": "Final puzzle",
+    "boss_requirement": "Earn {stars} stars in the first four puzzles",
+    "chapter_progress": "{completed}/{total} completed",
+    "shape": "Shape",
+    "star_count": "{stars}/3 stars"
   },
   "game": {
     "score": "Score",
@@ -33,23 +49,41 @@
     "undo": "Undo",
     "canvas_label": "Arrow puzzle game area. Tap arrows to remove them in the correct order.",
     "zoom_hint": "Pinch with two fingers to zoom",
-    "banner_label": "Ad Space"
+    "banner_label": "Ad Space",
+    "blocked_feedback": "Exit blocked. Clear the blocking arrow first.",
+    "guided_feedback": "Tap the marked arrow; its exit is clear."
   },
   "common": {
-    "close": "Close"
+    "close": "Close",
+    "back": "Back"
   },
   "settings": {
     "dark_mode": "Dark Mode",
     "reset_label": "Reset Progress",
     "reset_button": "Reset",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Use"
+    "terms": "Terms of Use",
+    "rate_app": "Rate on the App Store",
+    "ad_privacy": "Ad privacy choices"
   },
   "collection": {
-    "hint": "Collect 13+ stars in a chapter to unlock the artifact"
+    "hint": "Collect 13+ stars in a chapter to unlock the artifact",
+    "names": {
+      "1": "Pharaoh’s Seal",
+      "2": "Zeus’s Staff",
+      "3": "Legion Shield",
+      "4": "Viking Axe",
+      "5": "Ottoman Seal",
+      "6": "Chinese Dragon",
+      "7": "Maya Calendar",
+      "8": "Lotus Flower",
+      "9": "Gothic Cross",
+      "10": "Crown of Wisdom"
+    }
   },
   "leaderboard": {
-    "hint": "Your daily challenge scores from the last 7 days"
+    "hint": "Your daily challenge scores from the last 7 days",
+    "empty": "No scores yet. Try the daily challenge!"
   },
   "time_up": {
     "continue_ad": "Watch Ad + Continue"
@@ -123,16 +157,16 @@
   "tutorial": {
     "step1_title": "Welcome to Okchu!",
     "step1_text": "Your goal is to remove all arrows from the grid in the correct order.",
-    "step2_title": "Which Arrow to Tap?",
-    "step2_text": "An arrow can be removed if the path in the direction it points is clear. If another arrow blocks it, you can't tap it!",
+    "step2_title": "Which Arrow Can Leave?",
+    "step2_text": "An arrow can leave when its tip points toward a clear exit. If another arrow blocks it, remove the blocker first.",
     "step3_title": "Correct Move",
     "step3_text": "Tap a clear arrow and it slides off the screen like a snake. You earn points!",
     "step4_title": "Wrong Move",
-    "step4_text": "Tap a blocked arrow and you lose a life plus 5 seconds. You have 3 lives, be careful!",
+    "step4_text": "A blocked arrow costs one life in Classic and Timed. Zen has no penalty; try another arrow.",
     "step5_title": "Race Against Time",
-    "step5_text": "Each level has a time limit. Correct moves add +3 seconds. Use your time wisely!",
+    "step5_text": "Finish before time runs out in Classic and Timed. Zen has no time limit.",
     "step6_title": "Collect Stars",
-    "step6_text": "Finish fast with no mistakes to earn 3 stars! Stars unlock new chapters.",
+    "step6_text": "Solve without mistakes or hints for 3 stars. Speed also matters in Timed. Stars unlock new chapters.",
     "next": "Next",
     "start": "Start!",
     "skip": "Skip"
@@ -140,15 +174,23 @@
   "civilizations": {
     "1": {
       "name": "Egypt",
-      "title": "Ancient Egypt",
+      "title": "The Silent Room of the Nile",
       "period": "3100 BC - 30 BC",
-      "text": "In the land of pharaohs, pyramids reach for the sky. Hieroglyphic inscriptions hold mysteries unsolved for millennia. Built on the fertile banks of the Nile, this civilization left humanity's most fascinating structures.",
-      "mystery": "Decode the arrow signs hidden in the secret chambers of the pyramids and find the path to the pharaoh's treasure!",
+      "text": "A map in the riverside archive is missing its last piece. Arrows carved into stone mark the closed passages. A young scribe asks you to help find a lost seal. Each path you open reveals another part of the map. Read the signs patiently; to reach the seal, first understand the room's arrangement.",
+      "mystery": "Remove arrows with a clear exit to open the passage to the lost seal.",
       "facts": [
         "Great Pyramid 146m tall",
         "Hieroglyphic writing",
         "Art of mummification",
         "Star cartography"
+      ],
+      "result_title": "Following the Map",
+      "results": [
+        "The first passage opens. The scribe finds a mark at the map's edge.",
+        "The marks connect. A second room lies beneath the sand.",
+        "The room opens. The trail to the seal is becoming clearer.",
+        "The final passage appears. The seal awaits beyond the closed room.",
+        "The seal is found. The scribe completes the map; your journey now leads to Greece."
       ]
     },
     "2": {
@@ -275,12 +317,6 @@
     "step_share": "Share",
     "step_add": "Add to Home Screen"
   },
-  "rate": {
-    "title": "Enjoying Okchu?",
-    "subtitle": "Your feedback guides us",
-    "later": "Later",
-    "email_body": "Hi! My thoughts on Okchu:\n\n"
-  },
   "appstore": {
     "title": "Okchu: Arrow Puzzle - Ancient Journey",
     "subtitle": "Arrow Puzzle Game",
@@ -306,8 +342,72 @@
     "classic_title": "Classic",
     "classic_text": "Standard mode: play with a timer and lives. Earn stars and unlock new chapters.",
     "timed_title": "Timed",
-    "timed_text": "Half the time — a challenging mode for quick reflexes.",
+    "timed_text": "35% less time than Classic. Find the right order faster.",
     "zen_title": "Zen",
     "zen_text": "No timer, no lives, no pressure. Just solve the puzzle at your pace."
+  },
+  "design": {
+    "home_eyebrow": "10 CIVILIZATIONS · 50 PUZZLES",
+    "home_title": "Your next discovery.",
+    "home_description": "Follow the arrows. Discover ancient worlds.",
+    "puzzles": "puzzles",
+    "stars": "stars",
+    "civilizations": "civilizations",
+    "adventure": "ADVENTURE",
+    "daily_description": "A fresh puzzle for today.",
+    "explore": "Explore civilizations",
+    "navigation": "Game menu",
+    "game_goal": "Clear the paths.",
+    "game_description": "Tap an arrow with a clear path. Find the order and remove them all.",
+    "fit_board": "Center board"
+  },
+  "shapes": {
+    "pyramid": "Pyramid",
+    "sphinx": "Sphinx",
+    "diamond": "Diamond",
+    "steps": "Steps",
+    "scarab": "Scarab",
+    "temple": "Temple",
+    "amphora": "Amphora",
+    "laurel": "Laurel",
+    "acropolis": "Acropolis",
+    "owl": "Owl",
+    "colosseum": "Colosseum",
+    "eagle": "Eagle",
+    "aqueduct": "Aqueduct",
+    "arena": "Arena",
+    "crown": "Crown",
+    "ship": "Ship",
+    "hammer": "Hammer",
+    "rune": "Rune",
+    "mountain": "Mountain",
+    "helmet": "Helmet",
+    "mosque": "Mosque",
+    "tulip": "Tulip",
+    "dome": "Dome",
+    "minaret": "Minaret",
+    "turban": "Turban",
+    "pagoda": "Pagoda",
+    "dragon": "Dragon",
+    "silk": "Silk",
+    "wall": "Wall",
+    "fan": "Fan",
+    "calendar": "Calendar",
+    "jaguar": "Jaguar",
+    "sun": "Sun",
+    "serpent": "Serpent",
+    "palace": "Palace",
+    "lotus": "Lotus",
+    "mandala": "Mandala",
+    "river": "River",
+    "castle": "Castle",
+    "shield": "Shield",
+    "cathedral": "Cathedral",
+    "flask": "Flask",
+    "rosette": "Rosette",
+    "portal": "Portal",
+    "trophy": "Trophy",
+    "jewel": "Jewel",
+    "infinity": "Infinity"
   }
 }

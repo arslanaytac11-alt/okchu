@@ -3,6 +3,7 @@
 export const chapters = [
     {
         id: 1,
+        artwork: { image: 'assets/backgrounds/expedition-egypt.png', focal: '70% 42%' },
         name: 'Mısır',
         difficulty: 'Kolay',
         story: {
@@ -29,6 +30,7 @@ export const chapters = [
     },
     {
         id: 2,
+        artwork: { image: 'assets/backgrounds/expedition-greek.png', focal: '70% 42%' },
         name: 'Yunan',
         difficulty: 'Orta',
         story: {
@@ -55,6 +57,7 @@ export const chapters = [
     },
     {
         id: 3,
+        artwork: { image: 'assets/backgrounds/expedition-rome.png', focal: '70% 42%' },
         name: 'Roma',
         difficulty: 'Zor',
         story: {
@@ -81,6 +84,7 @@ export const chapters = [
     },
     {
         id: 4,
+        artwork: { image: 'assets/backgrounds/expedition-viking.png', focal: '70% 42%' },
         name: 'Viking',
         difficulty: 'Zor+',
         story: {
@@ -107,6 +111,7 @@ export const chapters = [
     },
     {
         id: 5,
+        artwork: { image: 'assets/backgrounds/expedition-ottoman.png', focal: '70% 42%' },
         name: 'Osmanlı',
         difficulty: 'Çok Zor',
         story: {
@@ -139,6 +144,7 @@ export const chapters = [
     },
     {
         id: 6,
+        artwork: { image: 'assets/backgrounds/expedition-china.png', focal: '70% 42%' },
         name: 'Çin',
         difficulty: 'Çok Zor+',
         story: {
@@ -165,6 +171,7 @@ export const chapters = [
     },
     {
         id: 7,
+        artwork: { image: 'assets/backgrounds/expedition-maya.png', focal: '70% 42%' },
         name: 'Maya',
         difficulty: 'Efsanevi',
         story: {
@@ -191,6 +198,7 @@ export const chapters = [
     },
     {
         id: 8,
+        artwork: { image: 'assets/backgrounds/expedition-india.png', focal: '70% 42%' },
         name: 'Hint',
         difficulty: 'Efsanevi+',
         story: {
@@ -217,6 +225,7 @@ export const chapters = [
     },
     {
         id: 9,
+        artwork: { image: 'assets/backgrounds/expedition-medieval.png', focal: '70% 42%' },
         name: 'Ortaçağ Avrupa',
         difficulty: 'Kabus',
         story: {
@@ -243,6 +252,7 @@ export const chapters = [
     },
     {
         id: 10,
+        artwork: { image: 'assets/backgrounds/expedition-final.png', focal: '70% 42%' },
         name: 'Final',
         difficulty: 'Kabus+',
         story: {
