@@ -1,21 +1,13 @@
-# Notes — paste into App Store Connect → App Review Information
+# Draft App Review notes — Okchu 1.1.0
 
-Hello, thank you for the feedback. Below are the requested details.
+Confirm these notes against the final uploaded build before pasting into App Store Connect. No screen recording or attachment is claimed here.
 
-**1. Screen recording:** Attached (recorded on iPhone — shows launch, language select, playing a level, unlocking next level, opening the Remove Ads paywall).
+Okchu is a single-player arrow-removal puzzle game across ten historical civilizations. This update refreshes the interface, touch feedback, puzzle presentation, and difficulty progression.
 
-**2. App purpose:** Okchu is a single-player offline arrow-removal puzzle game — 50 hand-crafted levels across 10 historical civilizations. Short, meditative logic puzzles (2–5 min per session).
+No account or login is required. Open Play, select the first chapter, and start its first level. Select an arrow whose pointing direction is clear to remove it; clear the board to complete a puzzle. Gameplay progress is stored locally and the puzzles are available offline. Advertising and purchases require network access.
 
-**3. Access / instructions:** No login or credentials needed. All progress is stored locally. Tap Play → Chapter 1 (Egypt) → Level 1 "Pyramid". Tap an arrow to remove it; an arrow is removable only when its pointing direction is clear. Clear all arrows to win.
+The existing non-consumable StoreKit product is `com.arslanaytac.okchu.premium` (Remove Ads). Purchase restoration is available from the premium screen. The app uses Google AdMob with ATT and UMP consent handling. There is no third-party payment processor or required external account.
 
-**4. External services:**
-- Apple StoreKit — one non-consumable IAP: `com.arslanaytac.okchu.premium` (lifetime Remove Ads)
-- Google AdMob (banner + interstitial) with ATT prompt + UMP consent
-- Capacitor 6 (hybrid shell, WKWebView)
-- No backend, no accounts, no analytics, no AI, no third-party payment processor
-
-**5. Regional differences:** None. Functions identically worldwide. UI auto-switches between Turkish / English / Spanish / French / Japanese based on device language.
-
-**6. Regulated industry:** No — this is a standard casual puzzle game.
+The interface includes Turkish, English, Spanish, French, and Japanese. Gameplay is the same across regions. The product is a casual puzzle game without regulated services.
 
 Contact: arslan.aytac11@gmail.com

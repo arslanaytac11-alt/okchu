@@ -1,202 +1,39 @@
-# App Store Submission — Okchu: Arrow Puzzle
+# Okchu update submission
 
-Hazır-kopyala metinler. App Store Connect'te ilgili alanlara yapıştır.
+The existing application is App Store ID `6762461650`, bundle `com.arslanaytac.okchu`, with the same premium product `com.arslanaytac.okchu.premium`. The new candidate requires **iOS 15.0+**; do not reuse metadata claiming iOS 13 support.
 
----
+The current final local signed candidate is **1.1.0 (148)** at `outputs/native/export-1.1.0-148-final/App.ipa`, built with Xcode 27.1/27A9275. It includes the new icon, ten chapter PNGs, revised puzzle shapes/difficulty, slimmer arrows, timeout-vignette reset, IAP/consent repairs, native Duo reserved-region layout and guarded native banner pane. Its extracted 113-file payload, native manifest, existing profile/certificate, entitlements, production settings and deep signature passed. Proof is `outputs/native/release-verification-final.json`. Earlier unsuffixed/preicon/prearrow/prevignette artifacts are historical. **No upload/submission/release has been performed.**
 
-## 1. App Information
+Frozen source: `363903d0e37ec2973199bba9ddfaf00b392f278d`, [draft PR #1](https://github.com/arslanaytac11-alt/okchu/pull/1). Final IPA SHA-256: `77bd10205284260cb9896da679f333142b65ed88523ec5bc3de9c2af365bd90c` (73,616,647 bytes), source SW35/main49/Game6.
 
-| Field | Value |
-|---|---|
-| **App Name** | Okchu: Arrow Puzzle |
-| **Subtitle (TR, 30 char max)** | Antik Medeniyet Ok Bulmacası |
-| **Subtitle (EN, 30 char max)** | Ancient Arrow Puzzle Journey |
-| **Bundle ID** | com.arslanaytac.okchu |
-| **SKU** | okchu-ios-001 |
-| **Primary Category** | Games |
-| **Secondary Category** | Puzzle |
-| **Age Rating** | 4+ |
-| **Price** | Free (with In-App Purchase) |
+The final Debug candidate installed/launched on our iPhone 18 Pro Max/iOS 27.0 simulator and preserved LocalStorage bytes. Duo fold/rotation/transition tests, native post-vignette recapture and upload remain pending **manual Mac unlock**. Transporter was already authenticated and its Add IPA action enabled before the lock; no file was added or uploaded. The account's existing **automatic release** preference was not changed.
 
----
+See [release readiness](RELEASE_1.1.0.md) for artifact hashes/draft notes and [QA scope](QA_1.1.0.md) for actual observed tests. Physical-device purchase/restore and a public 1.0.4 upgrade remain pending. Candidate simulator progress preservation is a narrower check.
 
-## 2. Promotional Text (170 char max, güncellenebilir)
+## Finish device verification
 
-**Türkçe:**
-> Mısır'dan Roma'ya, Osmanlı'dan Maya'ya — 10 antik medeniyet, 50 seviye, sonsuz bulmaca zekası. Günlük meydan okumada skorunu zirveye taşı!
+1. Complete Duo27.1 simulator outer/inner display, partial-fold, rotation, Split View and live-puzzle transition checks. Inspect hinge/camera avoidance and touch reachability; record physical Duo/touch/haptics separately when available.
+2. Test the signed candidate's sandbox purchase, cancellation, already-owned startup and restore; upgrade the public 1.0.4 installation without clearing progress/data.
+3. Verify ATT/UMP/privacy options and actual advertising placement on device. Debug simulator ads use Google's test units; do not infer live Release delivery from them.
+4. Complete final localized screenshots/metadata, links and privacy answers, tied to the final source/artifact. Do not claim physical certification or completed purchase/upgrade checks without evidence.
 
-**English:**
-> From Egypt to Rome, Ottoman to Maya — 10 ancient civilizations, 50 levels, endless puzzle intrigue. Climb the leaderboard in daily challenges!
+## Reproduce or revise the candidate
 
----
+1. Run `npm ci`, `npm test`, and `npm run cap:sync`; the tracked CLI/AdMob compatibility patches are applied locally and in CI.
+2. Run `python3 ios/scripts/verify-release.py`. Compile with Xcode 27.1 and source deployment15.0; keep the bundle/product IDs.
+3. Check App Store Connect build availability before choosing a number. Current 148 follows latest completed 147; if 148 is uploaded, a revised candidate needs a new number.
+4. Build/export with existing signing assets. `OKCHU_PROVISIONING_PROFILE` belongs to the App Release target only. Do not use automatic provisioning or revoke certificates. The manual Codemagic workflow produces artifacts without uploading/publishing.
+5. Verify the actual exported IPA and record its SHA/source manifest before handing it off.
 
-## 3. Description
+## Submit the verified update
 
-### Türkçe (4000 char max)
+1. Upload the verified final signed candidate through Xcode Organizer or Transporter, then select the processed build for a new **1.1.0** version.
+2. Replace screenshots with final captures using actual App Store Connect slots and [Apple's current screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/). Verify Duo-specific requirements in the account rather than relying on older fixed dimensions.
+3. Add verified localized What's New/review notes. State Duo support only to the extent actually tested; include no physical-device certification claim.
+4. Confirm App Privacy reflects actual AdMob/UMP/StoreKit behavior. Existing metadata discloses identifiers, advertising usage data and diagnostics; local gameplay saves alone do not mean no data is collected.
+5. Recheck production support/privacy links and existing IAP listing. No new account or purchase product is needed.
+6. Before App Review submission, verify the release preference in App Store Connect. The existing automatic-release setting is untouched; selecting **Manually release this version** would be a deliberate change, not an action already completed. Submit only after the final device/metadata checks, and follow the selected release setting after approval.
 
-```
-Okchu, seni 10 antik medeniyetin gizemlerine götüren minimalist bir ok bulmacasıdır. Her bölümde farklı bir dönem, farklı bir atmosfer — Mısır piramitlerinden Viking diyarlarına, Osmanlı saraylarından Maya tapınaklarına.
+## Signing recovery
 
-OYNANIŞ
-Izgara üzerindeki okları doğru sırada kaldır. Her ok, yönü boyunca sıradaki oku işaretler. Stratejini planla, kombo yap, yıldızları topla.
-
-ÖZELLİKLER
-• 10 Bölüm, 50 Seviye — her bölüm kendi temasıyla
-• Günlük Meydan Okuma — her gün yeni bir seviye, haftalık lider tablosu
-• 4 Oyun Modu — Klasik, Süreli, Hamle Sınırlı, Zen
-• Boss Seviyeleri — her bölümün sonunda özel mücadele
-• Güç-Up'lar — İpucu, Zaman Dondurma, Geri Al
-• Koleksiyon Sistemi — her bölümün eserini topla
-• Offline Oynanır — internete gerek yok
-• 5 Dil — Türkçe, İngilizce, İspanyolca, Fransızca, Japonca
-• iPhone ve iPad desteği, karanlık mod
-
-PREMIUM
-Reklamsız Premium ile kesintisiz oyna. Tek seferlik ödeme.
-
-Geri bildirim ve önerilerin için: arslan.aytac11@gmail.com
-```
-
-### English
-
-```
-Okchu is a minimalist arrow puzzle that takes you on a journey through 10 ancient civilizations. Each chapter brings a new era, a new atmosphere — from the Egyptian pyramids to Viking fjords, Ottoman palaces to Maya temples.
-
-HOW TO PLAY
-Remove arrows from the grid in the correct order. Each arrow points to the next in its direction. Plan your strategy, build combos, collect stars.
-
-FEATURES
-• 10 Chapters, 50 Levels — each with its own theme
-• Daily Challenge — new level every day, weekly leaderboard
-• 4 Game Modes — Classic, Timed, Move-Limited, Zen
-• Boss Levels — a special challenge ends each chapter
-• Power-Ups — Hint, Freeze Time, Undo
-• Collection System — unlock an artifact per chapter
-• Play Offline — no internet required
-• 5 Languages — Turkish, English, Spanish, French, Japanese
-• iPhone & iPad support, dark mode
-
-PREMIUM
-Go ad-free with a one-time purchase.
-
-Feedback & suggestions: arslan.aytac11@gmail.com
-```
-
----
-
-## 4. Keywords (100 char max, virgülle)
-
-**Türkçe:** `ok,bulmaca,puzzle,antik,mısır,roma,osmanlı,maya,beyin,zeka,mantık,offline,günlük`
-
-**English:** `arrow,puzzle,ancient,egypt,rome,ottoman,maya,brain,logic,offline,daily,minimalist,game`
-
----
-
-## 5. Support URLs (gerekli)
-
-| Field | URL (hosting sonrası doldur) |
-|---|---|
-| **Privacy Policy URL** | `https://<DOMAIN>/privacy.html` |
-| **Support URL** | `https://<DOMAIN>/` (veya GitHub issues sayfası) |
-| **Marketing URL (opsiyonel)** | `https://<DOMAIN>/` |
-
-> Not: `privacy.html` ve `terms.html` proje kök dizininde hazır. Deploy ettiğin domainle bu URL'leri tamamla.
-
----
-
-## 6. Screenshots
-
-App Store 6.7" iPhone (1290×2796) gerekli — minimum 3, maksimum 10 ekran.
-
-Projedeki `appstore-screenshots-1290x2796/` klasöründeki dosyaları kullan:
-- Menü
-- Bölüm seçimi
-- Oyun ekranı
-- Günlük meydan okuma
-- Başarımlar / Koleksiyon
-
-iPad 13" (2048×2732) opsiyonel ama önerilir.
-
----
-
-## 7. App Privacy Questionnaire (App Store Connect)
-
-App Store Connect sana soracak. Cevaplar:
-
-| Soru | Cevap |
-|---|---|
-| Do you collect data? | **No** (uygulama lokal çalışır; ileride AdMob eklenirse cevap değişecek — aşağı bak) |
-| Third-party analytics? | **No** |
-| Tracking (ATT)? | **No** şimdilik |
-
-**AdMob eklendiğinde** (ileride):
-- Data types: **Device ID** (IDFA), **Advertising Data**
-- Linked to user: **No**
-- Used for tracking: **Yes** (eğer personalized ads aktifse)
-- Purpose: **Third-Party Advertising**
-
----
-
-## 8. Age Rating Questionnaire
-
-Tüm sorulara **"None"** — şiddet yok, dil yok, korku yok, kumar yok, kullanıcı ürünü içerik yok. → Sonuç: **4+**
-
----
-
-## 9. In-App Purchase Setup
-
-App Store Connect → Monetization → In-App Purchases → New
-
-| Field | Value |
-|---|---|
-| Type | Non-Consumable |
-| Reference Name | Premium Ad-Free |
-| Product ID | `com.arslanaytac.okchu.premium` |
-| Price Tier | Tier 3 (~2.99 USD) — tercihine göre |
-| Display Name (TR) | Reklamsız Premium |
-| Display Name (EN) | Premium (Ad-Free) |
-| Description (TR) | Tüm reklamları kaldır. Tek seferlik ödeme. |
-| Description (EN) | Remove all ads. One-time purchase. |
-
-> Review için IAP'ı test ederken screenshot da yüklemen gerekir.
-
----
-
-## 10. App Review Information
-
-| Field | Value |
-|---|---|
-| Contact First Name | Arslan |
-| Contact Last Name | Aytaç |
-| Contact Phone | (senin numaran) |
-| Contact Email | arslan.aytac11@gmail.com |
-| Demo Account | Gerekmez (login yok) |
-| Notes to Reviewer | "No login required. All features accessible offline. Premium IAP removes banner ad. Privacy policy: <URL>" |
-
----
-
-## 11. Eksik Kalanlar (hesap/lisans düzeyi — sen yapmalısın)
-
-Bunları uygulama içinden değil **dışarıdan** halletmen gerekir — ben yapamam:
-
-1. **Apple Developer Program üyeliği** ($99/yıl) — [developer.apple.com](https://developer.apple.com/programs/enroll/)
-2. **Domain + hosting** (privacy.html ve terms.html için halka açık URL). Ücretsiz seçenekler:
-   - **GitHub Pages** (repo → Settings → Pages)
-   - **Netlify Drop** ([netlify.com/drop](https://app.netlify.com/drop) — zip sürükle bırak)
-   - **Vercel** (aynı)
-3. **Xcode** (Mac gerekli) veya **PWABuilder.com** (web'den iOS paketi üretir)
-4. App icon 1024×1024 PNG (App Store listing icon — şeffaflık yok)
-
----
-
-## 12. Önerilen Sıralama
-
-```
-1. privacy.html + terms.html → Netlify'a yükle, URL al
-2. Apple Developer hesabı aç
-3. PWABuilder.com → PWA URL'ni ver → iOS paketi indir
-4. App Store Connect → yeni uygulama oluştur (yukarıdaki bilgilerle)
-5. IAP ekle (premium)
-6. Build yükle, screenshots yükle
-7. Review'a gönder → 24-48 saat bekle
-```
+Use the existing distribution certificate with its private key and the matching app-specific profile. The installed `Okchu-AppStore-20261007` profile was matched to that identity without creating/revoking keys or certificates. Missing/expired assets stop the build; resolve only the affected identity/profile deliberately with the account owner. Do not revoke unrelated certificates or clear tester data as a workaround.
