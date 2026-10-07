@@ -5,9 +5,9 @@
 import { ArrowState, getDirectionVector } from './arrow.js';
 import { ParticleSystem } from './particles.js';
 import { getArrowStyle, getGridStyle } from './themes.js';
-import { BOARD_VISUALS } from './balance.js?v=2';
+import { BOARD_VISUALS } from './balance.js?v=4';
 import { silhouetteCells } from './puzzle-catalog.js';
-import { createArrowRoute, sampleArrowMotion, arrowShaftPoints, arrowColorVariant, ARROW_COLORS, ARROW_DARK_COLORS, ARROW_ERROR_COLOR, ARROW_DARK_ERROR_COLOR } from './arrow-motion.js?v=3';
+import { createArrowRoute, sampleArrowMotion, arrowColorVariant, ARROW_COLORS, ARROW_DARK_COLORS, ARROW_ERROR_COLOR, ARROW_DARK_ERROR_COLOR } from './arrow-motion.js?v=3';
 import { buildBoardOutline } from './board-outline.js';
 
 const boardShapeCache = new Map();
@@ -66,11 +66,18 @@ export class Renderer {
         };
     }
 
-    // A slimmer carved shaft keeps a readable floor on the smallest boards.
+    // Ink weight is measured on screen, so sparse boards and zoom never
+    // turn a fine path into an oversized pipe. Dense overviews stay bounded
+    // by their logical cells without shrinking the touch target.
     _getArrowMetrics() {
-        const cs = this.cellSize;
-        const width = Math.min(cs * BOARD_VISUALS.maximumStrokeRatio, Math.max(cs * BOARD_VISUALS.idealStrokeRatio, BOARD_VISUALS.minimumStroke / this.scale));
-        return { width, headSize: cs * BOARD_VISUALS.headRatio, headSpread: 0.62 };
+        const scale = Math.max(0.01, this.scale);
+        const cellCss = this.cellSize * scale;
+        const widthCss = Math.min(BOARD_VISUALS.arrowStrokeCss,
+            Math.max(BOARD_VISUALS.minimumStroke, cellCss * BOARD_VISUALS.idealStrokeRatio),
+            cellCss * BOARD_VISUALS.maximumStrokeRatio);
+        const headCss = Math.min(BOARD_VISUALS.headSizeCss, cellCss * BOARD_VISUALS.headRatio);
+        return { width: widthCss / scale, headSize: headCss / scale,
+            headSpread: BOARD_VISUALS.headSpread, widthCss, headCss };
     }
 
     get reducedMotion() { return this._motionQuery?.matches || false; }
@@ -126,16 +133,18 @@ export class Renderer {
         ctx.restore();
     }
 
-    setBoardShape(shape, width, height) {
+    setBoardShape(shape, width, height, boardCells = null) {
         this._boardShapeRuns = [];
         this._boardOutlines = [];
         this._boardShapeBounds = null;
-        if (!shape) return;
-        const cacheKey = `${shape}:${width}:${height}`;
+        if (!shape && !boardCells?.length) return;
+        const authoredCells = Array.isArray(boardCells) && boardCells.length ?
+            boardCells.slice().sort((a,b)=>a[1]-b[1]||a[0]-b[0]) : null;
+        const cacheKey = authoredCells ? `cells:${width}:${height}:${authoredCells.map(cell=>cell.join(',')).join(';')}` : `${shape}:${width}:${height}`;
         if (!boardShapeCache.has(cacheKey)) {
             try {
                 const rows = new Map();
-                const cells = silhouetteCells(shape, width, height);
+                const cells = authoredCells || silhouetteCells(shape, width, height);
                 boardOutlineCache.set(cacheKey, buildBoardOutline(cells));
                 for (const [x, y] of cells) {
                     if (!rows.has(y)) rows.set(y, []);
@@ -172,12 +181,16 @@ export class Renderer {
         ctx.save();
         const bounds = this._boardShapeBounds;
         const surface = ctx.createLinearGradient(0, this.gridOffsetY + bounds.top * cs, 0, this.gridOffsetY + bounds.bottom * cs);
-        surface.addColorStop(0, dark ? '#24483F' : '#F6F0DE');
-        surface.addColorStop(1, dark ? '#1D3D34' : '#EAE0C9');
+        const surfaceColors = dark ? BOARD_VISUALS.boardSurfaceDark : BOARD_VISUALS.boardSurfaceLight;
+        surface.addColorStop(0, surfaceColors[0]);
+        surface.addColorStop(1, surfaceColors[1]);
         ctx.fillStyle = surface;
-        ctx.shadowColor = dark ? 'rgba(0,0,0,0.25)' : 'rgba(108,81,40,0.15)';
-        ctx.shadowBlur = 5 / this.scale;
-        ctx.shadowOffsetY = 2.5 / this.scale;
+        // The silhouette is a quiet paper impression, not a row of raised
+        // stone cells. No ledge, border or shadow competes with the ink.
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
         ctx.beginPath();
         for (const closedLoop of this._boardOutlines) {
             const loop = closedLoop.slice(0,-1).map(p => ({x:this.gridOffsetX+p.x*cs,y:this.gridOffsetY+p.y*cs}));
@@ -197,11 +210,6 @@ export class Renderer {
             ctx.closePath();
         }
         ctx.fill('evenodd');
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.lineWidth = 1.1 / this.scale;
-        ctx.strokeStyle = dark ? '#456052' : '#D8C5A3';
-        ctx.stroke();
         ctx.restore();
     }
 
@@ -480,13 +488,81 @@ export class Renderer {
     _buildPathPoints(path, metrics) {
         if (!path.cells.length) return { points: [], tipX: 0, tipY: 0 };
         const geometry = path._visualGeometry || sampleArrowMotion(createArrowRoute(path.cells, path.direction));
-        const shaft = arrowShaftPoints(geometry, metrics.headSize * 0.70 / this.cellSize);
         const project = point => ({
             x: this.gridOffsetX + point.x * this.cellSize,
             y: this.gridOffsetY + point.y * this.cellSize,
         });
         const tip = project(geometry.tip);
-        return { points: shaft.map(project), tipX: tip.x, tipY: tip.y };
+        // Open chevrons meet the complete shaft at the real tip. Idle and
+        // departing arrows use this identical zero-inset construction.
+        return { points: geometry.points.map(project), tipX: tip.x, tipY: tip.y };
+    }
+
+    _getRuneGeometry(path) {
+        if (!Number.isInteger(path.rune) || path.rune < 0 || path.rune > 3 || !path.cells.length) return null;
+        const geometry = path._visualGeometry || sampleArrowMotion(createArrowRoute(path.cells, path.direction));
+        // The route starts just before its first cell. Keep the symbol at
+        // the tail cell's center, then carry that same arc-length offset
+        // along the moving window, including when its tail passes a bend.
+        let remaining = path.cells.length === 1 ? 0.35 : 0.42;
+        let anchor = geometry.points[geometry.points.length - 1];
+        for (let index = 1; index < geometry.points.length; index++) {
+            const before = geometry.points[index - 1], after = geometry.points[index];
+            const length = Math.hypot(after.x - before.x, after.y - before.y);
+            if (remaining <= length) {
+                const fraction = length ? remaining / length : 0;
+                anchor = { x: before.x + (after.x - before.x) * fraction,
+                    y: before.y + (after.y - before.y) * fraction };
+                break;
+            }
+            remaining -= length;
+        }
+        const scale = Math.max(0.01, this.scale);
+        const sizeCss = Math.min(BOARD_VISUALS.runeSizeCss, this.cellSize * scale * BOARD_VISUALS.runeSizeRatio);
+        return { rune: path.rune, x: this.gridOffsetX + anchor.x * this.cellSize,
+            y: this.gridOffsetY + anchor.y * this.cellSize, gridY: anchor.y,
+            size: sizeCss / scale, width: Math.min(BOARD_VISUALS.runeStrokeCss, sizeCss * 0.16) / scale };
+    }
+
+    _getBoardSurfaceColor(gridY) {
+        const dark = this.theme.background === BOARD_VISUALS.darkBackground;
+        if (!this._boardShapeBounds) return this.theme.background;
+        const colors = dark ? BOARD_VISUALS.boardSurfaceDark : BOARD_VISUALS.boardSurfaceLight;
+        const bounds = this._boardShapeBounds;
+        const fraction = Math.max(0, Math.min(1, (gridY - bounds.top) / (bounds.bottom - bounds.top || 1)));
+        const rgb = color => color.slice(1).match(/../g).map(value => parseInt(value, 16));
+        const first = rgb(colors[0]), last = rgb(colors[1]);
+        return '#' + first.map((value, index) => Math.round(value + (last[index] - value) * fraction)
+            .toString(16).padStart(2, '0')).join('');
+    }
+
+    _drawRuneMarker(path, color) {
+        const glyph = this._getRuneGeometry(path);
+        if (!glyph) return;
+        const ctx = this.ctx, r = glyph.size / 2;
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = this._getBoardSurfaceColor(glyph.gridY);
+        ctx.lineWidth = glyph.width;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        if (glyph.rune === 0) {
+            ctx.arc(glyph.x, glyph.y, r * 0.9, 0, Math.PI * 2);
+        } else {
+            const vertices = glyph.rune === 1 ? [[0, -r], [r, 0], [0, r], [-r, 0]]
+                : glyph.rune === 2 ? [[0, -r], [r * 0.92, r * 0.72], [-r * 0.92, r * 0.72]]
+                : [[-r * 0.8, -r * 0.8], [r * 0.8, -r * 0.8], [r * 0.8, r * 0.8], [-r * 0.8, r * 0.8]];
+            vertices.forEach(([x, y], index) => {
+                if (index === 0) ctx.moveTo(glyph.x + x, glyph.y + y);
+                else ctx.lineTo(glyph.x + x, glyph.y + y);
+            });
+            ctx.closePath();
+        }
+        // A matte interior keeps the four silhouettes distinct where the
+        // arrow shaft crosses their centers. It matches the board surface.
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
     }
 
     _getPathColor(path) {
@@ -504,67 +580,14 @@ export class Renderer {
 
         ctx.save();
         ctx.globalAlpha = path._visualGeometry?.alpha ?? 1;
-        // One under-stroke gives the whole arrow depth, including its bends.
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.save();
-        ctx.translate(0, 0.8 / this.scale);
-        ctx.strokeStyle = this.theme.background === BOARD_VISUALS.darkBackground ? 'rgba(0,0,0,0.22)' : 'rgba(45,40,25,0.15)';
-        ctx.lineWidth = metrics.width + 1.4 / this.scale;
-        this._strokePoints(ctx, points);
-        this._drawArrowHead(ctx, tipX, tipY, path.direction, ctx.strokeStyle, metrics);
-        ctx.restore();
-
         ctx.strokeStyle = color;
         ctx.lineWidth = metrics.width;
         this._strokePoints(ctx, points);
         this._drawArrowHead(ctx, tipX, tipY, path.direction, color, metrics);
-        // A carved center ridge and two facets give the paths a material
-        // surface. The solid body stays dominant, including on tiny boards.
-        if (!path._flashColor) {
-            ctx.save();
-            ctx.translate(0, -metrics.width * 0.17);
-            ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-            ctx.lineWidth = Math.max(0.65 / this.scale, metrics.width * 0.22);
-            this._strokePoints(ctx, points);
-            ctx.restore();
-            this._drawArrowFacets(ctx, tipX, tipY, path.direction, metrics);
-            this._drawTailBands(ctx, points, metrics);
-        }
+        this._drawRuneMarker(path, color);
         ctx.restore();
-    }
-
-    _drawArrowFacets(ctx, tipX, tipY, direction, metrics) {
-        const {dx,dy} = getDirectionVector(direction);
-        const baseX = tipX - dx * metrics.headSize;
-        const baseY = tipY - dy * metrics.headSize;
-        const spread = metrics.headSize * metrics.headSpread;
-        for (const [side, color] of [[1,'rgba(255,255,255,0.24)'],[-1,'rgba(0,0,0,0.13)']]) {
-            ctx.beginPath();
-            ctx.moveTo(tipX,tipY);
-            ctx.lineTo(baseX - dy * spread * side,baseY + dx * spread * side);
-            ctx.lineTo(baseX,baseY);
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-        }
-    }
-
-    _drawTailBands(ctx, points, metrics) {
-        if (this.cellSize * this.scale < 24 || points.length < 2) return;
-        const tail = points[0], next = points[1];
-        const length = Math.hypot(next.x-tail.x,next.y-tail.y);
-        if (length < metrics.width * 3) return;
-        const dx=(next.x-tail.x)/length,dy=(next.y-tail.y)/length;
-        ctx.strokeStyle='rgba(255,255,255,0.44)';
-        ctx.lineWidth=Math.max(0.65/this.scale,metrics.width*0.15);
-        for (const distance of [metrics.width*0.8,metrics.width*1.5]) {
-            const x=tail.x+dx*distance,y=tail.y+dy*distance;
-            ctx.beginPath();
-            ctx.moveTo(x-dy*metrics.width*0.36,y+dx*metrics.width*0.36);
-            ctx.lineTo(x+dy*metrics.width*0.36,y-dx*metrics.width*0.36);
-            ctx.stroke();
-        }
     }
 
     _strokePoints(ctx, points) {
@@ -577,7 +600,8 @@ export class Renderer {
             const bx = next.x - point.x, by = next.y - point.y;
             return Math.abs(ax * by - ay * bx) > 1e-7 || ax * bx + ay * by < 0;
         });
-        const radius = this.cellSize * 0.20;
+        const radius = Math.min(this.cellSize * BOARD_VISUALS.bendRadiusRatio,
+            BOARD_VISUALS.bendRadiusCss / Math.max(0.01, this.scale));
         ctx.beginPath();
         ctx.moveTo(bends[0].x, bends[0].y);
         for (let i = 1; i < bends.length - 1; i++) {
@@ -595,19 +619,18 @@ export class Renderer {
         ctx.stroke();
     }
 
-    _drawArrowHead(ctx, tipX, tipY, direction, color, metrics, outline = null) {
+    _drawArrowHead(ctx, tipX, tipY, direction, color, metrics) {
         const size = metrics.headSize;
         const spread = size * metrics.headSpread;
         const { dx, dy } = getDirectionVector(direction);
         const baseX = tipX - dx * size, baseY = tipY - dy * size;
-        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = metrics.width;
         ctx.beginPath();
-        ctx.moveTo(tipX, tipY);
-        ctx.lineTo(baseX - dy * spread, baseY + dx * spread);
+        ctx.moveTo(baseX - dy * spread, baseY + dx * spread);
+        ctx.lineTo(tipX, tipY);
         ctx.lineTo(baseX + dy * spread, baseY - dx * spread);
-        ctx.closePath();
-        if (outline) { ctx.strokeStyle = outline; ctx.lineWidth = 2.4 / this.scale; ctx.lineJoin = 'round'; ctx.stroke(); }
-        ctx.fill();
+        ctx.stroke();
     }
 
     drawGhostTrail(cells, direction, alpha) {
@@ -643,30 +666,27 @@ export class Renderer {
     // Predictive selection halo. Drawn under the player's finger from
     // touchstart until touchend so they can SEE the arrow that will fire
     // and slide their finger to a different one if it landed wrong.
-    // A white edge and orange center follow the complete arrow continuously.
+    // Selection keeps the same fine silhouette and uses a restrained accent.
     drawPreviewHalo(path) {
         if (!path || !path.cells || path.cells.length === 0) return;
         const ctx = this.ctx;
         ctx.save();
         ctx.translate(this.panX + this.shakeX, this.panY + this.shakeY);
         ctx.scale(this.scale, this.scale);
-        {
-            // One continuous mark follows the selected arrow. Its head ring
-            // stays within its cell; no glow spills over adjacent arrows.
-            const metrics = this._getArrowMetrics();
-            const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = BOARD_VISUALS.selectedEdge;
-            ctx.lineWidth = Math.min(this.cellSize * 0.40, metrics.width + 4 / this.scale);
-            this._strokePoints(ctx, points);
-            ctx.strokeStyle = BOARD_VISUALS.selected;
-            ctx.lineWidth = Math.min(this.cellSize * 0.28, metrics.width + 1 / this.scale);
-            this._strokePoints(ctx, points);
-            this._drawArrowHead(ctx, tipX, tipY, path.direction, BOARD_VISUALS.selected, metrics, BOARD_VISUALS.selectedEdge);
-            ctx.restore();
-            return;
-        }
+        const metrics = this._getArrowMetrics();
+        const color = this.theme.background === BOARD_VISUALS.darkBackground ? BOARD_VISUALS.darkSelected : BOARD_VISUALS.selected;
+        const selectedWidth = Math.min(this.cellSize * BOARD_VISUALS.maximumStrokeRatio,
+            metrics.width + BOARD_VISUALS.selectedStrokeExtraCss / Math.max(0.01, this.scale));
+        const selectedMetrics = { ...metrics, width: selectedWidth };
+        const { points, tipX, tipY } = this._buildPathPoints(path, metrics);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = selectedWidth;
+        this._strokePoints(ctx, points);
+        this._drawArrowHead(ctx, tipX, tipY, path.direction, color, selectedMetrics);
+        this._drawRuneMarker(path, color);
+        ctx.restore();
     }
 
     // A quiet ring guides the first taps without hiding the arrow head.

@@ -560,3 +560,266 @@ body .star.empty { color:var(--ui-line); }
     body .lb-date { font-size:10px; }
     body .lb-score { font-size:13px; }
 }
+
+/* The whole order stays visible; the board itself never reveals safe choices. */
+.rune-panel{flex:none;padding:7px 12px 10px;background:rgba(246,240,222,.96);border-bottom:1px solid rgba(51,66,46,.17);color:#244b41}
+.rune-panel.hidden{display:none}
+.rune-heading{display:flex;align-items:center;justify-content:space-between;min-height:36px;font-size:12px;font-weight:750;letter-spacing:.02em}
+.rune-help{width:44px;height:44px;min-height:44px;margin:-4px -8px;border:0;background:transparent;color:inherit;font-size:18px;border-radius:10px;cursor:pointer}
+.rune-help:focus-visible{outline:2px solid currentColor;outline-offset:-3px}
+.rune-cycle{display:flex;align-items:center;justify-content:center;gap:6px;min-height:30px}
+.rune-step{display:inline-flex;align-items:center;justify-content:center;width:29px;height:29px;border-radius:8px;font-size:24px;line-height:1;color:inherit;border:1px solid transparent}
+.rune-step.is-current{background:#244b41;color:#fff8dc;border-color:#244b41;box-shadow:0 0 0 2px rgba(36,75,65,.14)}
+.rune-link{font-size:15px;opacity:.58}
+.rune-explainer p{line-height:1.65;text-align:left;font-size:15px}
+.rune-explainer .rune-cycle{margin:16px 0 22px;color:#244b41}
+.rune-reassurance{background:#e7eee4;padding:12px 15px;border-radius:12px;color:#244b41}
+body.dark-mode .rune-panel{background:#24483f;color:#f6efd9;border-color:#7fa89655}
+body.dark-mode .rune-step.is-current{background:#eee1b1;color:#24483f;border-color:#eee1b1}
+@media(max-height:500px) and (orientation:landscape){.rune-panel{padding:2px 12px 4px;display:flex;align-items:center;justify-content:space-between;gap:10px}.rune-heading{gap:8px}.rune-cycle{gap:3px}.rune-step{width:25px;height:25px;font-size:22px}}
+body.dark-mode .rune-explainer .rune-cycle{color:var(--ui-ink)}
+body .overlay-content p.rune-reassurance{color:#244b41}
+body.dark-mode .overlay-content p.rune-reassurance{background:var(--ui-soft);color:var(--ui-ink)}
+.board-toolbar{flex-wrap:wrap}
+.board-view-tools{display:flex;gap:4px;align-items:center;flex-shrink:0;margin-left:auto}
+.board-zoom-button{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--ui-line);border-bottom:3px solid var(--ui-line);border-radius:12px;background:var(--ui-surface);color:var(--ui-ink);font-size:23px;cursor:pointer}
+.board-zoom-button:focus-visible{outline:2px solid var(--ui-teal);outline-offset:2px}
+.board-toolbar:has(.game-feedback:not(:empty)) .board-notices{flex-basis:100%;max-width:none}
+.board-toolbar .game-feedback{max-height:none}
+@media(max-height:650px) and (orientation:portrait){
+ body .game-header{padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:8px}
+ body .game-workspace,body .game-rail{gap:7px}
+ body .game-stats,body[data-chapter] .game-stats{min-height:48px;padding:7px 10px!important;gap:6px}
+ body .game-stats .stat-item{gap:2px}
+ body .game-stats .stat-label,body[data-chapter] .game-stats .stat-label{font-size:9px;line-height:1.2}
+ body .game-stats .stat-value{font-size:16px;line-height:1.15}
+ body .game-tools .stat-undo{min-height:44px;padding:6px 5px}
+ body .board-caption{min-height:32px;padding-top:6px;padding-bottom:6px}
+ body .board-caption .board-progress{min-width:45px;font-size:10px;line-height:1.1;padding:3px 6px}
+ body .rune-panel{position:relative;min-height:53px;padding:4px 54px 5px 10px}
+ body .rune-heading{min-height:18px;margin-bottom:2px;font-size:11px}
+ body .rune-help{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:44px;height:44px;min-height:44px;margin:0}
+ body .rune-panel .rune-cycle{gap:3px;min-height:24px;justify-content:flex-start}
+ body .rune-panel .rune-step{flex:none;width:24px;height:24px;font-size:20px}
+ body .rune-panel .rune-link{font-size:12px}
+}
+
+/* Game archive: the puzzle owns the stage, with one legend and one tool dock. */
+body #screen-game {
+ --game-paper:#F6F4ED; --game-ink:#173E38; --game-muted:#586B5F;
+ --game-line:#D9DED2; --game-control:#E8EDE3;
+ position:relative; background:var(--game-paper); color:var(--game-ink);
+}
+body.dark-mode #screen-game {
+ --game-paper:#142D2A; --game-ink:#E9EFE2; --game-muted:#A6B9AB;
+ --game-line:#38544A; --game-control:#28463D;
+ background:var(--game-paper);
+}
+#screen-game .game-visually-hidden {
+ position:absolute!important; width:1px!important; height:1px!important;
+ padding:0!important; margin:-1px!important; overflow:hidden!important;
+ clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important;
+}
+body #screen-game .game-header {
+ min-height:58px; max-width:none; gap:9px; margin:0;
+ padding:calc(env(safe-area-inset-top,0px) + 7px) 12px 7px;
+ border:0; background:none; box-shadow:none;
+}
+body #screen-game .game-header .btn-back {
+ flex:0 0 44px; width:44px; height:44px; min-width:44px;
+ border:0; border-radius:12px; background:none; box-shadow:none;
+ color:var(--game-ink); font-size:25px; padding:0;
+}
+body #screen-game .game-header .btn-back:active { background:var(--game-control); transform:none; }
+#screen-game .chapter-emblem {
+ width:34px; height:34px; flex:0 0 34px; border:0; border-radius:10px;
+ transform:none; box-shadow:none; background:var(--game-control);
+}
+#screen-game .game-header .level-info {
+ min-width:0; flex:1; gap:2px; padding:0; align-items:flex-start; text-align:left;
+}
+#screen-game .game-chapter-label {
+ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+ color:var(--game-muted); font-size:10px; font-weight:650; line-height:1.2;
+}
+body #screen-game #level-name {
+ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+ font-family:var(--ui-display); font-size:18px; font-weight:750;
+ line-height:1.2; letter-spacing:-.4px; color:var(--game-ink);
+}
+#screen-game .game-header-lives { gap:2px; flex:none; margin-left:2px; }
+#screen-game .game-header-lives .life-icon {
+ width:13px; height:13px; color:#BD6849; margin:0;
+}
+#screen-game .game-header-lives .life-icon.dead { color:var(--game-line); }
+#screen-game .game-workspace {
+ display:flex; flex-direction:column; flex:1; width:100%; min-height:0;
+ gap:5px; padding:0 12px; margin:0; max-width:none;
+}
+#screen-game .game-rail { display:block; flex:none; width:100%; gap:0; order:0; }
+body #screen-game .game-stats,body[data-chapter] #screen-game .game-stats {
+ position:relative; display:flex; flex-wrap:nowrap; justify-content:space-between;
+ align-items:center; min-height:34px; width:100%; gap:12px;
+ padding:3px 9px!important; margin:0; border:0; border-bottom:1px solid var(--game-line);
+ border-radius:0; background:none; box-shadow:none;
+}
+body #screen-game .game-stats .stat-item {
+ display:flex; flex-direction:row; align-items:baseline; justify-content:flex-start;
+ flex:none; gap:5px; min-width:0;
+}
+body #screen-game .game-stats .stat-label,body[data-chapter] #screen-game .game-stats .stat-label {
+ color:var(--game-muted); font-size:10px; line-height:1.2; letter-spacing:0;
+}
+body #screen-game .game-stats .stat-value {
+ color:var(--game-ink); font-family:inherit; font-size:15px; font-weight:700;
+ line-height:1.2; letter-spacing:-.2px; font-variant-numeric:tabular-nums;
+}
+body #screen-game .game-stats .stat-combo { display:none; }
+body #screen-game .game-stats .stat-combo.combo-stat-active {
+ display:flex; position:absolute; left:50%; right:auto; top:-13px;
+ transform:translateX(-50%); z-index:2; margin:0;
+}
+#screen-game .combo-badge {
+ border:0; border-radius:6px; background:var(--game-control); color:var(--game-ink);
+ font-size:10px; line-height:1.2; padding:2px 5px; box-shadow:none;
+}
+#screen-game .board-frame {
+ display:flex; flex-direction:column; flex:1; order:1;
+ min-width:0; min-height:0; width:100%; height:auto; overflow:hidden;
+ border:0; border-radius:0; background:none; box-shadow:none;
+}
+#screen-game .board-frame > .board-area {
+ flex:1; min-height:0; width:100%; height:auto; border:0; border-radius:0;
+ background:var(--game-paper); box-shadow:none;
+}
+body #screen-game #game-canvas { border:0; border-radius:0; background:var(--game-paper); }
+#screen-game #game-canvas:focus-visible { outline-color:var(--game-ink); outline-offset:-3px; }
+#screen-game .rune-panel {
+ position:relative; display:block; flex:none; min-height:50px;
+ padding:3px 53px 5px 9px; color:var(--game-ink);
+ background:none; border:0; box-shadow:none;
+}
+#screen-game .rune-panel.hidden { display:none; }
+#screen-game .rune-heading {
+ display:block; min-height:15px; margin:0 0 2px; font-size:10px;
+ font-weight:600; line-height:1.2; letter-spacing:0; color:var(--game-muted);
+}
+#screen-game .rune-help {
+ position:absolute; top:50%; right:3px; transform:translateY(-50%);
+ width:44px; height:44px; min-height:44px; margin:0; padding:0;
+ border:0; border-radius:12px; background:none; color:var(--game-muted); font-size:19px;
+}
+#screen-game .rune-help:active { background:var(--game-control); }
+#screen-game .rune-help:focus-visible { outline-color:var(--game-ink); }
+#screen-game .rune-panel .rune-cycle {
+ display:flex; justify-content:flex-start; align-items:center;
+ gap:3px; min-height:27px; margin:0; padding:0; color:var(--game-ink);
+}
+#screen-game .rune-panel .rune-step {
+ flex:none; width:27px; height:27px; font-size:22px; line-height:1;
+ border:0; border-radius:8px; background:none; color:inherit; box-shadow:none;
+}
+#screen-game .rune-panel .rune-step.is-current {
+ background:var(--game-ink); color:var(--game-paper); box-shadow:none;
+}
+#screen-game .rune-panel .rune-link { flex:none; width:5px; font-size:12px; text-align:center; opacity:.4; }
+body #screen-game .board-toolbar {
+ display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start;
+ flex:none; gap:7px; min-height:64px; width:100%; max-width:none; margin:0;
+ padding:6px 12px 7px; border:0; border-top:1px solid var(--game-line);
+ background:var(--game-paper); box-shadow:none;
+}
+#screen-game .board-notices {
+ display:flex; flex-direction:column; flex:none; min-width:0; max-width:none;
+ gap:3px; padding:0 3px; text-align:center;
+}
+#screen-game .game-guidance { display:block; margin:0; padding:0; }
+#screen-game .game-guidance p,#screen-game .game-feedback {
+ margin:0; padding:0; font-family:inherit; font-size:11px; font-weight:400;
+ line-height:1.35; color:var(--game-muted); text-align:center;
+}
+#screen-game .game-feedback { max-height:none; overflow:visible; color:var(--game-ink); }
+#screen-game .game-feedback:empty { display:none; }
+#screen-game .board-notices:has(.game-feedback:not(:empty)) .game-guidance,
+#screen-game .board-notices:has(.game-feedback:not(:empty)) .zoom-hint { display:none; }
+body #screen-game .zoom-hint {
+ display:block; position:static; transform:none; max-width:none; margin:0; padding:0;
+ background:none; border:0; color:var(--game-muted); font-size:10px; line-height:1.3;
+ text-align:center; animation:none;
+}
+body #screen-game .zoom-hint.hidden { display:none; }
+#screen-game .game-dock-controls { display:flex; align-items:center; width:100%; gap:8px; }
+#screen-game .game-tools { display:flex; flex:1; flex-direction:row; align-items:center; gap:3px; min-width:0; padding:0; }
+body #screen-game .game-tools .stat-undo {
+ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
+ flex:1; width:auto; min-width:44px; min-height:48px!important; height:48px;
+ gap:3px; padding:4px 2px!important; border:0; border-radius:12px;
+ background:none; color:var(--game-ink); font-size:20px; box-shadow:none;
+}
+body #screen-game .game-tools .stat-undo:not(:disabled):active {
+ background:var(--game-control); transform:none; border:0;
+}
+body #screen-game .game-tools .tool-label {
+ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+ font-family:inherit; font-size:9px!important; font-weight:550; line-height:1.1;
+}
+body #screen-game .game-tools .stat-undo-count {
+ position:absolute; top:1px; right:4px; min-width:11px; height:12px;
+ padding:0; border:0; border-radius:0; background:none; color:var(--game-muted);
+ font-family:inherit; font-size:9px; line-height:1; font-weight:650;
+}
+#screen-game .dock-icon { display:block; flex:none; width:21px; height:21px; }
+#screen-game .board-view-tools {
+ display:flex; align-items:center; flex:none; gap:3px; margin:0; padding:0 0 0 5px;
+ border-left:1px solid var(--game-line);
+}
+#screen-game .board-zoom-button,#screen-game .fit-button {
+ display:flex; align-items:center; justify-content:center; flex:0 0 44px;
+ width:44px; height:48px; min-width:44px; min-height:48px;
+ margin:0; padding:0; border:0; border-radius:12px; background:none;
+ color:var(--game-ink); font-family:inherit; font-size:25px; font-weight:400;
+ box-shadow:none;
+}
+#screen-game .board-zoom-button:active,#screen-game .fit-button:active { background:var(--game-control); transform:none; }
+#screen-game .daily-modifier-badge {
+ flex:none; max-width:calc(100% - 24px); margin:0 12px 4px;
+ padding:3px 9px; border:0; border-radius:6px; background:var(--game-control);
+ color:var(--game-ink); font-size:10px; line-height:1.2;
+}
+@media(max-width:350px) {
+ #screen-game .game-header { gap:6px; }
+ #screen-game .chapter-emblem { width:29px; height:29px; flex-basis:29px; border-radius:8px; }
+ body #screen-game #level-name { font-size:16px; }
+ #screen-game .game-header-lives .life-icon { width:11px; height:11px; }
+ #screen-game .game-workspace { padding:0 8px; }
+ body #screen-game .board-toolbar { padding-left:8px; padding-right:8px; }
+ #screen-game .rune-panel .rune-step { width:25px; height:25px; font-size:21px; }
+ #screen-game .rune-panel .rune-cycle { min-height:25px; }
+}
+@media(max-height:650px) and (orientation:portrait) {
+ body #screen-game .game-header { padding-top:calc(env(safe-area-inset-top,0px) + 4px); padding-bottom:4px; min-height:52px; }
+ #screen-game .game-workspace { gap:2px; }
+ body #screen-game .game-stats,body[data-chapter] #screen-game .game-stats { min-height:30px; padding-top:2px!important; padding-bottom:2px!important; }
+ #screen-game .rune-panel { min-height:46px; padding-top:1px; padding-bottom:3px; }
+ body #screen-game .board-toolbar { gap:4px; padding-top:5px; padding-bottom:5px; }
+ #screen-game .game-guidance p,#screen-game .game-feedback { font-size:10px; line-height:1.3; }
+}
+@media(max-height:500px) and (orientation:landscape) {
+ body #screen-game .game-header {
+  width:48%; align-self:flex-start; min-height:48px;
+  padding-top:calc(env(safe-area-inset-top,0px) + 2px); padding-bottom:2px;
+ }
+ #screen-game .game-rail { position:absolute; top:calc(env(safe-area-inset-top,0px) + 9px); right:12px; width:47%; }
+ body #screen-game .game-stats,body[data-chapter] #screen-game .game-stats { min-height:34px; border-bottom:0; }
+ #screen-game .game-workspace { gap:0; padding:0 12px; }
+ #screen-game .rune-panel { min-height:44px; padding:0 59px 0 125px; }
+ #screen-game .rune-heading { min-height:0; margin:0; }
+ #screen-game #rune-current { position:absolute; left:9px; top:50%; transform:translateY(-50%); }
+ #screen-game .rune-panel .rune-cycle { justify-content:center; min-height:44px; }
+ body #screen-game .board-toolbar { flex-direction:row; align-items:center; gap:14px; min-height:52px; padding-top:4px; padding-bottom:4px; }
+ #screen-game .board-notices { flex:1; max-width:340px; }
+ #screen-game .game-dock-controls { width:330px; flex:0 0 330px; }
+ body #screen-game .game-tools .stat-undo { height:44px; min-height:44px!important; }
+ #screen-game .board-zoom-button,#screen-game .fit-button { height:44px; min-height:44px; }
+ #screen-game .game-guidance p,#screen-game .game-feedback { font-size:10px; }
+}

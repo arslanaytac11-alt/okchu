@@ -17,7 +17,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-192-expedition.png">
     <link rel="icon" type="image/png" href="assets/icons/icon-192-expedition.png">
     <link rel="stylesheet" href="css/style.css?v=14">
-    <link rel="stylesheet" href="css/redesign.css?v=5">
+    <link rel="stylesheet" href="css/redesign.css?v=8">
     <link rel="stylesheet" href="css/tutorial-demo.css?v=1">
 </head>
 <body>
@@ -101,35 +101,55 @@
         </div>
 
         <!-- Game Screen -->
-        <div id="screen-game" class="screen">
+        <div id="screen-game" class="screen game-archive">
             <div class="game-header">
                 <button class="btn-back" id="btn-game-back" data-i18n-aria="common.back" aria-label="Geri"><span aria-hidden="true">&larr;</span></button>
-                <div class="level-info">
-                    <span id="level-name">Seviye 1</span>
-                    <span id="level-difficulty" class="difficulty-badge">Kolay</span>
-                </div>
                 <span class="chapter-emblem" aria-hidden="true"><img id="game-chapter-emblem" src="assets/backgrounds/expedition-egypt.png" alt=""></span>
+                <div class="level-info">
+                    <span id="board-chapter-label" class="game-chapter-label">Mısır</span>
+                    <span id="level-name">Seviye 1</span>
+                    <span id="level-difficulty" class="difficulty-badge game-visually-hidden">Kolay</span>
+                </div>
+                <div id="lives-display" class="lives-display game-header-lives"></div>
             </div>
             <div id="daily-modifier-badge" class="daily-modifier-badge hidden"></div>
             <div class="game-workspace">
                 <aside class="game-rail">
                     <div class="game-stats">
-                        <div id="lives-display" class="lives-display"></div>
                         <div class="stat-item"><span class="stat-label" data-i18n="game.score">Skor</span><span id="game-score" class="stat-value">0</span></div>
                         <div class="stat-item stat-combo"><span id="game-combo" class="combo-badge"></span></div>
                         <div class="stat-item"><span class="stat-label" data-i18n="game.moves">Hamle</span><span id="game-moves" class="stat-value">0/0</span></div>
                         <div class="stat-item"><span class="stat-label" data-i18n="game.time">Süre</span><span id="game-timer" class="stat-value">0:00</span></div>
-                    </div>
-                    <div class="game-guidance"><span class="guidance-mark" aria-hidden="true">↗</span><h3 data-i18n="design.game_goal">Yolları aç.</h3><p data-i18n="design.game_description">Önü boş olan bir oka dokun. Doğru sırayla tüm okları çıkar.</p></div>
-                    <div class="game-tools">
-                        <button id="btn-undo" class="stat-undo" data-i18n-aria="game.undo" data-i18n-title="game.undo" aria-label="Geri Al" title="Geri Al"><span aria-hidden="true">↶</span><span class="tool-label" data-i18n="game.undo">Geri Al</span><span id="undo-count" class="stat-undo-count">3</span></button>
-                        <button id="btn-powerup-hint" class="stat-undo stat-powerup" data-i18n-aria="powerup.hint" data-i18n-title="powerup.hint_use" aria-label="İpucu" title="İpucu"><span aria-hidden="true">✧</span><span class="tool-label" data-i18n="powerup.hint">İpucu</span><span id="powerup-hint-count" class="stat-undo-count">0</span></button>
-                        <button id="btn-powerup-freeze" class="stat-undo stat-powerup" data-i18n-aria="powerup.freeze" data-i18n-title="powerup.freeze_use" aria-label="Zamanı Dondur" title="Zamanı Dondur"><span aria-hidden="true">❄</span><span class="tool-label" data-i18n="powerup.freeze">Dondur</span><span id="powerup-freeze-count" class="stat-undo-count">0</span></button>
+                        <span id="board-progress-label" class="game-visually-hidden" hidden aria-hidden="true">0/0</span>
                     </div>
                 </aside>
-                <div class="board-frame"><div class="board-caption"><span id="board-chapter-label">Mısır</span><span class="board-progress" id="board-progress-label">0/5</span></div><div class="board-area"><canvas id="game-canvas" role="img" data-i18n-aria="game.canvas_label" aria-label="Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun." tabindex="0"></canvas></div></div>
+                <div class="board-frame">
+                    <div id="rune-panel" class="rune-panel hidden">
+                        <div class="rune-heading"><span id="rune-current"></span><button id="btn-rune-help" class="rune-help" data-i18n-aria="runes.help" aria-label="Sıra mührü nasıl çalışır?">?</button></div>
+                        <div id="rune-cycle" class="rune-cycle" role="group" data-i18n-aria="runes.title" aria-label="Sıra mührü"></div>
+                    </div>
+                    <div class="board-area"><canvas id="game-canvas" role="img" data-i18n-aria="game.canvas_label" aria-label="Ok bulmacası oyun alanı. Okları doğru sırada kaldırmak için dokunun." tabindex="0"></canvas></div>
+                </div>
             </div>
-            <div class="board-toolbar"><span class="board-notices"><span id="game-feedback" class="game-feedback" role="status" aria-live="polite" aria-atomic="true"></span><span id="zoom-hint" class="zoom-hint" data-i18n="game.zoom_hint">Yakınlaştırmak için iki parmakla aç</span></span><button id="btn-fit-board" class="fit-button" data-i18n="design.fit_board">Görünümü ortala</button></div>
+            <div class="board-toolbar game-bottom-dock">
+                <div class="board-notices">
+                    <div class="game-guidance"><p id="game-guidance-text" data-i18n="design.game_description">Önü boş olan bir oka dokun. Doğru sırayla tüm okları çıkar.</p></div>
+                    <span id="game-feedback" class="game-feedback" role="status" aria-live="polite" aria-atomic="true"></span>
+                    <span id="zoom-hint" class="zoom-hint hidden" data-i18n="game.zoom_hint">Yakınlaştırmak için iki parmakla aç</span>
+                </div>
+                <div class="game-dock-controls">
+                    <div class="game-tools">
+                        <button id="btn-undo" class="stat-undo" data-i18n-aria="game.undo" data-i18n-title="game.undo" aria-label="Geri Al" title="Geri Al"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 13H3V7m0 6a9 9 0 1 1 3 6"/></svg><span class="tool-label" data-i18n="game.undo">Geri Al</span><span id="undo-count" class="stat-undo-count">3</span></button>
+                        <button id="btn-powerup-hint" class="stat-undo stat-powerup" data-i18n-aria="powerup.hint" data-i18n-title="powerup.hint_use" aria-label="İpucu" title="İpucu"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 2.8 7.2L22 12l-7.2 2.8L12 22l-2.8-7.2L2 12l7.2-2.8Z"/></svg><span class="tool-label" data-i18n="powerup.hint">İpucu</span><span id="powerup-hint-count" class="stat-undo-count">0</span></button>
+                        <button id="btn-powerup-freeze" class="stat-undo stat-powerup" data-i18n-aria="powerup.freeze" data-i18n-title="powerup.freeze_use" aria-label="Zamanı Dondur" title="Zamanı Dondur"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3M3 10l4-1-1-4M21 14l-4 1 1 4M3 14l4 1-1 4M21 10l-4-1 1-4"/></svg><span class="tool-label" data-i18n="powerup.freeze">Dondur</span><span id="powerup-freeze-count" class="stat-undo-count">0</span></button>
+                    </div>
+                    <span class="board-view-tools">
+                        <button id="btn-zoom-out" class="board-zoom-button" data-i18n-aria="game.zoom_out" aria-label="Uzaklaştır">−</button>
+                        <button id="btn-zoom-in" class="board-zoom-button" data-i18n-aria="game.zoom_in" aria-label="Yakınlaştır">+</button>
+                        <button id="btn-fit-board" class="fit-button" data-i18n-aria="design.fit_board" data-i18n-title="design.fit_board" aria-label="Görünümü ortala" title="Görünümü ortala"><svg class="dock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="12" cy="12" r="2.5"/></svg><span class="game-visually-hidden" data-i18n="design.fit_board">Görünümü ortala</span></button>
+                    </span>
+                </div>
+            </div>
             <div id="banner-ad" class="banner-ad">
                 <span class="banner-ad-label" data-i18n="game.banner_label">Reklam Alanı</span>
             </div>
@@ -231,6 +251,16 @@
                 <p class="leaderboard-hint" data-i18n="leaderboard.hint">Son 7 günün günlük meydan okuma skorları</p>
                 <div id="leaderboard-list" class="leaderboard-list"></div>
                 <button id="btn-leaderboard-close" class="btn btn-secondary" data-i18n="common.close">Kapat</button>
+            </div>
+        </div>
+
+        <div id="overlay-rune-help" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rune-help-title">
+            <div class="overlay-content rune-explainer">
+                <h2 id="rune-help-title" data-i18n="runes.title">Sıra mührü</h2>
+                <div id="rune-help-cycle" class="rune-cycle" aria-hidden="true"></div>
+                <p data-i18n="runes.rule">Önü açık ve aktif mühürle aynı simgedeki oku seç. Her çıkarış mührü sıradaki simgeye geçirir. Yanlış sıra ileride yolu kilitleyebilir.</p>
+                <p class="rune-reassurance" data-i18n="runes.free_undo">Sınırsız Geri Al · Seçimini ücretsiz değiştirebilirsin.</p>
+                <button id="btn-rune-close" class="btn btn-primary" data-i18n="common.close">Kapat</button>
             </div>
         </div>
 
@@ -352,6 +382,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=50"></script>
+    <script type="module" src="js/main.js?v=53"></script>
 </body>
 </html>

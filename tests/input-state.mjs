@@ -164,7 +164,7 @@ check('deliberate legal solves of the real first four boards open the final puzz
  for(const level of allLevels.slice(0,4)){
   h.game.startLevel(level,chapters[0]);
   while(!h.game.grid.isCleared()){
-   const active=h.game.grid.getActivePaths();const path=active.find(p=>h.game.grid.isPathClear(p));assert.ok(path);
+   const active=h.game.grid.getActivePaths();const path=h.game.grid.hasRuneOrder() ? h.game.grid.paths[h.game.grid.getRuneAnalysis().solution[0]] : active.find(p=>h.game.grid.isPathClear(p));assert.ok(path);
    if(active.length===1)h.game.timeRemaining=1;
    h.game.removePathWithAnimation(path);frame(400);
   }

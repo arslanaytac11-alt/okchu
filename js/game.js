@@ -1,8 +1,9 @@
 // js/game.js
 
 import { Grid } from './grid.js';
+import { updateRuneHud, bindRuneHelp, RUNE_GLYPHS } from './rune-hud.js';
 import { hitTestPath } from './hit-test.js';
-import { Renderer } from './renderer.js?v=4';
+import { Renderer } from './renderer.js?v=6';
 import { LivesManager } from './lives.js';
 import { HintManager } from './hints.js';
 import { storage } from './storage.js';
@@ -11,7 +12,7 @@ import { getNextLevel } from './levels.js';
 import { getDirectionVector } from './arrow.js';
 import { tapLight, tapMedium, tapHeavy, notifyError } from './haptics.js';
 import { t } from './i18n.js?v=2';
-import { getPuzzleTimeLimit, BOARD_VISUALS } from './balance.js?v=2';
+import { getPuzzleTimeLimit, BOARD_VISUALS } from './balance.js?v=4';
 import { createArrowRoute, sampleArrowMotion, arrowExitDistance, arrowDepartureEase, assignBalancedArrowColors } from './arrow-motion.js?v=3';
 
 // Map chapter id (1-10) to its difficulty translation key. Mirrors the table
@@ -99,6 +100,9 @@ export class Game {
         // Zen mode: no timer, no wrong-move penalties — casual solve
         this.zenMode = false;
 
+        this._runeNotice = null;
+        this._runeHelpOpen = false;
+        bindRuneHelp(() => this.setRuneHelpOpen(true), () => this.setRuneHelpOpen(false));
         this.setupInput();
     }
 
@@ -126,11 +130,13 @@ export class Game {
         }
 
         this.grid = new Grid(levelData.gridWidth, levelData.gridHeight);
-        this.grid.loadFromData(levelData.paths, levelData.walls || []);
+        this.grid.loadFromData(levelData.paths, levelData.walls || [], levelData.runeCycle || []);
+        updateRuneHud(this.grid);
+        this._updateGameFeedback();
         assignBalancedArrowColors(this.grid.paths);
 
         this.renderer.setTheme(chapterData.theme, chapterData.id);
-        this.renderer.setBoardShape(levelData.shape, levelData.gridWidth, levelData.gridHeight);
+        this.renderer.setBoardShape(levelData.shape, levelData.gridWidth, levelData.gridHeight, levelData.boardCells);
         this.renderer.resize(levelData.gridWidth, levelData.gridHeight);
         this.renderer.drawGrid(this.grid);
 
@@ -154,8 +160,8 @@ export class Game {
         this._moveHistory = [];
         // Base 3 undos + any inventory extraUndo powerups auto-consumed at level start
         const invAtStart = storage.getPowerups();
-        this.undoCharges = 3 + (invAtStart.extraUndo || 0);
-        if (invAtStart.extraUndo > 0) {
+        this.undoCharges = this.grid.hasRuneOrder() ? Infinity : 3 + (invAtStart.extraUndo || 0);
+        if (!this.grid.hasRuneOrder() && invAtStart.extraUndo > 0) {
             for (let i = 0; i < invAtStart.extraUndo; i++) storage.usePowerup('extraUndo');
         }
         this._updateUndoButton();
@@ -212,6 +218,10 @@ export class Game {
         this._levelEpoch++;
         this.onboardingActive = false;
         this.onboardingTapsLeft = 0;
+        this._runeNotice = null;
+        this._runeHelpOpen = false;
+        updateRuneHud(null);
+        document.getElementById('overlay-rune-help')?.classList.add('hidden');
         this._clearBlockedFeedback();
         if (this._animationRestore) this._animationRestore();
         this._animationRestore = null;
@@ -225,8 +235,9 @@ export class Game {
     _updateGameFeedback() {
         const element = document.getElementById('game-feedback');
         if (!element) return;
-        const key = this.renderer.blockedFeedback ? 'game.blocked_feedback' : this.onboardingActive ? 'game.guided_feedback' : '';
-        const message = key ? t(key) : '';
+        const stuck = this._active && this.grid?.hasRuneOrder() && !this.isAnimating && !this.grid.isCleared() && this.grid.getRemovablePaths().length === 0;
+        const key = this._runeNotice || (stuck ? 'runes.stuck' : this.renderer.blockedFeedback ? 'game.blocked_feedback' : this.onboardingActive ? 'game.guided_feedback' : '');
+        const message = key ? t(key).replace('{rune}', RUNE_GLYPHS[this.grid?.getCurrentRune()] || '') : '';
         element.textContent = message === key ? '' : message;
     }
 
@@ -251,8 +262,17 @@ export class Game {
         }, 900);
     }
 
+    setRuneHelpOpen(open) {
+        this._runeHelpOpen = !!open;
+        if (this._resetInput) this._resetInput();
+        if (open) this._stopTimer();
+        else if (this._active && !this._outcome && !this.zenMode && !this.moveLimit) this._startCountdown();
+    }
+
     resumeLevel(seconds) {
         this._active = true;
+        updateRuneHud(this.grid);
+        this._updateGameFeedback();
         this._outcome = null;
         this.timeRemaining = seconds;
         if (!this.zenMode && !this.moveLimit) this._startCountdown();
@@ -276,7 +296,7 @@ export class Game {
     _startCountdown() {
         this._stopTimer();
         this._lastTick = Date.now();
-        if (!this._active || this._outcome || this.zenMode || this.moveLimit || this._visibilityHidden || document.hidden === true) return;
+        if (!this._active || this._outcome || this.zenMode || this.moveLimit || this._visibilityHidden || document.hidden === true || this._runeHelpOpen) return;
         this._timerInterval = setInterval(() => {
             const now = Date.now();
             if (this._visibilityHidden || document.hidden === true) {
@@ -662,7 +682,9 @@ export class Game {
     }
 
     removePathWithAnimation(path) {
-        if (!this._active || this.isAnimating || !this.grid.paths.includes(path)) return;
+        if (!this._active || this.isAnimating || !this.grid.paths.includes(path) || path.isRemoved()) return;
+        if (this.grid.hasRuneOrder() && !this.grid.isPathClear(path)) { this.handleWrongMove(path); return; }
+        this._runeNotice = null;
         this._clearBlockedFeedback();
         const epoch = this._levelEpoch;
         this.isAnimating = true;
@@ -679,7 +701,7 @@ export class Game {
             consecutiveWrongs: this._consecutiveWrongs,
         };
         this._moveHistory.push(snapshot);
-        if (this._moveHistory.length > 20) this._moveHistory.shift();
+        if (!this.grid.hasRuneOrder() && this._moveHistory.length > 20) this._moveHistory.shift();
 
         this.grid.removePath(path);
 
@@ -760,6 +782,8 @@ export class Game {
                 this._animationRestore = null;
                 this.grid.finalizeRemoval(path);
                 this.isAnimating = false;
+                updateRuneHud(this.grid);
+                this._updateGameFeedback();
                 this._updateUndoButton();
                 this._updatePowerupButtons();
                 this.renderer.drawGrid(this.grid);
@@ -779,6 +803,14 @@ export class Game {
     handleWrongMove(path) {
         if (!this._active || this.isAnimating || !this.grid.paths.includes(path) || path.isRemoved()) return;
         this._clearBlockedFeedback();
+        if (this.grid.hasRuneOrder() && !this.grid.isRuneEligible(path)) {
+            // The visible code is a puzzle rule, never a paid mistake.
+            this._runeNotice = 'runes.wrong_rune';
+            this._updateGameFeedback();
+            tapLight();
+            return;
+        }
+        this._runeNotice = null;
         const blocker = this.grid.getFirstBlocker(path);
         if (this.zenMode) {
             // Zen still acknowledges a blocked exit, without charging a
@@ -1212,11 +1244,16 @@ export class Game {
         this.maxCombo = last.maxCombo;
         this.moves = last.moves;
         this._consecutiveWrongs = last.consecutiveWrongs;
-        this.undoCharges--;
+        if (!this.grid.hasRuneOrder()) this.undoCharges--;
+        this.hintedPath = null;
+        this._runeNotice = null;
 
         this.grid.updateRemovableStates();
+        updateRuneHud(this.grid);
+        this._updateGameFeedback();
         this._updateScoreDisplay();
         this._updateUndoButton();
+        this._updatePowerupButtons();
         this.renderer.drawGrid(this.grid);
         return true;
     }
@@ -1225,7 +1262,9 @@ export class Game {
         const btn = document.getElementById('btn-undo');
         if (!btn) return;
         const countEl = document.getElementById('undo-count');
-        if (countEl) countEl.textContent = this.undoCharges;
+        if (countEl) countEl.textContent = this.undoCharges === Infinity ? '∞' : this.undoCharges;
+        if (this.grid?.hasRuneOrder()) btn.setAttribute?.('title', t('runes.free_undo'));
+        else btn.setAttribute?.('title', t('game.undo'));
         btn.disabled = this.undoCharges <= 0 || this._moveHistory.length === 0;
         btn.style.opacity = btn.disabled ? '0.35' : '1';
     }
@@ -1234,7 +1273,13 @@ export class Game {
         if (!this._active || this.isAnimating || !this.grid || this.hintedPath) return;
 
         const hintPath = this.hintManager.findHintArrow(this.grid);
-        if (!hintPath) return;
+        if (!hintPath) {
+            if (this.grid.hasRuneOrder()) {
+                this._runeNotice = this.hintManager.lastStatus === 'unsolvable' ? 'runes.hint_undo' : 'runes.hint_unavailable';
+                this._updateGameFeedback();
+            }
+            return;
+        }
 
         // Use this level's free hint before spending an earned inventory hint.
         const invPowerups = storage.getPowerups();
@@ -1246,6 +1291,7 @@ export class Game {
             return;
         }
 
+        this._runeNotice = null;
         this.usedHint = true;
         this.hintedPath = hintPath;
         this._clearBlockedFeedback();
@@ -1328,6 +1374,13 @@ export class Game {
             cancelAnimationFrame(this._renderLoopId);
             this._renderLoopId = null;
         }
+    }
+
+    zoomBoard(factor) {
+        if (!this._active || !this.grid) return;
+        const rect = this.canvas.getBoundingClientRect();
+        this.renderer.setZoom(this.renderer.scale * factor, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        this.renderer.drawGrid(this.grid);
     }
 
     handleResize() {

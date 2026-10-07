@@ -1,6 +1,14 @@
 # Okchu 1.1.0 release candidate
 
-> Local inspection now uses main50/Game7/SW36 with an explicit loopback-only all-level control mode and offline boot/cache repairs. The signed IPA below remains the verified main49/Game6/SW35 snapshot; it does not contain those subsequent browser changes. Rebuild/verify the selected final source before upload. No upload has occurred.
+## Current seal revision
+
+Current frozen source is main53/Game10/Screens6/Renderer6/Balance4/CSS8/SW39, with 45 new seal mazes, visible symbol order, free unlimited coded-board Undo, thin flat arrows and a simplified game screen. All22 suites,50 validations and48 syntax checks pass. The exact progress/bundle/Premium identities remain. Final six-removal decision floors are4/5/5/5/5, with an eight-removal floor3 for the boss. Observed values are4/6/5/6/5.
+
+The new manually signed artifact is verified at `outputs/native/export-1.1.0-148-seals/App.ipa` (73,660,114 bytes). SHA-256: `8ea102c571df38d590553851495a99df2f5f1ec2ed27f698475d5feac4406963`. `outputs/native/release-verification-seals.json` confirms all116 current-source/public hashes,20 native source/patch hashes,3 generated Cordova files,10 chapter PNGs,compiled icon,existing identity/profile,deep/strict signature and production Release flags. App and Capacitor are iOS15.0 / SDK27.1 with DEBUG=false. Source rows digest: `69224bbbb2de2494bc3cb76d153b07551752a9779c9aa02a1151d33f5d641952`; native digest: `cf5b763ebe0a4e079a617c8abdf8e1756bd00e9cebcceb6898a9c568751ed049`. Signing/payload verification does not supply a new native UI launch, physical Duo or live purchase observation. **No upload has occurred.** Five updated localized metadata drafts are [saved here](store-metadata-1.1.0.json); [review notes](../APPSTORE_REVIEW_NOTES.md) explain the new rule. Existing App Store Connect metadata predates this rule and still needs updating.
+
+Everything below describes the earlier main49/Game6/SW35 signed snapshot. Its labels “final” are historical, not the current gameplay candidate. Current browser/structural QA does not supply physical Duo, purchase/restore, production ads or public-install upgrade observations.
+
+## Historical signed snapshot
 
 Updated 7 October 2026. The final local signed candidate is **1.1.0 (148)**, built with **Xcode 27.1 / 27A9275**. No build has been uploaded, submitted for review, or released from this work. Simulator checks, source tests, and signed-artifact checks below have different scopes; live purchase/restore and a public-install upgrade remain pending.
 
@@ -103,11 +111,11 @@ Publish only behavior verified in the submitted candidate; avoid untested device
 
 **Türkçe**
 
-Okchu'yu baştan yeniledik! Yeni uygulama ikonu, on medeniyeti yansıtan bölüm görselleri ve 47 yeni bulmaca şekli sizi bekliyor. Daha okunaklı oklar, net dokunma geri bildirimi ve geliştirilmiş zorluk ilerleyişiyle oyun daha akıcı. Oyun alanını farklı ekran boyutlarına uyarladık; satın alma geri yükleme ve reklam gizliliği işlemlerini iyileştirdik.
+Okchu’yu ince oklar, sade bir oyun ekranı ve yeni mühür labirentleriyle yeniledik. Görünür simge sırasını takip et; ileri bölümlerde birkaç hamle sonrasını düşünerek doğru yolu seç. Simge sıralı bulmacalarda sınırsız Geri Al ve geliştirilmiş yakınlaştırma kontrolleri seni bekliyor. Yeni uygulama simgesi ve on medeniyete özel görsellerle keşfe devam et.
 
 **English**
 
-Okchu has a fresh new look! Discover a new app icon, chapter artwork across ten civilizations, and 47 new puzzle shapes. Clearer arrows, precise touch feedback and refined difficulty progression improve play. The board adapts to different screen sizes, with improvements to purchase restoration and advertising privacy.
+Okchu has a clearer game screen, thin arrows and new seal mazes. Follow the visible symbol sequence and plan several moves ahead in later puzzles. Symbol-sequence puzzles include unlimited Undo, with improved zoom controls, a new app icon and artwork across ten civilizations.
 
 ## Official references
 

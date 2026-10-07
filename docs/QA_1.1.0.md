@@ -1,6 +1,20 @@
 # Okchu 1.1.0 QA record
 
-## Current local inspection update
+## Current seal candidate — main53 / Game10 / SW39
+
+This section supersedes the historical source/signed-artifact labels below. `npm test` exited 0 on the frozen current source: **22 suites, 50 validated puzzles, 48 syntax files**. Full log: `outputs/qa/seals-final-test.log`; structured results: `outputs/qa/test-results.json`.
+
+The 45 new Greek→Final seal mazes use an exact static footprint and three spatial chains. The active repeating shape symbol constrains each removal. Grading verifies all winning routes, not a sampled or most difficult route: final H6 minima 4/6/5/6/5, boss H8 minimum3; max no-critical runs 18/20/16/20/16. The final puzzle still permits a 13-move forced stretch. The six/eight distance includes the wrong removal, and deeper guarantees do not certify subjective human difficulty. See current [research](PUZZLE_RESEARCH.md) for the independent oracle and generation floors.
+
+Current automated evidence includes 2,109 actual Game removals, 50 recorded and 1,000 varied safe solves, 45,929 exact state checks, 48 real losing-choice/dead-end/full-Undo recoveries, 150 original-footprint fit/focal cases and 6,327 head checks. Input covers 227,772 coordinates; motion covers 69,597 frames. The renderer has a ≤2.35 CSS-pixel flat shaft and ≤8-pixel open tip, with the clickable logical cells unchanged. Minimum solid body/error cue contrast is 5.31/3.81. New footprint validation rejects missing/duplicate cells; runtime fitting retains the original footprint after removals and separates caches for different authored boards sharing a name.
+
+Actual browser QA operated the new final board at 320×568, 390×844 and 844×390, its explanation dialog, zoom/recenter, and dark mode. The eight controls are ≥44×44, within the viewport, with no horizontal overflow. Short landscape fit makes the dense portrait seal smaller; zoom is available. No console warning/error was observed. Captures: `outputs/qa/seals-final50-light-390.png`, `seals-final50-light-320.png`, `seals-final50-dark-390.png`, `seals-final50-landscape.png`, and `seals-final50-zoom-320.png`. The user’s existing preview session was preserved in its own tab. Canvas solving was verified through actual Game/Grid automated calls; these browser captures are not a manual 75-arrow solve.
+
+The existing review isolation, 33 installed-IAP mocked cases, 4,971 Duo-helper checks, consent/banner, storage, time/score and lifecycle regressions all remain green. Service-worker install/activate/fetch passed87 checks covering43 boot modules,5 languages and27 assets. This is an in-memory cache/network test rather than observed real offline boot. Host solver measurements are recorded separately in `outputs/qa/rune-solver-latency.json`; no device FPS/thermal or physical latency claim is made.
+
+The current source has been archived/exported: `outputs/native/export-1.1.0-148-seals/App.ipa`, with116 exact public hashes/20 native hashes, existing distribution identity/profile, deep/strict signature, App/Capacitor production flags and iOS15/SDK27.1 verified in `release-verification-seals.json`. No new native UI launch/observation is claimed by this export. Native launch, purchase/privacy and Duo UI observations below refer to their stated older snapshots; they must not be attributed to this new rule/UI until observed.
+
+## Historical SW36 inspection update
 
 The restored `http://127.0.0.1:5188/?kontrol=1` serves main 50 / Game 7 / SW 36 / redesign CSS 5. A detached local Node process continues after its starter exits; HEAD checks return 200, correct module/HTML MIME types and no-store headers, while non-public package/release paths return 404. The process is bound to 127.0.0.1. Opening its Codex browser panel was queued; no fresh GUI observation is claimed while Mac unlock remains unconfirmed.
 

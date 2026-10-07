@@ -55,7 +55,9 @@
     "zoom_hint": "Yakınlaştırmak için iki parmakla aç",
     "banner_label": "Reklam Alanı",
     "blocked_feedback": "Yolu kapalı. Önce engelleyen oku kaldır.",
-    "guided_feedback": "İşaretlenen oka dokun; yolu açık."
+    "guided_feedback": "İşaretlenen oka dokun; yolu açık.",
+    "zoom_in": "Yakınlaştır",
+    "zoom_out": "Uzaklaştır"
   },
   "common": {
     "close": "Kapat",
@@ -413,5 +415,21 @@
     "trophy": "Kupa",
     "jewel": "Mücevher",
     "infinity": "Sonsuzluk"
+  },
+  "runes": {
+    "title": "Sıra mührü",
+    "help": "Sıra mührü nasıl çalışır?",
+    "current": "Aktif mühür",
+    "rule": "Önü açık ve aktif mühürle aynı simgedeki oku seç. Her çıkarış mührü sıradaki simgeye geçirir; sıra başa dönerek devam eder. Aynı simgedeki iki açık oktan hangisini seçtiğin, ileride yolu kilitleyebilir. Birkaç hamle sonrasını düşün.",
+    "stuck": "Bu sıra yolu kilitledi. Geri Al ile önceki seçimini değiştir.",
+    "wrong_rune": "Bu tur {rune} mühründeki bir oku seç.",
+    "hint_undo": "Bu seçimin ardından çözüm kalmadı. Geri Al ile önceki seçimini değiştir; ipucun harcanmadı.",
+    "hint_unavailable": "Şu an güvenli ipucu bulunamadı. İpucun harcanmadı.",
+    "free_undo": "Sınırsız Geri Al · Seçimini ücretsiz değiştirebilirsin.",
+    "circle": "Daire",
+    "diamond": "Baklava",
+    "triangle": "Üçgen",
+    "square": "Kare",
+    "guidance": "Önü açık ve aktif mühürle aynı simgedeki oku seç. Birkaç hamle sonrasını düşün."
   }
 }

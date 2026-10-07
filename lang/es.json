@@ -55,7 +55,9 @@
     "zoom_hint": "Pellizca con dos dedos para acercar",
     "banner_label": "Espacio de Anuncio",
     "blocked_feedback": "Salida bloqueada. Retira primero la otra flecha.",
-    "guided_feedback": "Toca la flecha marcada; su salida está libre."
+    "guided_feedback": "Toca la flecha marcada; su salida está libre.",
+    "zoom_in": "Acercar",
+    "zoom_out": "Alejar"
   },
   "common": {
     "close": "Cerrar",
@@ -413,5 +415,21 @@
     "trophy": "Trofeo",
     "jewel": "Joya",
     "infinity": "Infinito"
+  },
+  "runes": {
+    "title": "Sello de orden",
+    "help": "¿Cómo funciona el sello de orden?",
+    "current": "Sello activo",
+    "rule": "Elige una flecha con salida libre y el símbolo activo. Cada retirada avanza el sello; la secuencia se repite. Elegir entre dos flechas libres del mismo símbolo puede bloquear un turno posterior. Piensa varias jugadas por adelantado.",
+    "stuck": "Este orden bloqueó el camino. Deshaz y cambia una elección anterior.",
+    "wrong_rune": "Elige una flecha con {rune} en este turno.",
+    "hint_undo": "Esta posición no tiene solución. Deshaz una elección anterior; no se ha gastado la pista.",
+    "hint_unavailable": "No hay una pista segura disponible ahora. No se ha gastado la pista.",
+    "free_undo": "Deshacer ilimitado · Cambia tus elecciones gratis.",
+    "circle": "Círculo",
+    "diamond": "Rombo",
+    "triangle": "Triángulo",
+    "square": "Cuadrado",
+    "guidance": "Elige una flecha libre con el símbolo activo. Piensa varias jugadas por adelantado."
   }
 }

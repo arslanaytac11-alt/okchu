@@ -1,7 +1,7 @@
 // js/main.js
 
-import { Game } from './game.js?v=7';
-import { ScreenManager } from './screens.js?v=4';
+import { Game } from './game.js?v=10';
+import { ScreenManager } from './screens.js?v=6';
 import { chapters } from './data/chapters.js';
 import { storage } from './storage.js';
 import { Tutorial } from './tutorial.js';
@@ -240,6 +240,8 @@ document.getElementById('btn-fit-board')?.addEventListener('click', () => {
     game.renderer.resetView(game.grid);
     if (game.grid) game.renderer.drawGrid(game.grid);
 });
+document.getElementById('btn-zoom-in')?.addEventListener('click', () => game.zoomBoard(1.5));
+document.getElementById('btn-zoom-out')?.addEventListener('click', () => game.zoomBoard(1 / 1.5));
 // A fold, rotation, split view, or toolbar change can resize the stage without a window resize.
 if (typeof ResizeObserver !== 'undefined') {
     let resizeFrame = 0;

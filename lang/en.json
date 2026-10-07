@@ -55,7 +55,9 @@
     "zoom_hint": "Pinch with two fingers to zoom",
     "banner_label": "Ad Space",
     "blocked_feedback": "Exit blocked. Clear the blocking arrow first.",
-    "guided_feedback": "Tap the marked arrow; its exit is clear."
+    "guided_feedback": "Tap the marked arrow; its exit is clear.",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out"
   },
   "common": {
     "close": "Close",
@@ -413,5 +415,21 @@
     "trophy": "Trophy",
     "jewel": "Jewel",
     "infinity": "Infinity"
+  },
+  "runes": {
+    "title": "Order seal",
+    "help": "How does the order seal work?",
+    "current": "Active seal",
+    "rule": "Choose an arrow with a clear exit and the active symbol. Each removal advances the seal; the sequence repeats. Choosing between two clear arrows with the same symbol can block a later turn. Think several moves ahead.",
+    "stuck": "This order blocked the way. Undo and change an earlier choice.",
+    "wrong_rune": "Choose an arrow marked {rune} this turn.",
+    "hint_undo": "This position has no solution. Undo and change an earlier choice; your hint was not spent.",
+    "hint_unavailable": "A safe hint is unavailable right now. Your hint was not spent.",
+    "free_undo": "Unlimited Undo · Change your choices for free.",
+    "circle": "Circle",
+    "diamond": "Diamond",
+    "triangle": "Triangle",
+    "square": "Square",
+    "guidance": "Choose a clear arrow with the active symbol. Think several moves ahead."
   }
 }

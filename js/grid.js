@@ -1,12 +1,15 @@
 // js/grid.js
 
 import { ArrowPath, ArrowState, getDirectionVector } from './arrow.js';
+import { createRuneSolver } from './rune-order.js';
 
 export class Grid {
     constructor(width, height) {
         this.width = width;
         this.height = height;
         this.paths = [];
+        this.runeCycle = [];
+        this.runeSolver = null;
         this.walls = []; // [[x,y], ...] immovable obstacles that block path clearance
     }
 
@@ -66,7 +69,25 @@ export class Grid {
         if (!path || path.isRemoved() || !path.getHead() || !getDirectionVector(path.direction)) return false;
         const head = path.getHead();
         if (!Number.isInteger(head.x) || !Number.isInteger(head.y) || head.x < 0 || head.x >= this.width || head.y < 0 || head.y >= this.height) return false;
-        return this.getFirstBlocker(path) === null;
+        return this.isRuneEligible(path) && this.getFirstBlocker(path) === null;
+    }
+
+    hasRuneOrder() { return this.runeCycle.length > 0; }
+
+    getRemovedIndices() {
+        return this.paths.flatMap((path, index) => path.isRemoved() ? [index] : []);
+    }
+
+    getCurrentRune() {
+        return this.hasRuneOrder() ? this.runeCycle[this.getRemovedIndices().length % this.runeCycle.length] : null;
+    }
+
+    isRuneEligible(path) {
+        return !this.hasRuneOrder() || path.rune === this.getCurrentRune();
+    }
+
+    getRuneAnalysis() {
+        return this.runeSolver?.analyze(this.getRemovedIndices()) || null;
     }
 
     updateRemovableStates() {
@@ -98,12 +119,17 @@ export class Grid {
         return this.paths.filter(p => p.state === ArrowState.REMOVABLE);
     }
 
-    loadFromData(pathsData, walls = []) {
+    loadFromData(pathsData, walls = [], runeCycle = []) {
         this.paths = [];
         this.walls = walls.map(w => [w[0], w[1]]);
+        this.runeCycle = runeCycle.slice();
+        this.runeSolver = this.hasRuneOrder() ? createRuneSolver({
+            gridWidth: this.width, gridHeight: this.height, paths: pathsData, walls, runeCycle,
+        }) : null;
         for (let i = 0; i < pathsData.length; i++) {
             const data = pathsData[i];
-            this.addPath(data.cells, data.direction, i % 8);
+            const path = this.addPath(data.cells, data.direction, i % 8);
+            if (Number.isInteger(data.rune)) path.rune = data.rune;
         }
         this.updateRemovableStates();
     }

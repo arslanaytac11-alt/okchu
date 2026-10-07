@@ -1,41 +1,33 @@
-# Okchu — project state
+# Okchu — current project state
 
-## Temporary browser inspection
+Updated 7 October 2026. Current candidate is **1.1.0 (148)**; no upload, App Review submission or App Store release has occurred.
 
-The local preview is restored at `http://127.0.0.1:5188/?kontrol=1`. `npm run preview:start` starts it independently of the invoking terminal; `npm run preview` runs it in the foreground. Only public game files are served, on IPv4 loopback, with no-store headers.
+## Current gameplay and design
 
-The explicit local browser control mode opens all ten chapters and fifty puzzles, including their final puzzles. It starts in untimed Zen; review gameplay/mode changes use memory seeded from the actual save and never overwrite real progression, scores, resources or Premium. Native bridges, non-HTTP origins and remote hosts cannot enable it. Ordinary play retains its star gates. Main 50 / Game 7 / SW 36 passed all twenty suites, fifty level validations and forty-six JS syntax checks.
+The local preview is `http://127.0.0.1:5188/?kontrol=1`; `npm run preview:start` keeps the loopback-only server running independently of the terminal. Explicit local inspection opens all 10 chapters and 50 puzzles in untimed Zen. Saves, resources, scores, settings and Premium use an isolated memory snapshot. Native bridges and remote origins cannot activate this flag; ordinary 8-star boss/10-star chapter gates remain.
 
-The first-offline boot graph now precaches its four previously missing imports and the review helper. Cached exact module URLs take precedence over unversioned fallback entries. These browser changes are **not in the signed SW35/main49 IPA documented below**. Rebuild and verify the chosen final source before uploading; no upload has occurred.
+The five Egyptian puzzles introduce the controls and visible symbol sequence. The following **45 puzzles are new seal mazes** with longer bent arrows and three arrow chains coordinated by one visible symbol sequence. Each removal must have a clear exit and match the active symbol above the board. Removing a matching arrow can make the remaining sequence impossible. Free unlimited Undo supports reconsidering those choices; hints provide only an exactly proved safe continuation. A bounded solver returns unknown rather than a false failure or an unsafe hint.
 
-Updated 7 October 2026. No build has been uploaded, submitted or released during this redesign work.
+All 50 IDs, names, chapter order, progression keys, existing bundle `com.arslanaytac.okchu`, App Store ID `6762461650`, and Premium product `com.arslanaytac.okchu.premium` are preserved. There are 2,109 arrows across the campaign. No simulator mini-game was added.
 
-| Field | Current state |
-|---|---|
-| Existing app | [Okchu: Arrow Puzzle](https://apps.apple.com/tr/app/okchu-arrow-puzzle/id6762461650), public 1.0.4 |
-| App/bundle | `6762461650` / `com.arslanaytac.okchu` |
-| Existing Premium | `com.arslanaytac.okchu.premium`, same non-consumable |
-| Final local candidate | `1.1.0 (148)`; latest completed account upload was 1.0.4 (147) |
-| Minimum OS | iOS 15.0 in source App/Pod configurations |
-| Local/current CI Xcode | 27.1 / local 27A9275; per-command DEVELOPER_DIR pinned |
-| Native app icon | New opaque1024 gold bent arrow/lagoon stone, compiled in final IPA |
-| Native Duo layout | Public active division/occlusion reserved regions + hinge updates; same WKWebView wrapped in a safe pane on 27.1+; helper 4,971 geometry checks and native compile passed |
-| Final signed IPA | `outputs/native/export-1.1.0-148-final/App.ipa`; exact113 source/public assets, native source/icon manifest, profile/entitlements, production flags and deep signature verified |
-| Final native launch | Own StoreCapture iPhone 18 Pro Max/iOS 27.0, builtSDK 27.1: install/launch passed; LocalStorage byte hashes preserved on reinstall before launch |
-| Duo runtime | Own Okchu-Duo-QA/iOS 27.1 available but shut down; fold/rotation/transition **not observed**, pending Mac unlock |
-| IAP repair | Included in final IPA; 33 installed-plugin mock cases pass/exit0. Real checkout/restore/public 1.0.4 upgrade pending |
-| Native banner pane | Patched on 27.1+ to follow actual bridged WebView, permission and visibility; 15 source contracts and compile passed, actual Duo ad placement pending |
-| Advertising consent | Registered UMP 3 bridge and JS permission gating/privacy setting included; real-device form/delivery checks pending |
-| Signing | Existing identity and matching app-specific profile; no certificate/key creation/revocation |
-| CI | Manual artifact-only build; no automatic account mutations, upload or publishing |
-| Physical Duo/device QA | Pending unless subsequently documented in QA; no physical certification claim |
+Late difficulty is graded by the minimum over **every winning route**, including choices whose earliest possible dead end is 4/6/8 removals away. Grades also check further branching and limit long intervals without a critical choice. Final chapter six-removal minima are **4, 6, 5, 6, 5**; the final boss has three eight-removal decisions. A distance includes the selected wrong removal. These are exact structural guarantees, not a claim that every player will find a puzzle difficult. The first-final floor is explicitly four; other final floors are five. No failed candidate is silently substituted.
 
-See [release verification](docs/RELEASE_1.1.0.md), [QA evidence](docs/QA_1.1.0.md) and [submission steps](docs/APP_STORE_SUBMISSION.md). `outputs/native/release-verification-final.json` identifies the current IPA and source/native hashes. Older base/precontrast/precache/preicon/prearrow/prevignette artifacts are historical and must not be mistaken for the current final package.
+The game screen now uses a compact header, one inline status row, a visible sequence, a large borderless board and one bottom tool dock. Arrows use a thin flat shaft/open tip, outlined symbols and stable decorative colors. Matte paper replaces stepped bevels/shadows. Minimum body contrast is 5.31:1; causal error cue contrast is 3.81:1. The final seal is 23×32 with 453 occupied cells and paths of 5–13 cells. `boardCells` records the immutable actual footprint for fitting; the historical level names do not imply the old silhouette is still rendered.
 
-The same 50 level IDs/names and progress keys are retained; baseline comparison verified 47 new silhouettes. Preserve the bundle and IAP product, and verify upgrade/ownership on a signed device. A later build after uploading 148 requires a newly checked build number.
+Current cache: main53 / Game10 / Screens6 / Renderer6 / Balance4 / redesign CSS8 / SW39. The service worker covers the complete first-offline module graph and prioritizes exact query URLs.
 
-CSS owns the four safe-area insets with native contentInset never. On27.1+, the native container avoids the system's active hinge/camera reserved regions while retaining Capacitor's bridged WebView and native plugin references. Simulator Debug uses test ads; final native Release uses production defaults. Neither source tests nor signature verification replace signed-device purchase/privacy testing.
+## Verification
 
-Frozen source: commit `363903d0e37ec2973199bba9ddfaf00b392f278d`, [draft PR #1](https://github.com/arslanaytac11-alt/okchu/pull/1). Current final IPA SHA-256: `77bd10205284260cb9896da679f333142b65ed88523ec5bc3de9c2af365bd90c` (73,616,647 bytes). Public113/native20 manifest hashes are recorded in the machine-readable proof. Source SW35/main49/Game6 passed eighteen suites, fifty puzzle validations and forty-five syntax checks.
+`npm test` passed all **22 suites**, all 50 level validations, and 48 JavaScript syntax checks. It includes 2,109 actual Game removals, 1,000 varied exact-safe campaign solves, 48 losing-choice/dead-end/Undo recoveries, 227,772 input coordinate cases, 69,597 motion frames, and an independent all-winning-route difficulty oracle. Evidence: `outputs/qa/seals-final-test.log` and `outputs/qa/test-results.json`.
 
-The Mac is locked and requires manual user unlock. No unlock retry, shared-service restart, Duo boot or upload was attempted while locked. Final StoreCapture launch passed; the native vignette recapture, Duo runtime tests and authenticated Transporter upload are still pending. Existing App Store automatic-release preference remains untouched.
+Actual Codex browser observations cover 320×568, 390×844 and 844×390, light/dark themes, the explanation dialog, zoom and recenter. Controls remain at least 44×44 with no horizontal overflow. Dense puzzles use the zoom controls/two-finger zoom; the entire portrait seal is smaller in a short landscape viewport. These are browser observations, not physical touch or fold tests. Current images are `outputs/qa/seals-final50-light-390.png`, `-light-320.png`, `-dark-390.png`, and `-landscape.png`.
+
+## Native and publication
+
+Existing iOS 15 deployment targets, Xcode 27.1/27A9275, UIKit scene lifecycle, same bridged WKWebView, public reserved-region/hinge layout, existing StoreKit product, UMP consent bridge and guarded native AdMob banner pane are retained. Duo helper passed 4,971 geometry checks and native compilation previously passed. Actual Duo folds, physical touch/haptics, signed-device purchases/restoration, production consent/ads and an upgrade from public 1.0.4 remain unverified. Previous dedicated simulator installs preserved candidate LocalStorage, a narrower check.
+
+The previous `export-1.1.0-148-final/App.ipa` (main49/Game6/SW35) and provisional `export-1.1.0-148-rune/App.ipa` are **historical and do not contain current gameplay/UI**. The new frozen seal snapshot has been archived/exported with existing manual signing assets. Current IPA: `outputs/native/export-1.1.0-148-seals/App.ipa`, SHA-256 `8ea102c571df38d590553851495a99df2f5f1ec2ed27f698475d5feac4406963`. All116 public and20 native hashes, generated plugins, compiled icon and deep/strict distribution signature passed; proof is `outputs/native/release-verification-seals.json`. See [release status](docs/RELEASE_1.1.0.md). Never upload a historical artifact as this revision.
+
+The existing App Store Connect 1.1.0 metadata draft needs the new rule text before submission. Five localized drafts are saved in [store metadata](docs/store-metadata-1.1.0.json) with updated [review notes](APPSTORE_REVIEW_NOTES.md). Existing automatic-release preference remains unchanged. The Mac was locked during prior native UI/upload work; no unlock retries or shared-service resets were used.
+
+See [research and difficulty](docs/PUZZLE_RESEARCH.md), [QA](docs/QA_1.1.0.md), [release](docs/RELEASE_1.1.0.md), [submission](docs/APP_STORE_SUBMISSION.md), and [draft PR #1](https://github.com/arslanaytac11-alt/okchu/pull/1).

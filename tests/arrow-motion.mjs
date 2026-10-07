@@ -99,7 +99,7 @@ const renderer = new Renderer(canvas);
 renderer.resize(15,17);
 const path = {cells:bentCells.map(([x,y])=>({x,y})),direction:'right',colorIndex:0};
 const metrics = renderer._getArrowMetrics();
-assert.ok(metrics.width>=3.5 && metrics.width<=renderer.cellSize*.24,'The slimmer fitted phone shaft remains legible without touching adjacent cells');
+assert.ok(metrics.width>=2.2 && metrics.width<=2.4,'The fitted phone shaft uses a fine, constant screen weight');
 const idle = renderer._buildPathPoints(path,metrics);
 path._visualGeometry = sampleArrowMotion(bent);
 assert.deepEqual(renderer._buildPathPoints(path,metrics),idle,'Idle and motion use exactly the same renderer geometry');
@@ -114,6 +114,166 @@ close(projected.tipY,renderer.gridOffsetY+path._visualGeometry.tip.y*renderer.ce
 renderer.drawPath(path);
 assert.ok(calls.some(([name])=>name==='quadraticCurveTo'),'Elbows must be rounded curves, not pointed joins');
 assert.equal(context.globalAlpha,1);
+
+// A sparse first board must not grow a pipe. Zoom should reveal more detail,
+// while retaining the same screen ink and keeping dense tips in their cells.
+const savedView={cellSize:renderer.cellSize,scale:renderer.scale};
+let thinMetricCases=0;
+for (const dpr of [1,2,3]) {
+    window.devicePixelRatio=dpr;
+    for (const cellCss of [6.5,13,19,24,60,98]) for (const scale of [.5,1,2,3]) {
+        renderer.scale=scale;renderer.cellSize=cellCss/scale;
+        const m=renderer._getArrowMetrics();
+        assert.ok(m.width*scale>0 && m.width*scale<=2.4,'Every shaft remains a fine CSS-pixel stroke');
+        assert.ok(m.width*scale<=cellCss*.16+1e-8,'Even the round tip cap fits its logical cell');
+        if (cellCss>=19) assert.ok(m.width*scale>=2.2,'Full phone boards retain legible fine ink');
+        assert.ok(m.headSize*scale<=8+1e-8 && m.headSize*scale<=cellCss*.34+1e-8,'Open heads remain small on both sparse and dense boards');
+        assert.ok(m.headSize*m.headSpread+m.width/2<renderer.cellSize/2,'The full head spread cannot overlap a neighboring path');
+        thinMetricCases++;
+    }
+}
+window.devicePixelRatio=3;
+Object.assign(renderer,savedView);
+
+let flatDrawCases=0;
+const plainPath={...path,cells:path.cells.map(cell=>({...cell}))};
+delete plainPath._visualGeometry;
+let idleCommands;
+for (const state of ['idle','removable','removing']) {
+    plainPath.state=state;
+    if (state==='removing') plainPath._visualGeometry=sampleArrowMotion(bent,0);
+    calls.length=0;
+    renderer.drawPath(plainPath);
+    assert.equal(calls.filter(([name])=>name==='stroke').length,2,'The arrow has exactly one shaft and one open chevron');
+    assert.equal(calls.filter(([name])=>name==='fill'||name==='closePath'||name==='translate').length,0,'No filled head, extrusion, ridge or tail stripe remains');
+    if (!idleCommands) idleCommands=structuredClone(calls);
+    else assert.deepEqual(calls,idleCommands,'State changes and the first moving frame preserve the entire flat drawing');
+    flatDrawCases++;
+}
+calls.length=0;
+renderer.drawPreviewHalo(plainPath);
+assert.equal(calls.filter(([name])=>name==='stroke').length,2,'Touch preview uses the same restrained shaft and open head');
+assert.equal(calls.filter(([name])=>name==='fill').length,0,'Touch preview does not restore a filled head or thick halo');
+assert.deepEqual(calls.filter(([name])=>name==='translate'),[['translate',renderer.panX+renderer.shakeX,renderer.panY+renderer.shakeY]],'The only preview translation projects the world, without extruded ink');
+flatDrawCases++;
+
+// Every rune has a different visible contour. Its location, unlike its color,
+// expresses its persisted identity and follows the tail through real bends.
+let runeGlyphCases=0;
+const runeContours=new Set();
+renderer.theme.background=BOARD_VISUALS.background;
+renderer.setBoardShape('diamond',9,11);
+const runePath={...plainPath,cells:plainPath.cells.map(cell=>({...cell})),rune:0};
+delete runePath._visualGeometry;
+for (const rune of [0,1,2,3]) {
+    runePath.rune=rune;
+    const geometry=renderer._getRuneGeometry(runePath);
+    const tail=renderer._cellCenter(runePath.cells[0]);
+    pointClose(geometry,tail);
+    calls.length=0;
+    renderer._drawRuneMarker(runePath,ARROW_COLORS[0]);
+    const contour=calls.filter(([name])=>['arc','moveTo','lineTo','closePath'].includes(name));
+    runeContours.add(JSON.stringify(contour));
+    assert.equal(calls.filter(([name])=>name==='fill').length,1,'The quiet interior keeps the glyph recognizable across its shaft');
+    assert.equal(calls.filter(([name])=>name==='stroke').length,1,'Rune outline is a single fine stroke');
+    const idleGlyphCommands=structuredClone(calls);
+    runePath._visualGeometry=sampleArrowMotion(bent,0);
+    assert.deepEqual(renderer._getRuneGeometry(runePath),geometry,'Glyph starts at exactly the idle tail center');
+    calls.length=0;renderer._drawRuneMarker(runePath,ARROW_COLORS[0]);
+    assert.deepEqual(calls,idleGlyphCommands,'A successful departure cannot pop the rune on its first frame');
+    for (const distance of [.2,.6,1.8,3.7,bent.length+2]) {
+        runePath._visualGeometry=sampleArrowMotion(bent,distance);
+        const glyph=renderer._getRuneGeometry(runePath);
+        const expected=pointOnArrowRoute(bent,distance+.42);
+        pointClose(glyph,{x:renderer.gridOffsetX+expected.x*renderer.cellSize,y:renderer.gridOffsetY+expected.y*renderer.cellSize});
+        runeGlyphCases++;
+    }
+    delete runePath._visualGeometry;
+    runeGlyphCases++;
+}
+assert.equal(runeContours.size,4,'Circle, diamond, triangle and square remain distinct without color');
+assert.equal(renderer._getRuneGeometry(plainPath),null,'Ordinary introduction arrows do not gain a decorative rune');
+for (const rune of [-1,4,1.5,null,undefined]) {
+    assert.equal(renderer._getRuneGeometry({...runePath,rune}),null,'Invalid or absent rune IDs cannot invent a marker');
+    runeGlyphCases++;
+}
+for (const cellCss of [6.5,19,98]) for (const scale of [.5,1,3]) {
+    renderer.scale=scale;renderer.cellSize=cellCss/scale;
+    const glyph=renderer._getRuneGeometry(runePath);
+    assert.ok(glyph.size*scale<=11+1e-8 && glyph.size*scale<=cellCss*.48+1e-8,'Rune size remains bounded and readable under zoom');
+    assert.ok(glyph.width*scale<=1.3+1e-8,'The rune does not become a heavy outline under zoom');
+    runeGlyphCases++;
+}
+Object.assign(renderer,savedView);
+for (const direction of Object.keys(vectors)) {
+    const cell=[{x:4,y:5}],route=createArrowRoute(cell,direction);
+    const single={cells:cell,direction,rune:0};
+    pointClose(renderer._getRuneGeometry(single),renderer._cellCenter(cell[0]));
+    single._visualGeometry=sampleArrowMotion(route,.8);
+    const expected=pointOnArrowRoute(route,1.15);
+    pointClose(renderer._getRuneGeometry(single),{x:renderer.gridOffsetX+expected.x*renderer.cellSize,y:renderer.gridOffsetY+expected.y*renderer.cellSize});
+    runeGlyphCases++;
+}
+assert.deepEqual(runePath.cells,path.cells,'Marker rendering never changes logical cells or touch zones');
+
+// Actual card canvases share the gameplay palette and open-head grammar.
+// The smaller visual never changes level data or acts as an eligible-move cue.
+globalThis.localStorage={getItem:()=>null,setItem:()=>{throw new Error('Drawing a preview cannot persist game data');}};
+const {ScreenManager}=await import('../js/screens.js');
+let thumbnailCases=0;
+for (const displayWidth of [58,68]) for (const level of allLevels) {
+    const strokes=[],surfaces=[];
+    const thumbnailContext=new Proxy({}, {
+        get:(object,key)=>key in object?object[key]:(...args)=>{
+            if(key==='stroke') strokes.push({color:object.strokeStyle,width:object.lineWidth});
+            if(key==='fillRect') surfaces.push(object.fillStyle);
+        },set:(object,key,value)=>(object[key]=value,true),
+    });
+    const thumbnailCanvas={width:160,height:160,getContext:()=>thumbnailContext,getBoundingClientRect:()=>({width:displayWidth})};
+    const snapshot=JSON.stringify(level.paths);
+    ScreenManager.prototype._drawLevelThumbnail(thumbnailCanvas,level);
+    const grid=new Grid(level.gridWidth,level.gridHeight);grid.loadFromData(level.paths);assignBalancedArrowColors(grid.paths);
+    let strokeIndex=0;
+    for (const [index,arrow] of level.paths.entries()) {
+        const body=strokes[strokeIndex++],head=strokes[strokeIndex++];
+        assert.equal(body.color,ARROW_COLORS[arrowColorVariant(grid.paths[index])],'Thumbnail preserves the board decorative color');
+        assert.deepEqual(head,body,'Open thumbnail head shares the fine shaft ink');
+        assert.ok(body.width*displayWidth/160>0 && body.width*displayWidth/160<=1.3+1e-8,'Both responsive thumbnail sizes retain fine screen ink');
+        if(Number.isInteger(arrow.rune)&&arrow.rune>=0&&arrow.rune<=3) {
+            assert.equal(strokes[strokeIndex++].color,body.color,'Rune identity keeps the same decorative color');
+        }
+    }
+    assert.equal(strokes.length,strokeIndex,'No extra outline, facets or tail stripes remain in previews');
+    assert.deepEqual(surfaces,['#F6F0DE'],'Known matte surface keeps the palette legible on either UI theme');
+    assert.equal(JSON.stringify(level.paths),snapshot,'Preview does not add palette or rune properties to authored data');
+    thumbnailCases++;
+}
+let thumbnailRuneCases=0;
+for(const displayWidth of [58,68]) {
+    const runeLevel={gridWidth:9,gridHeight:5,paths:[0,1,2,3].map(rune=>({cells:[[1+rune*2,2]],direction:'up',rune}))};
+    const contours=[];let current=[];
+    const glyphContext=new Proxy({}, {
+        get:(object,key)=>key in object?object[key]:(...args)=>{
+            if(key==='beginPath') current=[];
+            else if(['arc','moveTo','lineTo','closePath'].includes(key)) current.push([key,...args]);
+            else if(key==='stroke') contours.push(structuredClone(current));
+        },set:(object,key,value)=>(object[key]=value,true),
+    });
+    ScreenManager.prototype._drawLevelThumbnail({width:160,height:160,getContext:()=>glyphContext,getBoundingClientRect:()=>({width:displayWidth})},runeLevel);
+    assert.equal(contours.length,12,'Four thumbnail arrows each have a shaft, open head and rune outline');
+    for(const rune of [0,1,2,3]) {
+        const contour=contours[rune*3+2];
+        if(rune===0) assert.equal(contour[0][0],'arc','The first thumbnail rune is a circle');
+        else {
+            assert.equal(contour.at(-1)[0],'closePath');
+            assert.equal(contour.filter(([name])=>name==='lineTo').length,rune===2?2:3,'Triangle is distinct from both four-sided glyphs');
+            const cs=140/9,ox=(160-9*cs)/2,centerX=ox+(1+rune*2+.5)*cs;
+            if(rune===1) close(contour[0][1],centerX,'Diamond starts above its center');
+            if(rune===3) assert.ok(contour[0][1]<centerX,'Square starts at its upper left corner');
+        }
+        thumbnailRuneCases++;
+    }
+}
 
 function luminance(hex) {
     const rgb=hex.slice(1).match(/../g).map(v=>parseInt(v,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
@@ -140,8 +300,15 @@ for (const dark of [false,true]) {
     const stops=[];
     context.createLinearGradient=()=>({addColorStop:(_offset,color)=>stops.push(color)});
     context.globalAlpha=1;
+    calls.length=0;
+    context.stroke=()=>calls.push(['stroke']);
     renderer.drawBoardShape();
     assert.equal(stops.length,2);
+    assert.equal(stops[0],stops[1],'The board surface is a flat matte impression');
+    assert.equal(calls.filter(([name])=>name==='fill').length,1,'One silhouette impression preserves actual static footprint');
+    assert.equal(calls.filter(([name])=>name==='stroke').length,0,'No cell-track contour or raised ledge remains');
+    assert.equal(context.shadowBlur,0);assert.equal(context.shadowOffsetX,0);assert.equal(context.shadowOffsetY,0);
+    assert.equal(renderer._getBoardSurfaceColor(renderer._boardShapeBounds.top+.5).toLowerCase(),stops[0].toLowerCase(),'Rune interiors use the identical paper material');
     const strokes=[];
     context.stroke=()=>strokes.push({color:context.strokeStyle,alpha:context.globalAlpha,width:context.lineWidth});
     renderer.getBlockedFeedbackGeometry=()=>({start:{x:1.94,y:2.5},end:{x:5.06,y:2.5},cell:{x:5,y:2},type:'path'});
@@ -150,10 +317,11 @@ for (const dark of [false,true]) {
     for (const bg of stops) {
         for (const color of dark?ARROW_DARK_COLORS:ARROW_COLORS) {
             const ratio=contrast(color,bg); stoneMinimums.body=Math.min(stoneMinimums.body,ratio);
-            assert.ok(ratio>=3,`${color}: solid arrow body contrast against stone ${bg}`);stoneContrastChecks++;
+            assert.ok(ratio>=4.5,`${color}: refined thin arrow body contrast against paper ${bg}`);stoneContrastChecks++;
         }
         const ratio=contrast(renderer.errorColor,bg); stoneMinimums.error=Math.min(stoneMinimums.error,ratio);
         assert.ok(ratio>=3,'Error flash must remain distinct on the new stone');stoneContrastChecks++;
+        assert.ok(contrast(dark?BOARD_VISUALS.darkSelected:BOARD_VISUALS.selected,bg)>=3,'Thin touch selection stays visible on either stone theme');
         for (const stroke of strokes) {
             const ratio=contrast(composite(stroke.color,bg,stroke.alpha),bg);stoneMinimums.error=Math.min(stoneMinimums.error,ratio);
             assert.ok(ratio>=3,`Static blocked ray/outline contrast against stone ${bg}`);stoneContrastChecks++;
@@ -161,4 +329,4 @@ for (const dark of [false,true]) {
     }
 }
 
-console.log(JSON.stringify({campaignFrames,singleCellChecks,bendTailChecks:3,rendererChecks:7,decorativeColorVariants:variants.size,balancedPaletteBoards,paletteStateCases,contrastChecks:8,stoneContrastChecks,stoneMinimums},null,2));
+console.log(JSON.stringify({campaignFrames,singleCellChecks,bendTailChecks:3,rendererChecks:7,thinMetricCases,flatDrawCases,runeGlyphCases,thumbnailCases,thumbnailRuneCases,decorativeColorVariants:variants.size,balancedPaletteBoards,paletteStateCases,contrastChecks:8,stoneContrastChecks,stoneMinimums},null,2));

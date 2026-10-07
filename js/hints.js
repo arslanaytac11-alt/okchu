@@ -22,6 +22,12 @@ export class HintManager {
     }
 
     findHintArrow(grid) {
+        this.lastStatus = null;
+        if (grid.hasRuneOrder()) {
+            const analysis = grid.getRuneAnalysis();
+            this.lastStatus = analysis.status;
+            return analysis.status === 'solvable' ? grid.paths[analysis.solution[0]] || null : null;
+        }
         const removable = grid.getRemovablePaths();
         if (removable.length === 0) return null;
         return removable[Math.floor(Math.random() * removable.length)];

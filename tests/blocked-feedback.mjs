@@ -91,13 +91,13 @@ check('grid edges are exits and malformed/out-of-bounds heads never create a ray
         const path = grid.addPath(cells,direction); assert.equal(grid.getFirstBlocker(path),null); assert.equal(grid.isPathClear(path),false);
     }
 });
-check('real Greek long rays identify exactly the first obstacle and stop at its entry edge',()=>{
-    let tested = 0;
-    for (const data of allLevels.slice(5,10)) {
+check('campaign blockers and a distant-ray fixture identify the first obstacle and stop at its entry edge',()=>{
+    let tested = 0, distant = 0, campaign = 0;
+    for (const data of [...allLevels,level]) {
         const h = fresh(data);
         for (const path of h.game.grid.paths) {
             const blocker = h.game.grid.getFirstBlocker(path);
-            if (!blocker || blocker.distance < 4) continue;
+            if (!blocker) continue;
             h.game.renderer.showBlockedFeedback(path,blocker);
             const geometry = h.game.renderer.getBlockedFeedbackGeometry();
             const head = path.getHead(), {dx,dy} = getDirectionVector(path.direction);
@@ -106,9 +106,13 @@ check('real Greek long rays identify exactly the first obstacle and stop at its 
             for (let d=1;d<blocker.distance;d++) assert.equal(h.game.grid.getPathAt(head.x+dx*d,head.y+dy*d),null);
             assert.equal(h.game.grid.getPathAt(blocker.x,blocker.y),blocker.path);
             tested++;
+            if (data !== level) campaign++;
+            if (blocker.distance >= 4) distant++;
         }
     }
-    assert.ok(tested >= 1,'Campaign must exercise a distant causal blocker');
+    assert.ok(campaign > 0,'Actual campaign blockers must be checked');
+    assert.ok(distant > 0,'Long-ray behavior must remain covered even when campaign geometry changes');
+    assert.ok(tested > campaign);
 });
 check('world-space ray and cell outline preserve their logical positions during zoom/resize and Reduce Motion',()=>{
     const h = fresh(), r = h.game.renderer, path = h.game.grid.paths[0], blocker = h.game.grid.getFirstBlocker(path);
