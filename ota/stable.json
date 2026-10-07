@@ -2,9 +2,7 @@
   "schemaVersion": 1,
   "appVersion": "1.1.0",
   "nativeBuild": 148,
-  "revision": 2,
+  "revision": 3,
   "texts": {},
-  "disableAds": {
-    "banner": true
-  }
+  "disableAds": {}
 }
