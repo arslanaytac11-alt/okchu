@@ -11,7 +11,7 @@ Date.now=()=>now;
 globalThis.setTimeout=(fn,delay)=>{timers.set(++id,{fn,at:now+delay});return id;};
 globalThis.clearTimeout=id=>timers.delete(id);
 globalThis.localStorage={getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)};
-memory.set('okchu.content.v1.staged',JSON.stringify({schemaVersion:1,appVersion:'1.1.0',nativeBuild:148,revision:1,texts:{},disableAds:{[type]:true}}));
+memory.set('okchu.content.v1.staged',JSON.stringify({schemaVersion:1,appVersion:'1.1.1',nativeBuild:149,revision:1,texts:{},disableAds:{[type]:true}}));
 globalThis.document={visibilityState:'visible',documentElement:{style:{setProperty(){}}},addEventListener(){}};
 const calls={banner:0,interstitial:0,rewarded:0};
 const sdk={initialize:async()=>{},trackingAuthorizationStatus:async()=>({status:'authorized'}),addListener:(name,fn)=>{events.set(name,fn);return Promise.resolve({remove(){}});},showBanner:async()=>{calls.banner++;},hideBanner:async()=>{},prepareInterstitial:async()=>{calls.interstitial++;},prepareRewardVideoAd:()=>{calls.rewarded++;return new Promise(()=>{});},showRewardVideoAd:()=>new Promise(()=>{})};

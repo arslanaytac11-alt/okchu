@@ -102,6 +102,7 @@ export class Game {
 
         this._runeNotice = null;
         this._runeHelpOpen = false;
+        this._runeStuck = false;
         bindRuneHelp(() => this.setRuneHelpOpen(true), () => this.setRuneHelpOpen(false));
         this.setupInput();
     }
@@ -220,6 +221,7 @@ export class Game {
         this.onboardingTapsLeft = 0;
         this._runeNotice = null;
         this._runeHelpOpen = false;
+        this._runeStuck = false;
         updateRuneHud(null);
         document.getElementById('overlay-rune-help')?.classList.add('hidden');
         this._clearBlockedFeedback();
@@ -236,7 +238,13 @@ export class Game {
         const element = document.getElementById('game-feedback');
         if (!element) return;
         const stuck = this._active && this.grid?.hasRuneOrder() && !this.isAnimating && !this.grid.isCleared() && this.grid.getRemovablePaths().length === 0;
-        const key = this._runeNotice || (stuck ? 'runes.stuck' : this.renderer.blockedFeedback ? 'game.blocked_feedback' : this.onboardingActive ? 'game.guided_feedback' : '');
+        const wasStuck = this._runeStuck;
+        this._runeStuck = !!stuck;
+        if (stuck) this._stopTimer();
+        else if (wasStuck && this._active && !this._outcome) this._startCountdown();
+        document.getElementById('btn-recover-runes')?.classList.toggle('hidden',
+            !this._active || (!stuck && this._runeNotice !== 'runes.hint_undo'));
+        const key = stuck ? 'runes.stuck' : this._runeNotice || (this.renderer.blockedFeedback ? 'game.blocked_feedback' : this.onboardingActive ? 'game.guided_feedback' : '');
         const message = key ? t(key).replace('{rune}', RUNE_GLYPHS[this.grid?.getCurrentRune()] || '') : '';
         element.textContent = message === key ? '' : message;
     }
@@ -296,7 +304,7 @@ export class Game {
     _startCountdown() {
         this._stopTimer();
         this._lastTick = Date.now();
-        if (!this._active || this._outcome || this.zenMode || this.moveLimit || this._visibilityHidden || document.hidden === true || this._runeHelpOpen) return;
+        if (!this._active || this._outcome || this.zenMode || this.moveLimit || this._visibilityHidden || document.hidden === true || this._runeHelpOpen || this._runeStuck) return;
         this._timerInterval = setInterval(() => {
             const now = Date.now();
             if (this._visibilityHidden || document.hidden === true) {
@@ -1311,6 +1319,29 @@ export class Game {
         };
 
         requestAnimationFrame(animate);
+    }
+
+    recoverRuneRoute() {
+        if (!this._active || this.isAnimating || !this.grid?.hasRuneOrder() ||
+            this.grid.getRuneAnalysis()?.status !== 'unsolvable') return false;
+        const removed = this.grid.getRemovedIndices();
+        // Find the nearest proved-solvable history prefix before changing
+        // anything. A bounded/unknown result is never called a solution.
+        let count = 0;
+        for (let i = this._moveHistory.length - 1; i >= 0; i--) {
+            const index = this.grid.paths.indexOf(this._moveHistory[i].pathRef);
+            const position = removed.indexOf(index);
+            if (position < 0) return false;
+            removed.splice(position, 1);
+            count++;
+            if (this.grid.runeSolver.analyze(removed).status === 'solvable') {
+                for (let n = 0; n < count; n++) this.undoLastMove();
+                this._runeNotice = 'runes.recovered';
+                this._updateGameFeedback();
+                return true;
+            }
+        }
+        return false;
     }
 
     undoLastMove() {

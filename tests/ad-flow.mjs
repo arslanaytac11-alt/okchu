@@ -61,6 +61,7 @@ try {
             async readyInterstitial(){await this.advance(AD_POLICY.firstSessionGraceMs);for(let i=0;i<6;i++)ads.noteLevelCompleted();await tick();assert.equal(interstitialLoads.length,1);interstitialLoads.shift().resolve();await tick();},
             async loadedReward(){await tick();this.emit('onRewardedVideoAdLoaded');await tick();},
             async hidden(){document.visibilityState='hidden';documentEvents.get('visibilitychange')?.();await tick();},
+            async visible(){document.visibilityState='visible';documentEvents.get('visibilitychange')?.();await tick();},
             async revoke(){permission={canRequestAds:false,privacyOptionsRequired:true};await ads.showAdPrivacyOptions();},
         };
     }
@@ -167,7 +168,7 @@ try {
     f.emit('onRewardedVideoAdDismissed');await f.advance(250);assert.equal(await reward,false);
     pass('Cancelled native load cannot show or be mistaken for a new button press; terminal event releases quarantine');
 
-    for(const cancellation of ['navigation','hidden','premium','consent']) {
+    for(const cancellation of ['navigation','premium','consent']) {
         f=await fixture();reward=f.ads.showRewarded(f.rewardContext);await f.loadedReward();
         if(cancellation==='navigation'){f.invalidate();f.ads.cancelPendingAds();}
         if(cancellation==='hidden')await f.hidden();
@@ -176,18 +177,41 @@ try {
         f.emit('onRewardedVideoAdReward',{amount:1});f.emit('onRewardedVideoAdDismissed');await f.advance(250);
         assert.equal(await reward,false);
     }
-    pass('Late reward after navigation/background/Premium/consent change cannot alter a stale offer');
+    pass('Late reward after navigation/Premium/consent change cannot alter a stale offer');
 
     f=await fixture();reward=f.ads.showRewarded(f.rewardContext);await tick();await f.advance(10_000);
     assert.equal(await reward,false);
     assert.equal(await f.ads.showRewarded(f.rewardContext),false);
     f.emit('onRewardedVideoAdLoaded');await tick();assert.equal(f.calls.showReward,0);
-    reward=f.ads.showRewarded(f.rewardContext);await f.loadedReward();await f.advance(90_000);
-    assert.equal(await reward,false);assert.equal(f.ads.isAdPresentationPending(),true);
+    reward=f.ads.showRewarded(f.rewardContext);await f.loadedReward();await f.advance(180_000);
+    assert.equal(f.ads.isAdPresentationPending(),true);
     f.emit('onRewardedVideoAdReward',{amount:1});f.emit('onRewardedVideoAdDismissed');
     assert.equal(f.ads.isAdPresentationPending(),true,'Dismissal grace still owns this terminal callback window');
-    await f.advance(250);assert.equal(f.ads.isAdPresentationPending(),false);
-    pass('Load/presentation timeout returns safely without awarding or assigning late callbacks to another offer');
+    await f.advance(250);assert.equal(await reward,true);assert.equal(f.ads.isAdPresentationPending(),false);
+    pass('Load timeout cancels safely; long valid presentations retain their earned reward');
+
+    for(const order of ['visible-before-dismissal','visible-after-dismissal']) {
+        f=await fixture();let delivered=false;
+        reward=f.ads.showRewarded(f.rewardContext).then(value=>{delivered=true;return value;});
+        await f.loadedReward();await f.hidden();
+        await f.advance(180_000);
+        f.emit('onRewardedVideoAdReward',{amount:1});
+        if(order==='visible-before-dismissal')await f.visible();
+        assert.equal(delivered,false);
+        f.emit('onRewardedVideoAdDismissed');await f.advance(250);
+        if(order==='visible-after-dismissal') {
+            assert.equal(delivered,false,'A continuation must wait until the player returns');
+            assert.equal(f.ads.isAdPresentationPending(),true);
+            await f.visible();
+        }
+        assert.equal(await reward,true);assert.equal(f.ads.isAdPresentationPending(),false);
+    }
+    pass('Native ad hiding WKWebView and long end cards preserve earned rewards; delivery waits for foreground');
+
+    f=await fixture();reward=f.ads.showRewarded(f.rewardContext);await f.loadedReward();await f.hidden();
+    f.emit('onRewardedVideoAdDismissed');await f.advance(250);
+    assert.equal(await reward,false);await f.visible();
+    pass('Background dismissal without an SDK reward still grants nothing');
 
     f=await fixture();await f.advance(180_000);for(let i=0;i<6;i++)f.ads.noteLevelCompleted();await tick();
     await f.advance(10_000);

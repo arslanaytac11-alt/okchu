@@ -2,10 +2,10 @@ import { isLocalReviewMode } from './preview-mode.js';
 
 // Reviewed content only. App code, rules, plugins and permissions remain in the
 // App Store binary. A downloaded packet takes effect on the NEXT app launch.
-export const CONTENT_UPDATE_URL = 'https://raw.githubusercontent.com/arslanaytac11-alt/okchu/main/ota/stable.json';
+export const CONTENT_UPDATE_URL = 'https://raw.githubusercontent.com/arslanaytac11-alt/okchu/main/ota/1.1.1.json';
 export const CONTENT_CACHE_KEY = 'okchu.content.v1.staged';
 export const CONTENT_MAX_BYTES = 32 * 1024;
-export const CONTENT_RELEASE = Object.freeze({ schemaVersion: 1, appVersion: '1.1.0', nativeBuild: 148 });
+export const CONTENT_RELEASE = Object.freeze({ schemaVersion: 1, appVersion: '1.1.1', nativeBuild: 149 });
 const LANGUAGES = new Set(['tr', 'en', 'es', 'fr', 'ja']);
 const AD_TYPES = new Set(['banner', 'interstitial', 'rewarded']);
 const TEXT_KEYS = new Set(['game.zoom_hint', ...Array.from({ length: 10 }, (_, i) =>

@@ -423,7 +423,7 @@
     "help": "¿Cómo funciona el sello de orden?",
     "current": "Sello activo",
     "rule": "Elige una flecha con salida libre y el símbolo activo. Cada retirada avanza el sello; la secuencia se repite. Elegir entre dos flechas libres del mismo símbolo puede bloquear un turno posterior. Piensa varias jugadas por adelantado.",
-    "stuck": "Este orden bloqueó el camino. Deshaz y cambia una elección anterior.",
+    "stuck": "Este orden llegó a un callejón sin salida. El tiempo está pausado. Vuelve gratis y prueba otro orden.",
     "wrong_rune": "Elige una flecha con {rune} en este turno.",
     "hint_undo": "Esta posición no tiene solución. Deshaz una elección anterior; no se ha gastado la pista.",
     "hint_unavailable": "No hay una pista segura disponible ahora. No se ha gastado la pista.",
@@ -432,6 +432,8 @@
     "diamond": "Rombo",
     "triangle": "Triángulo",
     "square": "Cuadrado",
-    "guidance": "Elige una flecha libre con el símbolo activo. Piensa varias jugadas por adelantado."
+    "guidance": "Elige una flecha libre con el símbolo activo. Piensa varias jugadas por adelantado.",
+    "recover": "Volver a un paso resoluble · Gratis",
+    "recovered": "Has vuelto a la última elección con solución. Prueba otra flecha."
   }
 }

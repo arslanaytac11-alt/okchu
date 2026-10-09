@@ -423,7 +423,7 @@
     "help": "How does the order seal work?",
     "current": "Active seal",
     "rule": "Choose an arrow with a clear exit and the active symbol. Each removal advances the seal; the sequence repeats. Choosing between two clear arrows with the same symbol can block a later turn. Think several moves ahead.",
-    "stuck": "This order blocked the way. Undo and change an earlier choice.",
+    "stuck": "This order reached a dead end. The timer is paused. Go back for free and try a different order.",
     "wrong_rune": "Choose an arrow marked {rune} this turn.",
     "hint_undo": "This position has no solution. Undo and change an earlier choice; your hint was not spent.",
     "hint_unavailable": "A safe hint is unavailable right now. Your hint was not spent.",
@@ -432,6 +432,8 @@
     "diamond": "Diamond",
     "triangle": "Triangle",
     "square": "Square",
-    "guidance": "Choose a clear arrow with the active symbol. Think several moves ahead."
+    "guidance": "Choose a clear arrow with the active symbol. Think several moves ahead.",
+    "recover": "Return to a solvable step · Free",
+    "recovered": "Back at the last solvable choice. Try a different arrow."
   }
 }

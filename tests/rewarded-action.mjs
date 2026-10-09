@@ -49,7 +49,7 @@ const bindSource=source.slice(source.indexOf('function bindRewardOffer('),source
 function uiFixture(){
     let premium=false;const requests=[],timers=[],grants=[];
     const overlay={classList:{contains:()=>overlay.hidden}};overlay.hidden=false;
-    const sandbox={createRewardedAction,navigationGeneration:1,rewardOfferGeneration:0,document:{hidden:false},
+    const sandbox={createRewardedAction,navigationGeneration:1,rewardOfferGeneration:0,rewardOfferPending:0,document:{hidden:false},
         game:{_levelEpoch:2,currentLevel:{id:'egypt_3'}},isPremiumOwned:()=>premium,
         t:key=>'translation:'+key,setTimeout:fn=>timers.push(fn),
         showRewarded:options=>{const d=deferred();requests.push({options,...d});return d.promise;}};
@@ -67,10 +67,31 @@ await check('actual UI binding resets a reused button and renders its correct lo
     assert.equal(b.disabled,false);assert.equal(b.textContent,'translation:overlay.ad_unavailable');
     h.timers.forEach(fn=>fn());assert.equal(b.textContent,'translation:overlay.watch_ad');assert.equal(h.grants.length,0);
 });
-await check('actual UI failure restores retry after background cancellation without giving a reward',async()=>{
+await check('actual UI offer survives native presentation hiding WKWebView; new hidden taps are blocked',async()=>{
     const h=uiFixture(),b=h.button(),run=b.click();h.sandbox.document.hidden=true;
-    h.requests[0].resolve(true);await run;assert.equal(b.disabled,false);assert.equal(h.grants.length,0);
-    h.sandbox.document.hidden=false;const retry=b.click();h.requests[1].resolve(true);await retry;assert.equal(h.grants.length,1);
+    assert.equal(h.requests[0].options.isCurrent(),true,'Offer identity outlives native presentation');
+    await b.click();assert.equal(h.requests.length,1);
+    h.sandbox.document.hidden=false;h.requests[0].resolve(true);await run;
+    assert.equal(h.grants.length,1);await b.click();assert.equal(h.grants.length,1);
+});
+await check('a naturally regenerated life cannot close the offer before its earned reward settles',async()=>{
+    const h=uiFixture(),b=h.button(),run=b.click();
+    assert.equal(h.sandbox.rewardOfferPending,1);
+    let handler,resumes=0;
+    Object.assign(h.sandbox,{livesDisplay:{},storage:{getTimeUntilNextLife:()=>0},isAdPresentationPending:()=>false});
+    h.overlay.classList.add=()=>{h.overlay.hidden=true;};
+    h.sandbox.game.handleVisibilityChange=()=>{};
+    h.sandbox.game.livesManager={renderLives(){},getCurrentLives:()=>1};
+    h.sandbox.game.resumeLevel=()=>resumes++;
+    h.sandbox.document.visibilityState='visible';
+    h.sandbox.document.addEventListener=(_,fn)=>{handler=fn;};
+    h.sandbox.document.getElementById=id=>id==='overlay-no-lives'?h.overlay:{textContent:'',classList:{contains:()=>true}};
+    const start=source.indexOf("document.addEventListener('visibilitychange', () => {");
+    const end=source.indexOf('// When a level is selected',start);
+    vm.runInContext(source.slice(start,end),h.sandbox);
+    handler();assert.equal(h.overlay.hidden,false);assert.equal(resumes,0);
+    h.requests[0].resolve(true);await run;
+    assert.equal(h.grants.length,1);assert.equal(h.sandbox.rewardOfferPending,0);
 });
 await check('actual UI reopens safely: old completions and label timers cannot alter a new offer',async()=>{
     const h=uiFixture(),old=h.button(),run=old.click();const fresh=h.button();

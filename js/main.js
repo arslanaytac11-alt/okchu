@@ -232,6 +232,7 @@ const launchScheduler = createLaunchScheduler({
 });
 let navigationGeneration = 0;
 let rewardOfferGeneration = 0;
+let rewardOfferPending = 0;
 const originalShowScreen = screenManager.showScreen.bind(screenManager);
 screenManager.showScreen = name => {
     navigationGeneration++;
@@ -280,6 +281,7 @@ screenManager.getGameBackTarget = () => {
 
 // Undo button — uses a single listener; the button is only interactable when game is active.
 const undoBtn = document.getElementById('btn-undo');
+document.getElementById('btn-recover-runes')?.addEventListener('click', () => game.recoverRuneRoute());
 if (undoBtn) {
     undoBtn.addEventListener('click', () => {
         game.undoLastMove();
@@ -347,7 +349,7 @@ document.addEventListener('visibilitychange', () => {
             }
             // If lives auto-regenerated to >=1 while in background, close the
             // overlay so the user can play immediately.
-            if (game.livesManager.getCurrentLives() > 0) {
+            if (game.livesManager.getCurrentLives() > 0 && !isAdPresentationPending() && !rewardOfferPending) {
                 noLivesOverlay.classList.add('hidden');
                 if (document.getElementById('screen-game').classList.contains('active')) game.resumeLevel(game.timeRemaining);
             }
@@ -658,7 +660,7 @@ function bindRewardOffer(button, overlay, premiumLabelKey, grant) {
     const level = game.currentLevel;
     const offerCurrent = () => offer === rewardOfferGeneration && navigation === navigationGeneration &&
         epoch === game._levelEpoch && level === game.currentLevel && !overlay.classList.contains('hidden');
-    const isCurrent = () => offerCurrent() && !document.hidden;
+    const isCurrent = offerCurrent;
     const baseLabel = t(button.getAttribute('data-i18n'));
     button.disabled = false;
     const label = () => isPremiumOwned() ? t(premiumLabelKey) : baseLabel;
@@ -667,10 +669,12 @@ function bindRewardOffer(button, overlay, premiumLabelKey, grant) {
         isCurrent, hasPremium: isPremiumOwned, requestReward: showRewarded, applyReward: grant,
     });
     button.addEventListener('click', async () => {
-        if (button.disabled || !isCurrent()) return;
+        if (button.disabled || document.hidden || !isCurrent()) return;
         button.disabled = true;
+        rewardOfferPending = offer;
         button.textContent = t('overlay.loading_ad');
         const result = await action.run();
+        if (rewardOfferPending === offer) rewardOfferPending = 0;
         if (!offerCurrent()) return;
         button.disabled = false;
         if (result === 'unavailable') {

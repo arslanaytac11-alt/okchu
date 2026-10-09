@@ -108,10 +108,12 @@ function isForeground() {
     return foreground && (typeof document === 'undefined' || document.visibilityState !== 'hidden');
 }
 
-function canRequestAds(kind) {
-    return initialized && adsAllowed && !isPremium() && isForeground() &&
+function hasAdPermission(kind) {
+    return initialized && adsAllowed && !isPremium() &&
         (!kind || !isAdTypeDisabled(kind));
 }
+
+function canRequestAds(kind) { return hasAdPermission(kind) && isForeground(); }
 
 function currentContext(options) {
     if (typeof options?.isCurrent !== 'function') return false;
@@ -121,17 +123,21 @@ function currentContext(options) {
 function bindLifecycle() {
     if (lifecycleBound) return;
     lifecycleBound = true;
-    document?.addEventListener?.('visibilitychange', () => {
-        if (!isForeground()) cancelPendingAds();
-        else synchronizeBanner().catch(() => {});
-    });
-    window?.addEventListener?.('pagehide', () => cancelPendingAds());
+    const updateForeground = () => {
+        // A native ad covers WKWebView and can make it hidden. An already
+        // presented ad still owns its reward, including while visiting its
+        // landing page. Only cancel loads; route/consent changes still cancel.
+        if (!isForeground() && !isAdPresentationPending()) cancelPendingAds();
+        if (isForeground()) fullScreenRequest?.onForeground?.();
+        synchronizeBanner().catch(() => {});
+    };
+    document?.addEventListener?.('visibilitychange', updateForeground);
+    window?.addEventListener?.('pagehide', updateForeground);
     const app = window.Capacitor?.Plugins?.App;
     if (typeof app?.addListener === 'function') {
         Promise.resolve(app.addListener('appStateChange', status => {
             foreground = status?.isActive === true;
-            if (!foreground) cancelPendingAds();
-            else synchronizeBanner().catch(() => {});
+            updateForeground();
         })).catch(() => {});
     }
 }
@@ -355,7 +361,8 @@ function makeFullScreenRequest(kind, options) {
     const request = {
         kind, phase: 'loading', cancelled: false, earned: false, shown: false,
         promise,
-        valid: () => !request.cancelled && epoch === adEpoch && canRequestAds(kind) && currentContext(options),
+        valid: () => !request.cancelled && epoch === adEpoch && hasAdPermission(kind) &&
+            (isForeground() || request.phase === 'showing' || request.phase === 'dismissed') && currentContext(options),
         timer(callback, delay) {
             const id = setTimeout(() => { timers.delete(id); callback(); }, delay);
             timers.add(id);
@@ -436,7 +443,8 @@ export async function showRewarded(options = {}) {
             await suspendBanner(true);
             if (!request.valid()) { request.finish(false, true); return; }
             request.phase = 'showing';
-            request.timer(() => request.cancel(), AD_POLICY.presentationTimeoutMs);
+            // A viewer may spend longer than 90 seconds on a valid creative
+            // or its end card. Elapsed time must never revoke an SDK reward.
             // The installed iOS show promise hangs on a dismissal without a
             // reward; SDK events below are the only reward authority.
             Promise.resolve(A.showRewardVideoAd()).catch(() => request.onShowFail());
@@ -446,12 +454,21 @@ export async function showRewarded(options = {}) {
     request.onReward = () => {
         if ((request.phase === 'showing' || request.phase === 'dismissed') && request.valid()) request.earned = true;
     };
+    let dismissalReady = false;
+    const deliver = () => {
+        if (!dismissalReady) return;
+        // Queue an earned reward until the app is visible so the continuation
+        // timer cannot run behind a native sheet. Navigation still invalidates.
+        if (request.earned && request.valid() && !isForeground()) return;
+        request.finish(request.earned, true);
+    };
+    request.onForeground = deliver;
     request.onDismissed = () => {
         if (request.phase !== 'showing') return;
         request.phase = 'dismissed';
         // A short callback-order grace accommodates mediated adapters. It is
         // not a reward; only onReward can set earned, once for this request.
-        request.timer(() => request.finish(request.earned, true), AD_POLICY.rewardDismissGraceMs);
+        request.timer(() => { dismissalReady = true; deliver(); }, AD_POLICY.rewardDismissGraceMs);
     };
     request.onShowFail = () => request.finish(false, true);
     try {

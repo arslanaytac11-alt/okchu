@@ -53,7 +53,7 @@ check('hints select the proved safe continuation; unsolvable and unknown states 
 check('a real legal trap reaches a visible dead end and full free Undo recovers it',()=>{
  const g=fresh();finish(g,0);let guard=0;
  while(g.grid.getRemovablePaths().length&&guard++<8)finish(g,g.grid.paths.indexOf(g.grid.getRemovablePaths()[0]));
- assert.equal(g.grid.isCleared(),false);assert.match(element('game-feedback').textContent,/yolu kilitledi/);
+ assert.equal(g.grid.isCleared(),false);assert.match(element('game-feedback').textContent,/çıkmaza girdi/);
  while(g._moveHistory.length)assert.equal(g.undoLastMove(),true);
  assert.equal(g.grid.getCurrentRune(),0);assert.equal(g.grid.getActivePaths().length,8);assert.equal(g.grid.getRuneAnalysis().status,'solvable');assert.equal(g.undoCharges,Infinity);
 });
@@ -98,6 +98,35 @@ check('authored seal footprint controls fitting and stays fixed as arrows depart
  assert.equal(validateLevel({...level,boardCells:[...level.boardCells,level.boardCells[0]]}).solvable,false,'Duplicate footprint cells must be rejected');
  g.startLevel({...level,boardCells:[[0,0],[1,0]]},chapters[0]);
  assert.deepEqual(g.renderer._boardShapeBounds,{left:0,top:0,right:2,bottom:1},'Authored footprint cache must distinguish boards sharing a shape name');
+});
+check('both actual Egypt Diamond dead ends return to the nearest solvable choice without payment or lost geometry',()=>{
+ const level=allLevels.find(l=>l.id==='egypt_3');
+ for(const route of [[0,1,3,2],[0,1,3,4,5,2,6,7,8,9]]) {
+  const g=fresh(level,'classic'),cells=JSON.stringify(g.grid.paths.map(p=>p.cells));
+  for(const i of route)finish(g,i);
+  assert.equal(g.grid.getRemovablePaths().length,0);assert.equal(g.grid.getRuneAnalysis().status,'unsolvable');
+  assert.equal(element('btn-recover-runes').classList.contains('hidden'),false);
+  assert.equal(g._timerInterval,null,'Dead-end instructions pause the timer');
+  g.handleVisibilityChange(true);g.handleVisibilityChange(false);assert.equal(g._timerInterval,null);
+  const lives=storage.getLives(),powers=JSON.stringify(storage.getPowerups()),time=g.timeRemaining;
+  assert.equal(g.recoverRuneRoute(),true);assert.equal(g.grid.getRuneAnalysis().status,'solvable');
+  assert.equal(g.moves,route.length-1,'Keep all preceding solvable progress');
+  assert.equal(g.timeRemaining,time);assert.ok(g._timerInterval);assert.equal(storage.getLives(),lives);
+  assert.equal(JSON.stringify(storage.getPowerups()),powers);assert.equal(g.hintManager.hasFreeHint(),true);
+  assert.equal(JSON.stringify(g.grid.paths.map(p=>p.cells)),cells);assert.equal(g.undoCharges,Infinity);
+  assert.equal(element('btn-recover-runes').classList.contains('hidden'),true);
+  for(const i of g.grid.getRuneAnalysis().solution)finish(g,i);
+  assert.equal(g.grid.isCleared(),true);
+ }
+});
+check('recovery rolls back several trap moves, is repeatable and never calls an unknown state solved',()=>{
+ const g=fresh();finish(g,0);let guard=0;
+ while(g.grid.getRemovablePaths().length&&guard++<8)finish(g,g.grid.paths.indexOf(g.grid.getRemovablePaths()[0]));
+ assert.ok(g._moveHistory.length>1);assert.equal(g.recoverRuneRoute(),true);assert.equal(g.moves,0);
+ assert.equal(g.recoverRuneRoute(),false);finish(g,0);
+ g.grid.runeSolver=createRuneSolver(trap,{maxStates:1});const moves=g.moves;
+ assert.equal(g.recoverRuneRoute(),false);assert.equal(g.moves,moves);
+ g.leaveLevel();assert.equal(g.recoverRuneRoute(),false);
 });
 let campaignMoves=0;
 check('recorded exact campaign solutions complete real Game removal/phase without modifying level cells',()=>{

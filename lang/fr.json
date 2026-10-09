@@ -423,7 +423,7 @@
     "help": "Comment fonctionne le sceau d’ordre ?",
     "current": "Sceau actif",
     "rule": "Choisissez une flèche dont la sortie est libre et qui porte le symbole actif. Chaque retrait avance le sceau ; la séquence se répète. Choisir entre deux flèches libres du même symbole peut bloquer un tour suivant. Anticipez plusieurs coups.",
-    "stuck": "Cet ordre a bloqué le passage. Annulez un choix précédent.",
+    "stuck": "Cet ordre mène à une impasse. Le chrono est en pause. Revenez gratuitement et essayez un autre ordre.",
     "wrong_rune": "Choisissez une flèche marquée {rune} à ce tour.",
     "hint_undo": "Cette position n’a plus de solution. Annulez un choix précédent ; votre indice n’a pas été dépensé.",
     "hint_unavailable": "Aucun indice sûr n’est disponible actuellement. Votre indice n’a pas été dépensé.",
@@ -432,6 +432,8 @@
     "diamond": "Losange",
     "triangle": "Triangle",
     "square": "Carré",
-    "guidance": "Choisissez une flèche libre portant le symbole actif. Anticipez plusieurs coups."
+    "guidance": "Choisissez une flèche libre portant le symbole actif. Anticipez plusieurs coups.",
+    "recover": "Revenir à un choix résoluble · Gratuit",
+    "recovered": "Retour au dernier choix résoluble. Essayez une autre flèche."
   }
 }

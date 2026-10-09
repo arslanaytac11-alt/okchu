@@ -423,7 +423,7 @@
     "help": "Sıra mührü nasıl çalışır?",
     "current": "Aktif mühür",
     "rule": "Önü açık ve aktif mühürle aynı simgedeki oku seç. Her çıkarış mührü sıradaki simgeye geçirir; sıra başa dönerek devam eder. Aynı simgedeki iki açık oktan hangisini seçtiğin, ileride yolu kilitleyebilir. Birkaç hamle sonrasını düşün.",
-    "stuck": "Bu sıra yolu kilitledi. Geri Al ile önceki seçimini değiştir.",
+    "stuck": "Bu sıra çıkmaza girdi. Süre durdu. Ücretsiz geri dönüp farklı bir sıra deneyebilirsin.",
     "wrong_rune": "Bu tur {rune} mühründeki bir oku seç.",
     "hint_undo": "Bu seçimin ardından çözüm kalmadı. Geri Al ile önceki seçimini değiştir; ipucun harcanmadı.",
     "hint_unavailable": "Şu an güvenli ipucu bulunamadı. İpucun harcanmadı.",
@@ -432,6 +432,8 @@
     "diamond": "Baklava",
     "triangle": "Üçgen",
     "square": "Kare",
-    "guidance": "Önü açık ve aktif mühürle aynı simgedeki oku seç. Birkaç hamle sonrasını düşün."
+    "guidance": "Önü açık ve aktif mühürle aynı simgedeki oku seç. Birkaç hamle sonrasını düşün.",
+    "recover": "Son çözülebilir adıma dön · Ücretsiz",
+    "recovered": "Çözümü olan son seçime döndün. Şimdi farklı bir ok seç."
   }
 }

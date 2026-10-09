@@ -8,7 +8,7 @@ import {
 const passed = [];
 async function check(name, fn) { await fn(); passed.push(name); }
 const packet = (revision = 1, changes = {}) => ({
-    schemaVersion: 1, appVersion: '1.1.0', nativeBuild: 148, revision,
+    schemaVersion: 1, appVersion: '1.1.1', nativeBuild: 149, revision,
     texts: {}, disableAds: {}, ...changes,
 });
 const encoded = value => JSON.stringify(value);
@@ -30,8 +30,12 @@ function fixture({ cached, native = true, review = false, fetchImpl, timeoutMs }
 }
 
 await check('the committed stable packet is compatible, revision1 and genuinely no-op', () => {
-    const stable = validateContentPacket(readFileSync(new URL('../ota/stable.json', import.meta.url), 'utf8'));
+    const stable = validateContentPacket(readFileSync(new URL('../ota/1.1.1.json', import.meta.url), 'utf8'));
     assert.deepEqual(stable, packet()); assert.deepEqual(stable.texts, {}); assert.deepEqual(stable.disableAds, {});
+});
+await check('previous release packet is rejected without changing its endpoint or contents',()=>{
+ const previous=readFileSync(new URL('../ota/stable.json',import.meta.url),'utf8');
+ assert.equal(validateContentPacket(previous),null);assert.equal(JSON.parse(previous).nativeBuild,148);
 });
 await check('all five existing languages and exactly the approved21 copy keys accept plain text', () => {
     for (const language of ['tr', 'en', 'es', 'fr', 'ja']) {
@@ -46,7 +50,7 @@ await check('all five existing languages and exactly the approved21 copy keys ac
 await check('schema rejects unknown fields, version/build mismatch, missing keys and invalid revisions', () => {
     const variants = [
         null, [], { ...packet(), code: 'alert(1)' }, { ...packet(), schemaVersion: 2 },
-        { ...packet(), appVersion: '1.2.0' }, { ...packet(), nativeBuild: 149 },
+        { ...packet(), appVersion: '1.2.0' }, { ...packet(), nativeBuild: 148 },
         ...[0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, '2'].map(revision => packet(revision)),
         { ...packet(), texts: [] }, { ...packet(), disableAds: [] },
     ];
@@ -62,7 +66,7 @@ await check('HTML, encoded markup, controls, bidi, lone surrogates and oversized
 });
 await check('prototype keys, unapproved copy, executable payloads, puzzle data and native flags are rejected', () => {
     for (const raw of [
-        '{"schemaVersion":1,"appVersion":"1.1.0","nativeBuild":148,"revision":2,"texts":{},"disableAds":{},"__proto__":{}}',
+        '{"schemaVersion":1,"appVersion":"1.1.1","nativeBuild":149,"revision":2,"texts":{},"disableAds":{},"__proto__":{}}',
         encoded(packet(2, { texts: { en: JSON.parse('{"__proto__":"bad"}') } })),
         encoded(packet(2, { texts: { constructor: {} } })),
         encoded(packet(2, { texts: { en: { 'game.play_hint': 'Unknown key' } } })),
@@ -110,7 +114,7 @@ await check('cached content is captured once; downloaded content activates only 
     assert.throws(() => { snapshot.texts.en['game.zoom_hint'] = 'Mutated'; }, TypeError);
 });
 await check('empty or corrupt offline cache keeps the bundled default and cannot invent ad permission', async () => {
-    for (const cached of [undefined, '{', packet(5, { nativeBuild: 149 }), packet(5, { disableAds: { banner: false } })]) {
+    for (const cached of [undefined, '{', packet(5, { nativeBuild: 148 }), packet(5, { disableAds: { banner: false } })]) {
         const h = fixture({ cached, fetchImpl: () => { throw new Error('Offline'); } });
         assert.equal(h.client.getContentText('en', 'game.zoom_hint'), undefined);
         assert.equal(h.client.isAdTypeDisabled('banner'), false);

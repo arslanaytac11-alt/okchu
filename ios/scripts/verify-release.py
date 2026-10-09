@@ -10,7 +10,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 BUNDLE = "com.arslanaytac.okchu"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 ORIENTATIONS = {
     "UIInterfaceOrientationPortrait",
     "UIInterfaceOrientationLandscapeLeft",
@@ -39,7 +39,7 @@ def check_plist(info, built=False, build_number=None):
             "a storyboard-backed window scene is required by the iOS 27 SDK")
     if built:
         require(info.get("CFBundleIdentifier") == BUNDLE, "export bundle ID changed")
-        require(info.get("CFBundleShortVersionString") == VERSION, "export version is not 1.1.0")
+        require(info.get("CFBundleShortVersionString") == VERSION, "export version is not 1.1.1")
         require(info.get("CFBundleVersion") == build_number, "export build number differs from selected number")
         require(info.get("MinimumOSVersion") == "15.0", "export minimum system version must be iOS 15.0")
 
@@ -72,7 +72,7 @@ else:
     require(not configuration.get("server", {}).get("url"), "a release must load bundled offline assets")
     project = (ROOT / "ios/App/App.xcodeproj/project.pbxproj").read_text()
     versions = re.findall(r"MARKETING_VERSION = ([^;]+);", project)
-    require(len(versions) == 2 and set(versions) == {VERSION}, "Debug and Release marketing versions must be 1.1.0")
+    require(len(versions) == 2 and set(versions) == {VERSION}, "Debug and Release marketing versions must be 1.1.1")
     targets = re.findall(r"IPHONEOS_DEPLOYMENT_TARGET = ([^;]+);", project)
     require(len(targets) == 4 and set(targets) == {"15.0"}, "project and application deployment targets must be iOS 15.0")
     check_plist(plistlib.loads((ROOT / "ios/App/App/Info.plist").read_bytes()))

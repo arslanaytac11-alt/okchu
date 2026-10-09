@@ -823,3 +823,8 @@ body #screen-game .game-tools .stat-undo-count {
  #screen-game .board-zoom-button,#screen-game .fit-button { height:44px; min-height:44px; }
  #screen-game .game-guidance p,#screen-game .game-feedback { font-size:10px; }
 }
+
+/* A stalled code puzzle always has a visible, free way back. */
+#screen-game .rune-recovery { min-height:44px; padding:9px 14px; border:1px solid var(--game-line); border-radius:12px; background:var(--game-control); color:var(--game-ink); font-family:inherit; font-size:12px; font-weight:600; line-height:1.4; cursor:pointer; white-space:normal; }
+#screen-game .rune-recovery.hidden { display:none; }
+#screen-game .rune-recovery:focus-visible { outline:2px solid var(--game-ink); outline-offset:2px; }
